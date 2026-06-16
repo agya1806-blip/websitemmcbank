@@ -320,7 +320,11 @@ function init() {
     
     // Load logo
     const savedLogo = localStorage.getItem('mughis_logo_dataurl');
-    if (savedLogo) document.getElementById('logoPreview').src = savedLogo;
+    if (savedLogo) {
+        document.getElementById('logoPreview').src = savedLogo;
+        const hl = document.getElementById('headerLogo');
+        if (hl) hl.src = savedLogo;
+    }
 
     // Load AI key
     const savedAiKey = localStorage.getItem(`mughis_ai_key_${currentUser?.userId || 'guest'}`);
@@ -1367,12 +1371,12 @@ function renderInvoices() {
     
     const invTypes = getInvoiceTypes();
     const typeIcon = {}; const typeLabel = {};
-    invTypes.forEach(t => { typeIcon[t.id] = t.icon || '📄'; typeLabel[t.id] = t.label; });
+    invTypes.forEach(t => { typeIcon[t.id] = t.icon || 'description'; typeLabel[t.id] = t.label; });
     
     container.innerHTML = invoices.map(inv => `
         <div class="card">
             <div class="list-item" style="padding-top:0;cursor:pointer" onclick="showInvoiceDetail('${inv.id}')">
-                <div class="list-icon" style="background:#e0e7ff">${typeIcon[inv.type] || '📄'}</div>
+                <div class="list-icon" style="background:#e0e7ff;font-size:20px"><span class="m-icon">${typeIcon[inv.type] || 'description'}</span></div>
                 <div class="list-content">
                     <div class="list-title">${inv.number}</div>
                     <div class="list-subtitle">${inv.customerName} • ${formatDate(inv.date)} • ${typeLabel[inv.type] || inv.type}</div>
@@ -1602,6 +1606,8 @@ function handleLogoUpload(input) {
             ctx.drawImage(img, 0, 0, 192, 192);
             const resized = canvas.toDataURL('image/png');
             document.getElementById('logoPreview').src = resized;
+            const hl = document.getElementById('headerLogo');
+            if (hl) hl.src = resized;
             localStorage.setItem('mughis_logo_dataurl', resized);
             alert('✅ Logo berhasil diupload! Jangan lupa klik "Simpan Pengaturan" untuk menyimpan.');
         };
