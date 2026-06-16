@@ -939,9 +939,9 @@ function recalculateDashboard() {
     let totalInvoiceNominal = 0, paidInvoiceNominal = 0, unpaidInvoiceNominal = 0;
     let paidInvoiceCount = 0, unpaidInvoiceCount = 0;
     
-    // Proses transaksi keuangan (exclude yg terkait invoice/invoiceId)
+    // Proses transaksi keuangan (skip income invoice, tapi tetap hitung modal keluar)
     transactions.forEach(t => {
-        if (t.invoiceId) return; // transaksi invoice tidak dihitung di keuangan
+        if (t.invoiceId && !t.isModalKeluar) return;
         const amt = parseFloat(t.amount) || 0;
         const tDate = new Date(t.date);
         const isMonth = tDate.getMonth() === thisMonth && tDate.getFullYear() === thisYear;

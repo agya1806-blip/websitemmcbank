@@ -728,8 +728,8 @@ function saveInvoice() {
         alert('⚠️ Nama pelanggan dan total invoice wajib diisi!');
         return;
     }
-    if ((status === 'Lunas' || status === 'DP') && !walletId) {
-        alert('⚠️ Pilih dompet penerima untuk DP/Lunas!');
+    if (!walletId && ((status === 'Lunas' || status === 'DP') || modalKeluar > 0)) {
+        alert('⚠️ Pilih dompet tujuan untuk transaksi ini!');
         return;
     }
     
@@ -825,7 +825,7 @@ function saveInvoice() {
             category, 
             description: desc, 
             amount, 
-            walletId: type === 'expense' ? null : walletId, 
+            walletId: walletId, 
             invoiceId: inv.id, 
             isModalKeluar: type === 'expense',
             createdAt: now++
