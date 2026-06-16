@@ -239,6 +239,7 @@ function saveProduct() {
     const name = document.getElementById('productName').value;
     const category = document.getElementById('productCategory').value;
     const price = parseFloat(document.getElementById('productPrice').value) || 0;
+    const stock = parseInt(document.getElementById('productStock').value) || 0;
     const type = document.getElementById('productType').value;
     if (!name) {
         alert('⚠️ Nama item wajib diisi!');
@@ -248,13 +249,22 @@ function saveProduct() {
     const products = loadData(DB.products);
     if (id) {
         const idx = products.findIndex(p => p.id === id);
-        if (idx >= 0) products[idx] = { ...products[idx], name, category, price, type };
+        if (idx >= 0) products[idx] = { ...products[idx], name, category, price, stock, type };
     } else {
-        products.push({ id: generateId(), name, category, price, type, createdAt: Date.now() });
+        products.push({ id: generateId(), name, category, price, stock, type, createdAt: Date.now() });
     }
     saveData(DB.products, products);
     addActivity(id ? '✏️ Mengupdate produk/jasa' : '➕ Menambah produk/jasa baru');
     closeModal('productModal');
+    renderAll();
+}
+
+function adjustStock(productId, delta) {
+    const products = loadData(DB.products);
+    const p = products.find(x => x.id === productId);
+    if (!p) return;
+    p.stock = Math.max(0, (p.stock || 0) + delta);
+    saveData(DB.products, products);
     renderAll();
 }
 
@@ -265,6 +275,7 @@ function editProduct(id) {
     document.getElementById('productName').value = p.name;
     document.getElementById('productCategory').value = p.category;
     document.getElementById('productPrice').value = p.price;
+    document.getElementById('productStock').value = p.stock || 0;
     document.getElementById('productModalTitle').textContent = 'Edit Item';
     openModal('productModal');
 }
@@ -580,21 +591,52 @@ function openInvoiceModal(type) {
     document.getElementById('invoiceTotal').value = '0';
     document.getElementById('invoiceDP').value = '0';
     document.getElementById('invoiceRemaining').value = '0';
+    document.getElementById('invoiceModalKeluar').value = '0';
     document.getElementById('invoiceStatus').value = 'Belum Lunas';
     
     document.getElementById('printSpecs').style.display = 'none';
     document.getElementById('laptopSpecs').style.display = 'none';
     document.getElementById('umumSpecs').style.display = 'none';
+    document.getElementById('handphoneSpecs').style.display = 'none';
+    document.getElementById('tiktokSpecs').style.display = 'none';
     
     if (type === 'print') document.getElementById('printSpecs').style.display = 'block';
     else if (type === 'laptop') document.getElementById('laptopSpecs').style.display = 'block';
-    else if (type === 'umum') document.getElementById('umumSpecs').style.display = 'block';
+    else if (type === 'handphone') document.getElementById('handphoneSpecs').style.display = 'block';
+    else if (type === 'tiktok') document.getElementById('tiktokSpecs').style.display = 'block';
+    else if (type === 'umum') {
+        document.getElementById('umumSpecs').style.display = 'block';
+        // Load product list for umum dropdown
+        const products = loadData(DB.products).filter(p => p.type === 'product');
+        const select = document.getElementById('umumProductSelect');
+        select.innerHTML = '<option value="">Pilih produk...</option>' + products.map(p => `<option value="${p.id}" data-name="${p.name}" data-price="${p.price}" data-stock="${p.stock||0}">${p.name} (stok: ${p.stock||0}) - ${formatRupiah(p.price)}</option>`).join('');
+        // Check if product has stock
+        if (products.length === 0) {
+            select.innerHTML = '<option value="">Belum ada produk barang</option>';
+        }
+    }
     
     const customers = loadData(DB.customers);
     document.getElementById('invoiceCustomer').innerHTML = '<option value="">Pilih Pelanggan</option>' + customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     invoiceItems = [];
     renderInvoiceItems();
     openModal('invoiceModal');
+}
+
+function fillUmumProduct() {
+    const select = document.getElementById('umumProductSelect');
+    const option = select.options[select.selectedIndex];
+    if (!option || !option.value) return;
+    const name = option.dataset.name;
+    const price = option.dataset.price;
+    // Auto-fill item
+    const existing = invoiceItems.find(i => i.productId === option.value);
+    if (existing) {
+        existing.qty += 1;
+    } else {
+        invoiceItems.push({ id: generateId(), productId: option.value, name: name, qty: 1, price: parseFloat(price) });
+    }
+    renderInvoiceItems();
 }
 
 function fillCustomerData() {
@@ -659,6 +701,7 @@ function saveInvoice() {
     const customerAddress = document.getElementById('invoiceCustomerAddress').value;
     const total = parseFloat(document.getElementById('invoiceTotal').value) || 0;
     const dp = parseFloat(document.getElementById('invoiceDP').value) || 0;
+    const modalKeluar = parseFloat(document.getElementById('invoiceModalKeluar').value) || 0;
     const status = document.getElementById('invoiceStatus').value;
     const walletId = document.getElementById('invoiceWallet').value;
     
@@ -677,7 +720,7 @@ function saveInvoice() {
     
     let invoiceData = {
         type, customerId, customerName, customerPhone, customerAddress,
-        total, dp, remaining: total - dp, status, walletId,
+        total, dp, modalKeluar, remaining: total - dp, status, walletId,
         items: JSON.parse(JSON.stringify(invoiceItems)),
         note: document.getElementById('invoiceNote').value,
         date: new Date().toISOString().split('T'),
@@ -705,9 +748,26 @@ function saveInvoice() {
             warranty: document.getElementById('laptopWarranty').value
         };
     } else if (type === 'umum') {
+        const prodSelect = document.getElementById('umumProductSelect');
         invoiceData.specs = {
+            productId: prodSelect?.value || '',
+            productName: prodSelect?.options[prodSelect.selectedIndex]?.text || '',
             umumType: document.getElementById('umumType').value,
             umumDesc: document.getElementById('umumDesc').value
+        };
+    } else if (type === 'handphone') {
+        invoiceData.specs = {
+            hpName: document.getElementById('hpName').value,
+            hpStorage: document.getElementById('hpStorage').value,
+            hpColor: document.getElementById('hpColor').value,
+            hpCondition: document.getElementById('hpCondition').value,
+            hpWarranty: document.getElementById('hpWarranty').value
+        };
+    } else if (type === 'tiktok') {
+        invoiceData.specs = {
+            tiktokProduct: document.getElementById('tiktokProduct').value,
+            tiktokPlatform: document.getElementById('tiktokPlatform').value,
+            tiktokPrice: parseFloat(document.getElementById('tiktokPrice').value) || 0
         };
     }
     
@@ -734,16 +794,17 @@ function saveInvoice() {
     inv.transactionIds = inv.transactionIds || [];
     
     // Fungsi bikin transaksi income
-    function addInvoiceTrans(category, desc, amount) {
+    function addInvoiceTrans(category, desc, amount, type) {
         const trans = { 
             id: generateId(), 
-            type: 'income', 
+            type: type || 'income', 
             date: inv.date, 
             category, 
             description: desc, 
             amount, 
-            walletId, 
+            walletId: type === 'expense' ? null : walletId, 
             invoiceId: inv.id, 
+            isModalKeluar: type === 'expense',
             createdAt: now++
         };
         transactions.push(trans);
@@ -757,6 +818,24 @@ function saveInvoice() {
     // Pelunasan (hanya jika Lunas dan remaining > 0)
     if (status === 'Lunas' && inv.remaining > 0) {
         addInvoiceTrans('Pelunasan Invoice', `Pelunasan Invoice ${inv.number} - ${customerName}`, inv.remaining);
+    }
+    // Modal Keluar (sebagai expense, tidak tampil di slip)
+    if (modalKeluar > 0) {
+        addInvoiceTrans('Modal Keluar', `Modal Keluar ${inv.number} - ${customerName}`, modalKeluar, 'expense');
+    }
+    
+    // Kurangi stok produk untuk invoice tipe umum yang pilih produk
+    if (type === 'umum') {
+        const prodSelect = document.getElementById('umumProductSelect');
+        if (prodSelect && prodSelect.value) {
+            const products = loadData(DB.products);
+            const prod = products.find(p => p.id === prodSelect.value);
+            if (prod && prod.stock > 0) {
+                const totalQty = invoiceItems.filter(i => i.productId === prodSelect.value).reduce((s, i) => s + i.qty, 0);
+                prod.stock = Math.max(0, prod.stock - totalQty);
+                saveData(DB.products, products);
+            }
+        }
     }
     
     saveData(DB.invoices, invoices);
@@ -1004,7 +1083,7 @@ async function aiSuggestCategory() {
     const prompt = `Kategorikan transaksi ini: "${desc}"
 Pilih salah satu kategori yang PALING SESUAI:
 - Pemasukan: Penjualan, Jasa, Pendapatan Lain
-- Pengeluaran: Pembelian, Operasional, Gaji, Modal Keluar, Pengeluaran Lain
+- Pengeluaran: Pembelian, Operasional, Gaji, Pengeluaran Lain
 
 Jawab hanya nama kategorinya saja, tanpa teks lain.`;
     

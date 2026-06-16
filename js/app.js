@@ -46,12 +46,30 @@ const defaultSettings = {
 };
 
 const incomeCategories = ['Penjualan', 'Jasa', 'Pendapatan Lain', 'Transfer Masuk'];
-const expenseCategories = ['Pembelian', 'Operasional', 'Gaji', 'Modal Keluar', 'Pengeluaran Lain', 'Transfer Keluar'];
+const expenseCategories = ['Pembelian', 'Operasional', 'Gaji', 'Pengeluaran Lain', 'Transfer Keluar'];
 
 let currentUser = null;
 let currentTransactionType = 'income';
 let currentInvoiceId = null;
 let invoiceItems = [];
+
+// ==================== BALANCE TOGGLE ====================
+
+let balanceHidden = false;
+
+function toggleBalance() {
+    balanceHidden = !balanceHidden;
+    const el = document.getElementById('totalBalance');
+    const eye = document.querySelector('#balanceEye .m-icon');
+    if (balanceHidden) {
+        el.textContent = 'Rp •••••••';
+        if (eye) eye.textContent = 'visibility_off';
+    } else {
+        const stats = recalculateDashboard();
+        el.textContent = formatRupiah(stats.totalBalance);
+        if (eye) eye.textContent = 'visibility';
+    }
+}
 
 // ==================== AUTHENTICATION ====================
 
@@ -207,23 +225,10 @@ function getStorageKey(key) {
     return `${key}_${currentUser?.userId || 'guest'}`;
 }
 
-let _driveSyncScheduled = false;
-
 function saveData(key, data) {
     const storageKey = getStorageKey(key);
     localStorage.setItem(storageKey, JSON.stringify(data));
     scheduleAutoSync();
-    // Jadwalkan sync ke Google Drive (dengan guard biar ga loop)
-    if (!_driveSyncScheduled && isDriveConnected() && key !== DB.activities) {
-        _driveSyncScheduled = true;
-        setTimeout(() => {
-            _driveSyncScheduled = false;
-            const tokenData = JSON.parse(localStorage.getItem(`mughis_drive_token_${currentUser?.userId || 'guest'}`) || 'null');
-            if (tokenData && Date.now() < tokenData.expiresAt) {
-                syncToDrive(true);
-            }
-        }, 3000);
-    }
 }
 
 function loadData(key) {
@@ -269,6 +274,7 @@ function init() {
     const aiKeyInput = document.getElementById('settingAiKey');
     if (aiKeyInput) aiKeyInput.value = savedAiKey || '';
 
+    loadTelegramConfig();
     recalculateAll();
     renderAll();
 
@@ -333,14 +339,13 @@ function scheduleAutoSync() {
 function updateSyncStatus() {
     const el = document.getElementById('syncStatus');
     if (!el) return;
-    const lastSync = localStorage.getItem(`mughis_last_sync_${currentUser?.userId || 'guest'}`);
-    const settings = loadData(DB.settings);
-    if (lastSync) {
-        el.innerHTML = `☁️ Cloud: Sync ${new Date(parseInt(lastSync)).toLocaleString('id-ID')}`;
+    const token = getTelegramToken();
+    const chatId = getTelegramChatId();
+    if (token && chatId) {
+        el.innerHTML = '📡 Telegram: ✅ Terkonfigurasi';
     } else {
-        el.innerHTML = `☁️ Cloud: Belum pernah sync`;
+        el.innerHTML = '📡 Telegram: Backup tersimpan lokal';
     }
-    checkCloudDataAvailable();
 }
 
 async function syncToCloud(silent = false) {
@@ -439,6 +444,139 @@ async function restoreFromCloud() {
         renderAll();
     } catch (err) {
         alert('⚠️ Restore cloud gagal: ' + err.message + '\nCek koneksi internet.');
+    }
+}
+
+// ==================== TELEGRAM BACKUP ====================
+
+function saveTelegramConfig() {
+    const token = document.getElementById('settingTelegramToken').value.trim();
+    const chatId = document.getElementById('settingTelegramChatId').value.trim();
+    if (!token || !chatId) {
+        alert('⚠️ Isi Bot Token dan Chat ID Telegram!');
+        return;
+    }
+    localStorage.setItem('mughis_telegram_token', token);
+    localStorage.setItem('mughis_telegram_chatid', chatId);
+    alert('✅ Konfigurasi Telegram tersimpan!');
+    addActivity('📡 Mengatur backup Telegram');
+}
+
+function getTelegramToken() {
+    return localStorage.getItem('mughis_telegram_token') || '';
+}
+
+function getTelegramChatId() {
+    return localStorage.getItem('mughis_telegram_chatid') || '';
+}
+
+async function syncToTelegram() {
+    const token = getTelegramToken();
+    const chatId = getTelegramChatId();
+    if (!token || !chatId) {
+        alert('⚠️ Konfigurasi Telegram belum diisi. Buka Settings → Backup Telegram.');
+        return;
+    }
+
+    try {
+        const allData = {};
+        Object.values(DB).forEach(key => { allData[key] = loadData(key); });
+        allData._backupAt = new Date().toISOString();
+        allData._version = '2.2.0';
+
+        const jsonStr = JSON.stringify(allData, null, 2);
+        // Kirim sebagai file
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const formData = new FormData();
+        formData.append('chat_id', chatId);
+        formData.append('document', blob, `mughis-backup-${new Date().toISOString().split('T')[0]}.json`);
+        formData.append('caption', `📦 Backup MUGHIS BANK - ${new Date().toLocaleDateString('id-ID')}`);
+
+        const res = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!res.ok) throw new Error('Gagal kirim: ' + res.status);
+
+        document.getElementById('syncStatus').innerHTML = '📡 Telegram: Backup ' + new Date().toLocaleString('id-ID');
+        addActivity('📡 Backup data ke Telegram');
+        alert('✅ Data berhasil di-backup ke Telegram!');
+    } catch (err) {
+        alert('❌ Gagal backup ke Telegram: ' + err.message + '\nCek Token & Chat ID.');
+    }
+}
+
+async function restoreFromTelegram() {
+    const token = getTelegramToken();
+    const chatId = getTelegramChatId();
+    if (!token || !chatId) {
+        alert('⚠️ Konfigurasi Telegram belum diisi.');
+        return;
+    }
+
+    if (!confirm('⚠️ Ini akan MENIMPA semua data lokal dengan data backup Telegram terbaru.\nLanjutkan?')) return;
+
+    try {
+        // Ambil daftar file backup terbaru
+        const res = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
+        if (!res.ok) throw new Error('Gagal ambil data: ' + res.status);
+        const data = await res.json();
+
+        // Cari dokumen terbaru yang dikirim ke chat ini
+        let latestFile = null;
+        let latestDate = 0;
+        (data.result || []).forEach(update => {
+            const doc = update.message?.document;
+            if (doc && doc.file_name && doc.file_name.startsWith('mughis-backup-')) {
+                if (update.message.date > latestDate) {
+                    latestFile = doc;
+                    latestDate = update.message.date;
+                }
+            }
+        });
+
+        if (!latestFile) {
+            alert('❌ Tidak ada file backup di Telegram. Backup dulu sebelum restore!');
+            return;
+        }
+
+        // Dapatkan file path
+        const fileRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${latestFile.file_id}`);
+        const fileData = await fileRes.json();
+        if (!fileData.ok) throw new Error('Gagal dapatkan file');
+
+        const filePath = fileData.result.file_path;
+        const downloadRes = await fetch(`https://api.telegram.org/bot${token}/${filePath}`);
+        const cloudData = await downloadRes.json();
+
+        let restored = 0;
+        Object.entries(cloudData).forEach(([key, value]) => {
+            if (Object.values(DB).includes(key) && Array.isArray(value)) {
+                const storageKey = getStorageKey(key);
+                localStorage.setItem(storageKey, JSON.stringify(value));
+                restored++;
+            }
+        });
+
+        alert(`✅ Data berhasil direstore dari Telegram! (${restored} kategori)`);
+        addActivity('📡 Restore data dari Telegram');
+        recalculateAll();
+        renderAll();
+    } catch (err) {
+        alert('❌ Gagal restore: ' + err.message);
+    }
+}
+
+function loadTelegramConfig() {
+    const token = getTelegramToken();
+    const chatId = getTelegramChatId();
+    const tokenInput = document.getElementById('settingTelegramToken');
+    const chatInput = document.getElementById('settingTelegramChatId');
+    if (tokenInput && token) tokenInput.value = token;
+    if (chatInput && chatId) chatInput.value = chatId;
+    if (token && chatId) {
+        document.getElementById('syncStatus').innerHTML = '📡 Telegram: ✅ Terkonfigurasi';
     }
 }
 
@@ -758,11 +896,12 @@ function recalculateDashboard() {
             financeIncome += amt;
             if (isMonth) monthFinanceIncome += amt;
         } else if (t.type === 'expense') {
-            financeExpense += amt;
-            if (isMonth) monthFinanceExpense += amt;
-            if (t.category === 'Modal Keluar') {
+            if (t.isModalKeluar) {
                 totalModalOut += amt;
                 if (isMonth) monthModalOut += amt;
+            } else {
+                financeExpense += amt;
+                if (isMonth) monthFinanceExpense += amt;
             }
         }
     });
@@ -995,7 +1134,7 @@ function renderTransactions() {
     const wallets = loadData(DB.wallets);
     const walletMap = Object.fromEntries(wallets.map(w => [w.id, w]));
     const incomeList = transactions.filter(t => t.type === 'income');
-    const expenseList = transactions.filter(t => t.type === 'expense');
+    const expenseList = transactions.filter(t => t.type === 'expense' && !t.isModalKeluar);
     
     const renderList = (list, containerId) => {
         const container = document.getElementById(containerId);
@@ -1062,11 +1201,16 @@ function renderProducts() {
             <div class="list-item" style="padding-top:0">
                 <div class="list-icon" style="background:#f3e8ff">📦</div>
                 <div class="list-content">
-                    <div class="list-title">${p.name}</div>
+                    <div class="list-title">${p.name} ${p.stock !== undefined && p.type === 'product' ? `<span class="badge badge-success">Stok: ${p.stock}</span>` : ''}</div>
                     <div class="list-subtitle">${p.category} • ${formatRupiah(p.price)}</div>
                 </div>
             </div>
-            <div style="display:flex;gap:8px;margin-top:8px">
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                ${p.stock !== undefined && p.type === 'product' ? `
+                <button class="btn btn-outline" style="padding:6px 10px;font-size:14px;flex:0" onclick="adjustStock('${p.id}', 1)">+</button>
+                <button class="btn btn-outline" style="padding:6px 10px;font-size:14px;flex:0" onclick="adjustStock('${p.id}', -1)" ${p.stock <= 0 ? 'disabled' : ''}>-</button>
+                <span style="font-size:13px;font-weight:600;padding:6px 8px">Stok: ${p.stock}</span>
+                ` : ''}
                 <button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="editProduct('${p.id}')">Edit</button>
                 <button class="btn btn-danger" style="padding:6px;font-size:12px;flex:1" onclick="deleteProduct('${p.id}')">Hapus</button>
             </div>
@@ -1144,8 +1288,8 @@ function renderInvoices() {
         return;
     }
     
-    const typeIcon = { print: '📚', laptop: '💻', umum: '🛒' };
-    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', umum: 'Umum' };
+    const typeIcon = { print: '📚', laptop: '💻', handphone: '📱', tiktok: '🎵', umum: '🛒' };
+    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', handphone: 'Handphone', tiktok: 'Affiliate TikTok', umum: 'Umum' };
     
     container.innerHTML = invoices.map(inv => `
         <div class="card">
@@ -1206,9 +1350,10 @@ function renderReports() {
         const amt = parseFloat(t.amount);
         if (t.type === 'income') {
             income += amt;
-        } else if (t.type === 'expense') {
+        } else if (t.type === 'expense' && !t.isModalKeluar) {
             expense += amt;
-            if (t.category === 'Modal Keluar') modalOut += amt;
+        } else if (t.type === 'expense' && t.isModalKeluar) {
+            modalOut += amt;
         }
     });
     
@@ -1310,7 +1455,7 @@ function showPage(pageName) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const page = document.getElementById('page-' + pageName);
     if (page) page.classList.add('active');
-    const navMap = { 'dashboard': 0, 'wallet': 1, 'invoice': 2, 'finance': 3, 'reports': 4, 'customer': 3, 'products': 3, 'debt': 3, 'receivable': 3, 'settings': 4 };
+    const navMap = { 'dashboard': 0, 'wallet': 1, 'invoice': 2, 'finance': 3, 'reports': 4, 'customer': 3, 'products': 3, 'debt': 3, 'receivable': 3, 'settings': 4, 'about': -1 };
     const navItems = document.querySelectorAll('.nav-item');
     if (navMap[pageName] !== undefined && navItems[navMap[pageName]]) {
         navItems[navMap[pageName]].classList.add('active');
@@ -1318,7 +1463,7 @@ function showPage(pageName) {
     document.getElementById('mainHeader').style.display = pageName === 'settings' ? 'none' : 'block';
     renderAll();
     window.scrollTo(0, 0);
-    if (pageName === 'settings') { updateSyncStatus(); updateDriveStatus(); }
+    if (pageName === 'settings') { updateSyncStatus(); loadTelegramConfig(); }
 }
 
 function switchFinanceTab(type) {
@@ -1517,26 +1662,34 @@ function showInvoiceDetail(id) {
     if (!inv) return;
     const settings = loadData(DB.settings);
     
+    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', handphone: 'Handphone', tiktok: 'Affiliate TikTok', umum: 'Umum' };
+    
     let specsHtml = '';
     if (inv.type === 'print') {
-        specsHtml = `<div class="invoice-section">
-            <div class="invoice-section-title">Spesifikasi Buku</div>
+        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Spesifikasi Buku</div>
             <p><strong>Ukuran:</strong> ${inv.specs?.bookSize||'-'} | <strong>Jilid:</strong> ${inv.specs?.binding||'-'}</p>
-            <p><strong>Ukuran Jadi:</strong> ${inv.specs?.finalSize||'-'}</p>
-            <p><strong>Kertas Isi:</strong> ${inv.specs?.paperType||'-'} | <strong>Cover:</strong> ${inv.specs?.coverType||'-'}</p>
-            <p><strong>Laminating:</strong> ${inv.specs?.laminating||'-'} | <strong>Wrapping:</strong> ${inv.specs?.wrapping||'-'}</p>
+            <p><strong>Ukuran Jadi:</strong> ${inv.specs?.finalSize||'-'} | <strong>Kertas Isi:</strong> ${inv.specs?.paperType||'-'}</p>
+            <p><strong>Cover:</strong> ${inv.specs?.coverType||'-'} | <strong>Laminating:</strong> ${inv.specs?.laminating||'-'}</p>
+            <p><strong>Wrapping:</strong> ${inv.specs?.wrapping||'-'}</p>
         </div>`;
     } else if (inv.type === 'laptop') {
-        specsHtml = `<div class="invoice-section">
-            <div class="invoice-section-title">Spesifikasi Laptop</div>
+        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Spesifikasi Laptop</div>
             <p><strong>${inv.specs?.laptopName||'-'}</strong></p>
-            <p><strong>Processor:</strong> ${inv.specs?.processor||'-'} | <strong>RAM:</strong> ${inv.specs?.ram||'-'}</p>
-            <p><strong>Storage:</strong> ${inv.specs?.storage||'-'} | <strong>Layar:</strong> ${inv.specs?.screen||'-'}</p>
-            <p><strong>Kondisi:</strong> ${inv.specs?.condition||'-'} | <strong>Garansi:</strong> ${inv.specs?.warranty||'-'}</p>
+            <p>${inv.specs?.processor||'-'} | RAM: ${inv.specs?.ram||'-'} | Storage: ${inv.specs?.storage||'-'}</p>
+            <p>Layar: ${inv.specs?.screen||'-'} | ${inv.specs?.condition||'-'} | Garansi: ${inv.specs?.warranty||'-'}</p>
+        </div>`;
+    } else if (inv.type === 'handphone') {
+        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Spesifikasi Handphone</div>
+            <p><strong>${inv.specs?.hpName||'-'}</strong> | Storage: ${inv.specs?.hpStorage||'-'} | ${inv.specs?.hpColor||'-'}</p>
+            <p>Kondisi: ${inv.specs?.hpCondition||'-'} | Garansi: ${inv.specs?.hpWarranty||'-'}</p>
+        </div>`;
+    } else if (inv.type === 'tiktok') {
+        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Affiliate TikTok</div>
+            <p><strong>Produk:</strong> ${inv.specs?.tiktokProduct||'-'} | <strong>Platform:</strong> ${inv.specs?.tiktokPlatform||'-'}</p>
+            <p><strong>Harga:</strong> ${formatRupiah(inv.specs?.tiktokPrice||0)}</p>
         </div>`;
     } else if (inv.type === 'umum') {
-        specsHtml = `<div class="invoice-section">
-            <div class="invoice-section-title">Keterangan</div>
+        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Keterangan</div>
             <p><strong>Jenis:</strong> ${inv.specs?.umumType||'-'}</p>
             <p>${inv.specs?.umumDesc||'-'}</p>
         </div>`;
@@ -1555,13 +1708,23 @@ function showInvoiceDetail(id) {
     const invoiceHtml = `
         <div class="invoice-preview" id="printArea" style="background:white;color:#0f172a;padding:24px">
             <div class="invoice-header">
-                <div class="invoice-logo">MB</div>
+                <div class="invoice-logo" style="background:linear-gradient(145deg,#0d3b66,#1a5276,#c9953c);font-size:0;overflow:hidden">
+                    <img src="icons/icon-192.png" style="width:100%;height:100%;object-fit:cover" alt="MG">
+                </div>
                 <div class="invoice-title">${settings.businessName}</div>
-                <div class="invoice-meta">${settings.address}<br>WA: ${settings.whatsapp}</div>
+                <div class="invoice-meta" style="font-size:11px;line-height:1.6">
+                    ${settings.address}<br>WA: ${settings.whatsapp}<br>
+                    <span style="font-size:10px;color:#6b7280">
+                        • Jual Laptop Baru & Bekas<br>
+                        • Penerbit & Percetakan<br>
+                        • Desain Grafis & Logo<br>
+                        • Jasa Bordir & Sablon
+                    </span>
+                </div>
             </div>
             <div class="invoice-section">
                 <div class="invoice-section-title">INVOICE</div>
-                <p><strong>${inv.number}</strong> | ${formatDate(inv.date)}</p>
+                <p><strong>${inv.number}</strong> | ${formatDate(inv.date)} | ${typeLabel[inv.type]||inv.type}</p>
             </div>
             <div class="invoice-section">
                 <div class="invoice-section-title">Pelanggan</div>
@@ -1571,15 +1734,13 @@ function showInvoiceDetail(id) {
             <div class="invoice-section">
                 <div class="invoice-section-title">Daftar Item</div>
                 <table class="invoice-table">
-                    <thead>
-                        <tr>
-                            <th style="width:5%">No</th>
-                            <th style="width:40%">Item</th>
-                            <th style="width:15%;text-align:center">Qty</th>
-                            <th style="width:20%;text-align:right">Harga</th>
-                            <th style="width:20%;text-align:right">Jumlah</th>
-                        </tr>
-                    </thead>
+                    <thead><tr>
+                        <th style="width:5%">No</th>
+                        <th style="width:40%">Item</th>
+                        <th style="width:15%;text-align:center">Qty</th>
+                        <th style="width:20%;text-align:right">Harga</th>
+                        <th style="width:20%;text-align:right">Jumlah</th>
+                    </tr></thead>
                     <tbody>${itemsHtml}</tbody>
                 </table>
             </div>
@@ -1603,14 +1764,9 @@ function showInvoiceDetail(id) {
     
     document.getElementById('invoiceDetailContent').innerHTML = invoiceHtml;
     
-    // Tampilkan tombol bayar jika belum lunas
     const payBtn = document.getElementById('invoicePayBtn');
     if (payBtn) {
-        if (inv.status === 'Lunas') {
-            payBtn.style.display = 'none';
-        } else {
-            payBtn.style.display = 'block';
-        }
+        payBtn.style.display = inv.status === 'Lunas' ? 'none' : 'block';
     }
     
     openModal('invoiceDetailModal');
@@ -1694,10 +1850,12 @@ function sendWhatsAppInvoice() {
     if (!inv) return;
     const settings = loadData(DB.settings);
     
-    const typeLabel = { print: 'Percetakan Buku', laptop: 'Laptop Bekas', umum: 'Umum' };
+    const typeLabel = { print: 'Percetakan Buku', laptop: 'Laptop Bekas', handphone: 'Handphone', tiktok: 'Affiliate TikTok', umum: 'Umum' };
     
     let text = `*${settings.businessName}*\n`;
-    text += `${settings.address}\n\n`;
+    text += `${settings.address}\n`;
+    text += `• Jual Laptop Baru & Bekas\n• Penerbit & Percetakan\n`;
+    text += `• Desain Grafis & Logo\n• Jasa Bordir & Sablon\n\n`;
     text += `*Invoice: ${inv.number}*\n`;
     text += `Tanggal: ${formatDate(inv.date)}\n`;
     text += `Jenis: ${typeLabel[inv.type] || inv.type}\n\n`;
@@ -1711,6 +1869,15 @@ function sendWhatsAppInvoice() {
         text += `*Spesifikasi Laptop:*\n`;
         text += `${inv.specs?.laptopName||'-'}\n${inv.specs?.processor||'-'}\nRAM: ${inv.specs?.ram||'-'}\n`;
         text += `Storage: ${inv.specs?.storage||'-'}\nKondisi: ${inv.specs?.condition||'-'}\n\n`;
+    } else if (inv.type === 'handphone') {
+        text += `*Spesifikasi Handphone:*\n`;
+        text += `${inv.specs?.hpName||'-'}\nStorage: ${inv.specs?.hpStorage||'-'}\nWarna: ${inv.specs?.hpColor||'-'}\n`;
+        text += `Kondisi: ${inv.specs?.hpCondition||'-'}\nGaransi: ${inv.specs?.hpWarranty||'-'}\n\n`;
+    } else if (inv.type === 'tiktok') {
+        text += `*Affiliate TikTok:*\n`;
+        text += `Produk: ${inv.specs?.tiktokProduct||'-'}\nPlatform: ${inv.specs?.tiktokPlatform||'-'}\n`;
+        text += `Harga: ${formatRupiah(inv.specs?.tiktokPrice||0)}\n\n`;
+    }
     } else if (inv.type === 'umum') {
         text += `*Keterangan:*\n`;
         text += `Jenis: ${inv.specs?.umumType||'-'}\n${inv.specs?.umumDesc||'-'}\n\n`;
