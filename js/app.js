@@ -1201,12 +1201,12 @@ function renderProducts() {
             <div class="list-item" style="padding-top:0">
                 <div class="list-icon" style="background:#f3e8ff">📦</div>
                 <div class="list-content">
-                    <div class="list-title">${p.name} ${p.stock !== undefined && p.type === 'product' ? `<span class="badge badge-success">Stok: ${p.stock}</span>` : ''}</div>
+                    <div class="list-title">${p.name} ${p.stock !== undefined && p.stock !== null ? `<span class="badge badge-success">Stok: ${p.stock}</span>` : ''}</div>
                     <div class="list-subtitle">${p.category} • ${formatRupiah(p.price)}</div>
                 </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-                ${p.stock !== undefined && p.type === 'product' ? `
+                ${p.stock !== undefined && p.stock !== null ? `
                 <button class="btn btn-outline" style="padding:6px 10px;font-size:14px;flex:0" onclick="adjustStock('${p.id}', 1)">+</button>
                 <button class="btn btn-outline" style="padding:6px 10px;font-size:14px;flex:0" onclick="adjustStock('${p.id}', -1)" ${p.stock <= 0 ? 'disabled' : ''}>-</button>
                 <span style="font-size:13px;font-weight:600;padding:6px 8px">Stok: ${p.stock}</span>
@@ -1776,9 +1776,11 @@ async function shareInvoiceAsImage() {
     const printArea = document.getElementById('printArea');
     if (!printArea) return;
     
+    const btn = event?.target || document.querySelector('#invoiceDetailModal .btn-primary');
+    if (!btn) return;
+    const orig = btn.textContent;
+    
     try {
-        const btn = event.target;
-        const orig = btn.textContent;
         btn.textContent = '⏳ Membuat gambar...';
         btn.disabled = true;
         
@@ -1838,8 +1840,7 @@ async function shareInvoiceAsImage() {
         }, 'image/png');
         
     } catch (err) {
-        const btn = event.target;
-        btn.textContent = '📸 Bagikan Slip (Foto)';
+        btn.textContent = orig;
         btn.disabled = false;
         alert('❌ Gagal membuat gambar: ' + err.message);
     }
@@ -1877,7 +1878,6 @@ function sendWhatsAppInvoice() {
         text += `*Affiliate TikTok:*\n`;
         text += `Produk: ${inv.specs?.tiktokProduct||'-'}\nPlatform: ${inv.specs?.tiktokPlatform||'-'}\n`;
         text += `Harga: ${formatRupiah(inv.specs?.tiktokPrice||0)}\n\n`;
-    }
     } else if (inv.type === 'umum') {
         text += `*Keterangan:*\n`;
         text += `Jenis: ${inv.specs?.umumType||'-'}\n${inv.specs?.umumDesc||'-'}\n\n`;
@@ -1913,13 +1913,22 @@ function editCurrentInvoice() {
     document.getElementById('invoiceNote').value = inv.note || '';
     document.getElementById('invoiceTotal').value = inv.total;
     document.getElementById('invoiceDP').value = inv.dp;
+    document.getElementById('invoiceModalKeluar').value = inv.modalKeluar || 0;
     document.getElementById('invoiceRemaining').value = inv.remaining;
     document.getElementById('invoiceStatus').value = inv.status;
     document.getElementById('invoiceWallet').value = inv.walletId || '';
     
-    document.getElementById('printSpecs').style.display = inv.type === 'print' ? 'block' : 'none';
-    document.getElementById('laptopSpecs').style.display = inv.type === 'laptop' ? 'block' : 'none';
-    document.getElementById('umumSpecs').style.display = inv.type === 'umum' ? 'block' : 'none';
+    document.getElementById('printSpecs').style.display = 'none';
+    document.getElementById('laptopSpecs').style.display = 'none';
+    document.getElementById('umumSpecs').style.display = 'none';
+    document.getElementById('handphoneSpecs').style.display = 'none';
+    document.getElementById('tiktokSpecs').style.display = 'none';
+    
+    if (inv.type === 'print') document.getElementById('printSpecs').style.display = 'block';
+    else if (inv.type === 'laptop') document.getElementById('laptopSpecs').style.display = 'block';
+    else if (inv.type === 'handphone') document.getElementById('handphoneSpecs').style.display = 'block';
+    else if (inv.type === 'tiktok') document.getElementById('tiktokSpecs').style.display = 'block';
+    else if (inv.type === 'umum') document.getElementById('umumSpecs').style.display = 'block';
     
     if (inv.type === 'print') {
         document.getElementById('printBookSize').value = inv.specs?.bookSize || '';
@@ -1937,6 +1946,16 @@ function editCurrentInvoice() {
         document.getElementById('laptopScreen').value = inv.specs?.screen || '';
         document.getElementById('laptopCondition').value = inv.specs?.condition || 'Like New';
         document.getElementById('laptopWarranty').value = inv.specs?.warranty || '';
+    } else if (inv.type === 'handphone') {
+        document.getElementById('hpName').value = inv.specs?.hpName || '';
+        document.getElementById('hpStorage').value = inv.specs?.hpStorage || '';
+        document.getElementById('hpColor').value = inv.specs?.hpColor || '';
+        document.getElementById('hpCondition').value = inv.specs?.hpCondition || 'Baru';
+        document.getElementById('hpWarranty').value = inv.specs?.hpWarranty || '';
+    } else if (inv.type === 'tiktok') {
+        document.getElementById('tiktokProduct').value = inv.specs?.tiktokProduct || '';
+        document.getElementById('tiktokPlatform').value = inv.specs?.tiktokPlatform || 'TikTok Shop';
+        document.getElementById('tiktokPrice').value = inv.specs?.tiktokPrice || 0;
     } else if (inv.type === 'umum') {
         document.getElementById('umumType').value = inv.specs?.umumType || '';
         document.getElementById('umumDesc').value = inv.specs?.umumDesc || '';

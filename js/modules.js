@@ -230,6 +230,7 @@ function openProductModal() {
     document.getElementById('productId').value = '';
     document.getElementById('productName').value = '';
     document.getElementById('productPrice').value = '';
+    document.getElementById('productStock').value = 0;
     document.getElementById('productModalTitle').textContent = 'Tambah Item';
     openModal('productModal');
 }
@@ -276,6 +277,9 @@ function editProduct(id) {
     document.getElementById('productCategory').value = p.category;
     document.getElementById('productPrice').value = p.price;
     document.getElementById('productStock').value = p.stock || 0;
+    document.getElementById('productType').value = p.type || 'service';
+    document.querySelectorAll('#page-products .tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`#page-products .tab[onclick*="'${p.type||'service'}'"]`)?.classList.add('active');
     document.getElementById('productModalTitle').textContent = 'Edit Item';
     openModal('productModal');
 }
@@ -606,13 +610,14 @@ function openInvoiceModal(type) {
     else if (type === 'tiktok') document.getElementById('tiktokSpecs').style.display = 'block';
     else if (type === 'umum') {
         document.getElementById('umumSpecs').style.display = 'block';
-        // Load product list for umum dropdown
-        const products = loadData(DB.products).filter(p => p.type === 'product');
+        // Load ALL products for umum dropdown
+        const products = loadData(DB.products);
         const select = document.getElementById('umumProductSelect');
-        select.innerHTML = '<option value="">Pilih produk...</option>' + products.map(p => `<option value="${p.id}" data-name="${p.name}" data-price="${p.price}" data-stock="${p.stock||0}">${p.name} (stok: ${p.stock||0}) - ${formatRupiah(p.price)}</option>`).join('');
-        // Check if product has stock
-        if (products.length === 0) {
-            select.innerHTML = '<option value="">Belum ada produk barang</option>';
+        const stockProducts = products.filter(p => p.stock !== undefined && p.stock !== null);
+        if (stockProducts.length > 0) {
+            select.innerHTML = '<option value="">Pilih produk (stok akan berkurang)...</option>' + stockProducts.map(p => `<option value="${p.id}" data-name="${p.name}" data-price="${p.price}" data-stock="${p.stock||0}">${p.name} (stok: ${p.stock||0}) - ${formatRupiah(p.price)}</option>`).join('');
+        } else {
+            select.innerHTML = '<option value="">Belum ada produk dengan stok</option>';
         }
     }
     
@@ -716,14 +721,14 @@ function saveInvoice() {
     
     const invoices = loadData(DB.invoices);
     const transactions = loadData(DB.transactions);
-    const now = Date.now();
+    let now = Date.now();
     
     let invoiceData = {
         type, customerId, customerName, customerPhone, customerAddress,
         total, dp, modalKeluar, remaining: total - dp, status, walletId,
         items: JSON.parse(JSON.stringify(invoiceItems)),
         note: document.getElementById('invoiceNote').value,
-        date: new Date().toISOString().split('T'),
+        date: new Date().toISOString(),
         createdAt: now
     };
     
