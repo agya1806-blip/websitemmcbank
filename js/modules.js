@@ -579,6 +579,15 @@ function confirmPayReceivable(receivableId, walletId) {
 // ==================== INVOICE MODULE ====================
 
 function openInvoiceTypeModal() {
+    const types = getInvoiceTypes();
+    const container = document.getElementById('invoiceTypeButtons');
+    if (container) {
+        container.innerHTML = types.map(t => `
+            <button class="btn btn-primary" onclick="openInvoiceModal('${t.id}')" style="margin-bottom:10px">
+                <span class="m-icon" style="font-size:20px;margin-right:4px">${t.icon||'receipt'}</span> ${t.label||t.id}
+            </button>
+        `).join('');
+    }
     openModal('invoiceTypeModal');
 }
 
@@ -603,6 +612,7 @@ function openInvoiceModal(type) {
     document.getElementById('umumSpecs').style.display = 'none';
     document.getElementById('handphoneSpecs').style.display = 'none';
     document.getElementById('tiktokSpecs').style.display = 'none';
+    document.getElementById('customSpecs').style.display = 'none';
     
     if (type === 'print') document.getElementById('printSpecs').style.display = 'block';
     else if (type === 'laptop') document.getElementById('laptopSpecs').style.display = 'block';
@@ -619,6 +629,10 @@ function openInvoiceModal(type) {
         } else {
             select.innerHTML = '<option value="">Belum ada produk dengan stok</option>';
         }
+    } else {
+        // Custom type - show generic specs
+        document.getElementById('customSpecs').style.display = 'block';
+        document.getElementById('customSpecsNote').value = '';
     }
     
     const customers = loadData(DB.customers);
@@ -773,6 +787,10 @@ function saveInvoice() {
             tiktokProduct: document.getElementById('tiktokProduct').value,
             tiktokPlatform: document.getElementById('tiktokPlatform').value,
             tiktokPrice: parseFloat(document.getElementById('tiktokPrice').value) || 0
+        };
+    } else {
+        invoiceData.specs = {
+            note: document.getElementById('customSpecsNote').value || ''
         };
     }
     

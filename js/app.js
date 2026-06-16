@@ -42,7 +42,25 @@ const defaultSettings = {
     logo: '',
     signature: '',
     theme: 'light',
-    cloudBinId: ''
+    cloudBinId: '',
+    services: [
+        'Jual Laptop Baru & Bekas',
+        'Penerbit & Percetakan',
+        'Desain Grafis & Logo',
+        'Jasa Bordir & Sablon'
+    ],
+    paymentMethods: [
+        { name: 'SeaBank', accountName: 'Muhammad Aghisna', accountNumber: '901007430064' },
+        { name: 'BSI', accountName: 'Muhammad Aghisna', accountNumber: '7197202798' },
+        { name: 'DANA', accountName: '', accountNumber: '' }
+    ],
+    invoiceTypes: [
+        { id: 'print', label: 'Percetakan Buku', icon: 'auto_stories', builtIn: true },
+        { id: 'laptop', label: 'Laptop Bekas', icon: 'laptop', builtIn: true },
+        { id: 'handphone', label: 'Jual Handphone', icon: 'phone_android', builtIn: true },
+        { id: 'tiktok', label: 'Affiliate TikTok', icon: 'smart_display', builtIn: true },
+        { id: 'umum', label: 'Umum', icon: 'shopping_cart', builtIn: true }
+    ]
 };
 
 const incomeCategories = ['Penjualan', 'Jasa', 'Pendapatan Lain', 'Transfer Masuk'];
@@ -56,6 +74,38 @@ let invoiceItems = [];
 // ==================== BALANCE TOGGLE ====================
 
 let balanceHidden = false;
+
+// ==================== HELPERS: Payment Methods, Services, Invoice Types ====================
+
+function getPaymentMethods() {
+    return loadData(DB.settings).paymentMethods || defaultSettings.paymentMethods;
+}
+
+function savePaymentMethods(methods) {
+    const s = loadData(DB.settings);
+    s.paymentMethods = methods;
+    saveData(DB.settings, s);
+}
+
+function getServices() {
+    return loadData(DB.settings).services || defaultSettings.services;
+}
+
+function saveServices(list) {
+    const s = loadData(DB.settings);
+    s.services = list;
+    saveData(DB.settings, s);
+}
+
+function getInvoiceTypes() {
+    return loadData(DB.settings).invoiceTypes || defaultSettings.invoiceTypes;
+}
+
+function saveInvoiceTypes(list) {
+    const s = loadData(DB.settings);
+    s.invoiceTypes = list;
+    saveData(DB.settings, s);
+}
 
 function toggleBalance() {
     balanceHidden = !balanceHidden;
@@ -268,6 +318,10 @@ function init() {
     document.getElementById('settingWhatsApp').value = settings.whatsapp;
     document.getElementById('settingAddress').value = settings.address;
     
+    // Load logo
+    const savedLogo = localStorage.getItem('mughis_logo_dataurl');
+    if (savedLogo) document.getElementById('logoPreview').src = savedLogo;
+
     // Load AI key
     const savedAiKey = localStorage.getItem(`mughis_ai_key_${currentUser?.userId || 'guest'}`);
     if (savedAiKey) CONFIG.GEMINI_API_KEY = savedAiKey;
@@ -1042,6 +1096,7 @@ function renderAll() {
     renderDebts();
     renderReceivables();
     renderInvoices();
+    renderRecentInvoices();
     renderReports();
     updateWalletSelects();
 }
@@ -1271,6 +1326,28 @@ function renderReceivables() {
         </div>`).join('');
 }
 
+function renderRecentInvoices() {
+    const container = document.getElementById('recentInvoices');
+    if (!container) return;
+    const invoices = loadData(DB.invoices).sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
+    const types = getInvoiceTypes();
+    const typeLabel = {};
+    types.forEach(t => { typeLabel[t.id] = t.label; });
+    if (invoices.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-secondary);font-size:13px">Belum ada invoice</div>';
+        return;
+    }
+    container.innerHTML = invoices.map(inv => `
+        <div class="list-item" style="cursor:pointer;padding:8px 0" onclick="showInvoiceDetail('${inv.id}')">
+            <div class="list-content">
+                <div class="list-title">${inv.number} — ${formatRupiah(inv.total)}</div>
+                <div class="list-subtitle">${inv.customerName} • ${typeLabel[inv.type]||inv.type} • ${formatDate(inv.date)}</div>
+            </div>
+            <span class="badge ${inv.status==='Lunas'?'badge-success':inv.status==='DP'?'badge-warning':'badge-danger'}" style="font-size:11px">${inv.status}</span>
+        </div>
+    `).join('');
+}
+
 function renderInvoices() {
     const tab = window.invoiceTab || 'all';
     const search = document.getElementById('invoiceSearch')?.value?.toLowerCase() || '';
@@ -1288,8 +1365,9 @@ function renderInvoices() {
         return;
     }
     
-    const typeIcon = { print: '📚', laptop: '💻', handphone: '📱', tiktok: '🎵', umum: '🛒' };
-    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', handphone: 'Handphone', tiktok: 'Affiliate TikTok', umum: 'Umum' };
+    const invTypes = getInvoiceTypes();
+    const typeIcon = {}; const typeLabel = {};
+    invTypes.forEach(t => { typeIcon[t.id] = t.icon || '📄'; typeLabel[t.id] = t.label; });
     
     container.innerHTML = invoices.map(inv => `
         <div class="card">
@@ -1455,7 +1533,7 @@ function showPage(pageName) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const page = document.getElementById('page-' + pageName);
     if (page) page.classList.add('active');
-    const navMap = { 'dashboard': 0, 'wallet': 1, 'invoice': 2, 'finance': 3, 'reports': 4, 'customer': 3, 'products': 3, 'debt': 3, 'receivable': 3, 'settings': 4, 'about': -1 };
+    const navMap = { 'dashboard': 0, 'wallet': 1, 'invoice': 2, 'finance': 3, 'products': 4, 'reports': 5, 'customer': 3, 'debt': 3, 'receivable': 3, 'settings': 5, 'about': -1 };
     const navItems = document.querySelectorAll('.nav-item');
     if (navMap[pageName] !== undefined && navItems[navMap[pageName]]) {
         navItems[navMap[pageName]].classList.add('active');
@@ -1463,7 +1541,7 @@ function showPage(pageName) {
     document.getElementById('mainHeader').style.display = pageName === 'settings' ? 'none' : 'block';
     renderAll();
     window.scrollTo(0, 0);
-    if (pageName === 'settings') { updateSyncStatus(); loadTelegramConfig(); }
+    if (pageName === 'settings') { updateSyncStatus(); loadTelegramConfig(); updateSettingsUI(); }
 }
 
 function switchFinanceTab(type) {
@@ -1509,6 +1587,38 @@ function toggleTheme() {
     saveData(DB.settings, settings);
 }
 
+function handleLogoUpload(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        // Resize to 192x192
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 192; canvas.height = 192;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 192, 192);
+            const resized = canvas.toDataURL('image/png');
+            document.getElementById('logoPreview').src = resized;
+            localStorage.setItem('mughis_logo_dataurl', resized);
+            alert('✅ Logo berhasil diupload! Jangan lupa klik "Simpan Pengaturan" untuk menyimpan.');
+        };
+        img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeLogo() {
+    document.getElementById('logoPreview').src = 'icons/icon-192.png';
+    localStorage.removeItem('mughis_logo_dataurl');
+}
+
+function getLogoUrl() {
+    return localStorage.getItem('mughis_logo_dataurl') || 'icons/icon-192.png';
+}
+
 function saveSettings() {
     const settings = loadData(DB.settings);
     settings.businessName = document.getElementById('settingBusinessName').value || 'Mughis Group';
@@ -1529,6 +1639,135 @@ function saveAiKey() {
     localStorage.setItem(`mughis_ai_key_${currentUser?.userId || 'guest'}`, key);
     CONFIG.GEMINI_API_KEY = key;
     alert('✅ API Key AI disimpan!');
+}
+
+// ==================== SETTINGS: Payment Methods, Services, Invoice Types UI ====================
+
+function renderPaymentMethodsSettings() {
+    const methods = getPaymentMethods();
+    const container = document.getElementById('paymentMethodsList');
+    if (!container) return;
+    container.innerHTML = methods.map((m, i) => `
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:10px;background:var(--surface-2);border-radius:8px">
+            <div style="flex:2"><input type="text" class="form-input" id="pm_name_${i}" value="${m.name}" placeholder="Nama bank/ewallet" style="font-size:13px;padding:8px"></div>
+            <div style="flex:2"><input type="text" class="form-input" id="pm_account_${i}" value="${m.accountName||''}" placeholder="Atas nama" style="font-size:13px;padding:8px"></div>
+            <div style="flex:2"><input type="text" class="form-input" id="pm_number_${i}" value="${m.accountNumber||''}" placeholder="No. rekening" style="font-size:13px;padding:8px"></div>
+            <button class="btn btn-danger" style="padding:6px 10px;font-size:13px;flex:0" onclick="removePaymentMethod(${i})">✕</button>
+        </div>
+    `).join('');
+}
+
+function showAddPaymentMethod() {
+    const methods = getPaymentMethods();
+    methods.push({ name: '', accountName: '', accountNumber: '' });
+    savePaymentMethods(methods);
+    renderPaymentMethodsSettings();
+}
+
+function removePaymentMethod(index) {
+    const methods = getPaymentMethods();
+    methods.splice(index, 1);
+    savePaymentMethods(methods);
+    renderPaymentMethodsSettings();
+}
+
+function savePaymentMethodsFromUI() {
+    const methods = getPaymentMethods();
+    methods.forEach((m, i) => {
+        m.name = document.getElementById(`pm_name_${i}`)?.value || m.name;
+        m.accountName = document.getElementById(`pm_account_${i}`)?.value || '';
+        m.accountNumber = document.getElementById(`pm_number_${i}`)?.value || '';
+    });
+    savePaymentMethods(methods);
+    alert('✅ Metode pembayaran disimpan!');
+}
+
+function renderServicesSettings() {
+    const services = getServices();
+    const container = document.getElementById('servicesList');
+    if (!container) return;
+    container.innerHTML = services.map((s, i) => `
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:10px;background:var(--surface-2);border-radius:8px">
+            <div style="flex:1"><input type="text" class="form-input" id="svc_${i}" value="${s}" placeholder="Nama layanan" style="font-size:13px;padding:8px"></div>
+            <button class="btn btn-danger" style="padding:6px 10px;font-size:13px;flex:0" onclick="removeServiceItem(${i})">✕</button>
+        </div>
+    `).join('');
+}
+
+function addServiceItem() {
+    const services = getServices();
+    services.push('');
+    saveServices(services);
+    renderServicesSettings();
+}
+
+function removeServiceItem(index) {
+    const services = getServices();
+    services.splice(index, 1);
+    saveServices(services);
+    renderServicesSettings();
+}
+
+function saveServicesFromUI() {
+    const services = getServices();
+    services.forEach((s, i) => {
+        services[i] = document.getElementById(`svc_${i}`)?.value || '';
+    });
+    saveServices(services.filter(s => s.trim()));
+    renderServicesSettings();
+    alert('✅ Layanan disimpan!');
+}
+
+function renderInvoiceTypesSettings() {
+    const types = getInvoiceTypes();
+    const container = document.getElementById('invoiceTypesList');
+    if (!container) return;
+    container.innerHTML = types.map((t, i) => `
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:10px;background:var(--surface-2);border-radius:8px">
+            <div style="flex:1;min-width:0">
+                <span class="m-icon" style="font-size:16px">${t.icon||'receipt'}</span>
+                <input type="text" class="form-input" id="it_label_${i}" value="${t.label}" placeholder="Nama tipe" style="font-size:13px;padding:8px;display:inline;width:auto" ${t.builtIn?'readonly':''}>
+                <input type="text" class="form-input" id="it_icon_${i}" value="${t.icon||'receipt'}" placeholder="icon" style="font-size:13px;padding:8px;display:inline;width:80px" ${t.builtIn?'readonly':''}>
+                <span style="font-size:11px;color:var(--text-secondary);margin-left:4px">${t.builtIn?'(bawaan)':''}</span>
+            </div>
+            ${t.builtIn ? '' : `<button class="btn btn-danger" style="padding:6px 10px;font-size:13px;flex:0" onclick="removeInvoiceType(${i})">✕</button>`}
+        </div>
+    `).join('');
+}
+
+function showAddInvoiceType() {
+    const types = getInvoiceTypes();
+    types.push({ id: 'custom_' + Date.now(), label: 'Tipe Baru', icon: 'receipt', builtIn: false });
+    saveInvoiceTypes(types);
+    renderInvoiceTypesSettings();
+}
+
+function removeInvoiceType(index) {
+    const types = getInvoiceTypes();
+    if (types[index]?.builtIn) { alert('⚠️ Tipe bawaan tidak bisa dihapus.'); return; }
+    if (!confirm(`Hapus tipe "${types[index]?.label}"?`)) return;
+    types.splice(index, 1);
+    saveInvoiceTypes(types);
+    renderInvoiceTypesSettings();
+}
+
+function saveInvoiceTypesFromUI() {
+    const types = getInvoiceTypes();
+    types.forEach((t, i) => {
+        const label = document.getElementById(`it_label_${i}`)?.value;
+        const icon = document.getElementById(`it_icon_${i}`)?.value;
+        if (label) t.label = label;
+        if (icon) t.icon = icon;
+    });
+    saveInvoiceTypes(types);
+    renderInvoiceTypesSettings();
+    alert('✅ Tipe invoice disimpan!');
+}
+
+function updateSettingsUI() {
+    renderPaymentMethodsSettings();
+    renderServicesSettings();
+    renderInvoiceTypesSettings();
 }
 
 function exportData() {
@@ -1662,7 +1901,12 @@ function showInvoiceDetail(id) {
     if (!inv) return;
     const settings = loadData(DB.settings);
     
-    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', handphone: 'Handphone', tiktok: 'Affiliate TikTok', umum: 'Umum' };
+    const types = getInvoiceTypes();
+    const typeLabel = {};
+    types.forEach(t => { typeLabel[t.id] = t.label; });
+    
+    const services = getServices();
+    const payMethods = getPaymentMethods();
     
     let specsHtml = '';
     if (inv.type === 'print') {
@@ -1693,6 +1937,10 @@ function showInvoiceDetail(id) {
             <p><strong>Jenis:</strong> ${inv.specs?.umumType||'-'}</p>
             <p>${inv.specs?.umumDesc||'-'}</p>
         </div>`;
+    } else if (inv.specs?.note) {
+        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Keterangan</div>
+            <p>${inv.specs.note}</p>
+        </div>`;
     }
     
     const itemsHtml = inv.items?.map((item, i) => `
@@ -1709,16 +1957,13 @@ function showInvoiceDetail(id) {
         <div class="invoice-preview" id="printArea" style="background:white;color:#0f172a;padding:24px">
             <div class="invoice-header">
                 <div class="invoice-logo" style="background:linear-gradient(145deg,#0d3b66,#1a5276,#c9953c);font-size:0;overflow:hidden">
-                    <img src="icons/icon-192.png" style="width:100%;height:100%;object-fit:cover" alt="MG">
+                    <img src="${getLogoUrl()}" style="width:100%;height:100%;object-fit:cover" alt="MG">
                 </div>
                 <div class="invoice-title">${settings.businessName}</div>
                 <div class="invoice-meta" style="font-size:11px;line-height:1.6">
                     ${settings.address}<br>WA: ${settings.whatsapp}<br>
                     <span style="font-size:10px;color:#6b7280">
-                        • Jual Laptop Baru & Bekas<br>
-                        • Penerbit & Percetakan<br>
-                        • Desain Grafis & Logo<br>
-                        • Jasa Bordir & Sablon
+                        ${services.map(s => `• ${s}`).join('<br>')}
                     </span>
                 </div>
             </div>
@@ -1755,9 +2000,12 @@ function showInvoiceDetail(id) {
             ${inv.note ? `<div style="margin-top:12px;padding:10px;background:#f8fafc;border-radius:8px;font-size:12px"><strong>Catatan:</strong> ${inv.note}</div>` : ''}
             <div style="margin-top:16px;padding:12px;background:#f0f9ff;border-radius:8px;text-align:center;font-size:11px;color:#0f172a">
                 <p style="font-weight:700;margin-bottom:6px">💳 Metode Pembayaran:</p>
-                <p>SeaBank • Muhammad Aghisna • 901007430064</p>
-                <p>BSI • Muhammad Aghisna • 7197202798</p>
-                <p>DANA • ${settings.whatsapp}</p>
+                ${payMethods.map(m => {
+                    const accName = m.accountName ? ` • ${m.accountName}` : '';
+                    const accNum = m.accountNumber ? ` • ${m.accountNumber}` : '';
+                    const waNum = m.name === 'DANA' && !m.accountNumber ? ` • ${settings.whatsapp}` : '';
+                    return `<p>${m.name}${accName}${accNum}${waNum}</p>`;
+                }).join('')}
                 <p style="margin-top:8px;color:#64748b">Kirim bukti transfer via WhatsApp setelah pembayaran.</p>
             </div>
         </div>`;
@@ -1851,13 +2099,16 @@ function sendWhatsAppInvoice() {
     if (!inv) return;
     const settings = loadData(DB.settings);
     
-    const typeLabel = { print: 'Percetakan Buku', laptop: 'Laptop Bekas', handphone: 'Handphone', tiktok: 'Affiliate TikTok', umum: 'Umum' };
+    const types = getInvoiceTypes();
+    const typeLabel = {};
+    types.forEach(t => { typeLabel[t.id] = t.label; });
+    const services = getServices();
+    const payMethods = getPaymentMethods();
     
     let text = `*${settings.businessName}*\n`;
     text += `${settings.address}\n`;
-    text += `• Jual Laptop Baru & Bekas\n• Penerbit & Percetakan\n`;
-    text += `• Desain Grafis & Logo\n• Jasa Bordir & Sablon\n\n`;
-    text += `*Invoice: ${inv.number}*\n`;
+    services.forEach(s => { text += `• ${s}\n`; });
+    text += `\n*Invoice: ${inv.number}*\n`;
     text += `Tanggal: ${formatDate(inv.date)}\n`;
     text += `Jenis: ${typeLabel[inv.type] || inv.type}\n\n`;
     text += `*Pelanggan:*\n${inv.customerName}\n${inv.customerPhone||'-'}\n${inv.customerAddress||'-'}\n\n`;
@@ -1881,6 +2132,8 @@ function sendWhatsAppInvoice() {
     } else if (inv.type === 'umum') {
         text += `*Keterangan:*\n`;
         text += `Jenis: ${inv.specs?.umumType||'-'}\n${inv.specs?.umumDesc||'-'}\n\n`;
+    } else if (inv.specs?.note) {
+        text += `*Keterangan:*\n${inv.specs.note}\n\n`;
     }
     
     text += `*Daftar Item:*\n`;
@@ -1891,7 +2144,12 @@ function sendWhatsAppInvoice() {
     text += `DP: ${formatRupiah(inv.dp)}\n`;
     text += `Sisa: ${formatRupiah(inv.remaining)}\n`;
     text += `Status: *${inv.status}*\n\n`;
-    text += `*Pembayaran:*\nSeaBank: 901007430064\nBSI: 7197202798\nDANA: ${settings.whatsapp}\n\n`;
+    text += `*Pembayaran:*\n`;
+    payMethods.forEach(m => {
+        const num = m.name === 'DANA' && !m.accountNumber ? settings.whatsapp : m.accountNumber;
+        text += `${m.name}: ${num || '-'}\n`;
+    });
+    text += `\n`;
     if (inv.note) text += `Catatan: ${inv.note}\n\n`;
     text += `Terima kasih! 🙏`;
     
@@ -1923,12 +2181,14 @@ function editCurrentInvoice() {
     document.getElementById('umumSpecs').style.display = 'none';
     document.getElementById('handphoneSpecs').style.display = 'none';
     document.getElementById('tiktokSpecs').style.display = 'none';
+    document.getElementById('customSpecs').style.display = 'none';
     
     if (inv.type === 'print') document.getElementById('printSpecs').style.display = 'block';
     else if (inv.type === 'laptop') document.getElementById('laptopSpecs').style.display = 'block';
     else if (inv.type === 'handphone') document.getElementById('handphoneSpecs').style.display = 'block';
     else if (inv.type === 'tiktok') document.getElementById('tiktokSpecs').style.display = 'block';
     else if (inv.type === 'umum') document.getElementById('umumSpecs').style.display = 'block';
+    else document.getElementById('customSpecs').style.display = 'block';
     
     if (inv.type === 'print') {
         document.getElementById('printBookSize').value = inv.specs?.bookSize || '';
@@ -1959,6 +2219,8 @@ function editCurrentInvoice() {
     } else if (inv.type === 'umum') {
         document.getElementById('umumType').value = inv.specs?.umumType || '';
         document.getElementById('umumDesc').value = inv.specs?.umumDesc || '';
+    } else {
+        document.getElementById('customSpecsNote').value = inv.specs?.note || '';
     }
     
     invoiceItems = inv.items ? JSON.parse(JSON.stringify(inv.items)) : [];

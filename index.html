@@ -210,6 +210,12 @@
                 <div class="chart-container" id="financeChart"></div>
             </div>
 
+            <!-- Invoice Terbaru -->
+            <div class="card">
+                <div class="card-title">📄 Invoice Terbaru <span style="font-size:12px;color:var(--text-secondary);font-weight:400">(5 terakhir)</span></div>
+                <div id="recentInvoices"></div>
+            </div>
+
             <!-- Aktivitas -->
             <div class="card">
                 <div class="card-title">🕐 Aktivitas Terbaru</div>
@@ -315,6 +321,16 @@
                     <label class="form-label">Alamat Usaha</label>
                     <textarea class="form-textarea" id="settingAddress" placeholder="Alamat lengkap usaha Anda"></textarea>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">Logo Usaha</label>
+                    <div style="display:flex;gap:12px;align-items:center">
+                        <img id="logoPreview" src="icons/icon-192.png" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:2px solid var(--border)">
+                        <input type="file" id="logoUploadInput" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+                        <button class="btn btn-outline" onclick="document.getElementById('logoUploadInput').click()" style="font-size:13px">Ganti Logo</button>
+                        <button class="btn btn-danger" onclick="removeLogo()" style="font-size:13px;padding:8px 12px">✕ Hapus</button>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Format PNG/JPG, akan otomatis di-resize. Logo tampil di slip foto invoice.</div>
+                </div>
                 <button class="btn btn-primary" onclick="saveSettings()">💾 Simpan Pengaturan</button>
             </div>
             <div class="card">
@@ -359,6 +375,27 @@
                 <button class="btn btn-primary" onclick="saveTelegramConfig()" style="margin-bottom:6px">💾 Simpan Konfigurasi Telegram</button>
                 <button class="btn btn-success" onclick="syncToTelegram()" style="margin-bottom:6px">⬆️ Backup Data ke Telegram</button>
                 <button class="btn btn-outline" onclick="restoreFromTelegram()">⬇️ Restore Data dari Telegram</button>
+            </div>
+            <div class="card">
+                <div class="card-title">💳 Metode Pembayaran</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Metode ini akan tampil di slip invoice dan pesan WhatsApp.</div>
+                <div id="paymentMethodsList"></div>
+                <button class="btn btn-outline" onclick="showAddPaymentMethod()" style="margin-top:8px">+ Tambah Metode Bayar</button>
+                <button class="btn btn-primary" onclick="savePaymentMethodsFromUI()" style="margin-top:8px;display:block">💾 Simpan Metode Bayar</button>
+            </div>
+            <div class="card">
+                <div class="card-title">📋 Layanan Usaha</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Layanan ini tampil di slip foto invoice.</div>
+                <div id="servicesList"></div>
+                <button class="btn btn-outline" onclick="addServiceItem()" style="margin-top:8px">+ Tambah Layanan</button>
+                <button class="btn btn-primary" onclick="saveServicesFromUI()" style="margin-top:8px;display:block">💾 Simpan Layanan</button>
+            </div>
+            <div class="card">
+                <div class="card-title">📑 Tipe Invoice</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Tipe invoice yang tampil di menu buat invoice. Tipe bawaan tidak bisa dihapus.</div>
+                <div id="invoiceTypesList"></div>
+                <button class="btn btn-outline" onclick="showAddInvoiceType()" style="margin-top:8px">+ Tambah Tipe Invoice</button>
+                <button class="btn btn-primary" onclick="saveInvoiceTypesFromUI()" style="margin-top:8px;display:block">💾 Simpan Tipe Invoice</button>
             </div>
             <div class="card">
                 <div class="card-title">💾 Data & Sharing</div>
@@ -429,6 +466,7 @@
             <button class="nav-item" onclick="showPage('wallet')"><span class="nav-icon">💳</span><span class="nav-label">Dompet</span></button>
             <button class="nav-item" onclick="showPage('invoice')"><span class="nav-icon">📄</span><span class="nav-label">Invoice</span></button>
             <button class="nav-item" onclick="showPage('finance')"><span class="nav-icon">💵</span><span class="nav-label">Keuangan</span></button>
+            <button class="nav-item" onclick="showPage('products')"><span class="nav-icon">📦</span><span class="nav-label">Produk</span></button>
             <button class="nav-item" onclick="showPage('reports')"><span class="nav-icon">📊</span><span class="nav-label">Laporan</span></button>
         </nav>
 
@@ -558,13 +596,7 @@
         <div class="modal-overlay" id="invoiceTypeModal">
             <div class="modal">
                 <div class="modal-header"><span class="modal-title">Pilih Jenis Invoice</span><button class="modal-close" onclick="closeModal('invoiceTypeModal')">✕</button></div>
-                <div class="modal-body">
-                    <button class="btn btn-primary" onclick="openInvoiceModal('print')" style="margin-bottom:10px"><span class="m-icon" style="font-size:20px;margin-right:4px">auto_stories</span> Percetakan Buku</button>
-                    <button class="btn btn-primary" onclick="openInvoiceModal('laptop')" style="margin-bottom:10px"><span class="m-icon" style="font-size:20px;margin-right:4px">laptop</span> Laptop Bekas</button>
-                    <button class="btn btn-primary" onclick="openInvoiceModal('handphone')" style="margin-bottom:10px"><span class="m-icon" style="font-size:20px;margin-right:4px">phone_android</span> Jual Handphone</button>
-                    <button class="btn btn-primary" onclick="openInvoiceModal('tiktok')" style="margin-bottom:10px"><span class="m-icon" style="font-size:20px;margin-right:4px">smart_display</span> Affiliate TikTok</button>
-                    <button class="btn btn-primary" onclick="openInvoiceModal('umum')"><span class="m-icon" style="font-size:20px;margin-right:4px">shopping_cart</span> Umum</button>
-                </div>
+                <div class="modal-body" id="invoiceTypeButtons"></div>
             </div>
         </div>
 
@@ -621,6 +653,11 @@
                         <div class="form-group"><label class="form-label">Nama Produk</label><input type="text" class="form-input" id="tiktokProduct" placeholder="Nama produk affiliate"></div>
                         <div class="form-group"><label class="form-label">Platform</label><select class="form-select" id="tiktokPlatform"><option value="TikTok Shop">TikTok Shop</option><option value="TikTok Live">TikTok Live</option><option value="Shopee">Shopee</option></select></div>
                         <div class="form-group"><label class="form-label">Komisi / Harga (Rp)</label><input type="number" class="form-input" id="tiktokPrice" placeholder="0"></div>
+                    </div>
+
+                    <div id="customSpecs" style="display:none">
+                        <div class="card-title" style="margin-top:20px">Keterangan</div>
+                        <div class="form-group"><label class="form-label">Deskripsi</label><textarea class="form-textarea" id="customSpecsNote" placeholder="Deskripsi untuk tipe invoice ini"></textarea></div>
                     </div>
 
                     <div class="form-group"><label class="form-label">Catatan</label><textarea class="form-textarea" id="invoiceNote"></textarea></div>
