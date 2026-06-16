@@ -2234,6 +2234,31 @@ function editCurrentInvoice() {
     openModal('invoiceModal');
 }
 
+function deleteInvoice() {
+    if (!currentInvoiceId) return;
+    if (!confirm('⚠️ Yakin hapus invoice ini? Data tidak bisa dikembalikan!')) return;
+    if (!confirm('⚠️⚠️ Invoice dan semua transaksinya akan dihapus permanen. Lanjutkan?')) return;
+    
+    let invoices = loadData(DB.invoices);
+    let transactions = loadData(DB.transactions);
+    const inv = invoices.find(i => i.id === currentInvoiceId);
+    if (!inv) return;
+    
+    // Hapus transaksi terkait invoice
+    transactions = transactions.filter(t => t.invoiceId !== inv.id);
+    
+    // Hapus invoice
+    invoices = invoices.filter(i => i.id !== inv.id);
+    
+    saveData(DB.invoices, invoices);
+    saveData(DB.transactions, transactions);
+    addActivity(`🗑️ Menghapus invoice ${inv.number}`);
+    closeModal('invoiceDetailModal');
+    recalculateAll();
+    renderAll();
+    alert('✅ Invoice berhasil dihapus!');
+}
+
 // ==================== INIT & EVENT LISTENERS ====================
 
 document.addEventListener('DOMContentLoaded', () => {
