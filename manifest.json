@@ -1,0 +1,97 @@
+{
+  "name": "MUGHIS BANK - Professional Financial Management",
+  "short_name": "MUGHIS BANK",
+  "description": "Aplikasi manajemen keuangan profesional untuk bisnis dengan fitur invoice, hutang, piutang, dan cloud sync",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "theme_color": "#0d9488",
+  "background_color": "#f0fdfa",
+  "categories": ["finance", "business", "productivity"],
+  "screenshots": [],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Dashboard utama",
+      "url": "/?page=dashboard",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Keuangan",
+      "short_name": "Keuangan",
+      "description": "Dompet & transaksi",
+      "url": "/?page=wallet",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Invoice",
+      "short_name": "Invoice",
+      "description": "Buat invoice baru",
+      "url": "/?page=invoice",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Transaksi",
+      "short_name": "Transaksi",
+      "description": "Catat transaksi baru",
+      "url": "/?page=transaction",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/?action=share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "launch_handler": {
+    "client_mode": ["navigate-new", "auto"]
+  }
+}
