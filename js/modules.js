@@ -8,6 +8,11 @@ function openTransactionModal() {
     document.getElementById('transactionDesc').value = '';
     document.getElementById('transactionAmount').value = '';
     updateCategoryOptions();
+    const cabangEl = document.getElementById('transactionCabang');
+    if (cabangEl) {
+        const cabang = getCabang();
+        cabangEl.innerHTML = '<option value="">Pusat</option>' + cabang.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
     openModal('transactionModal');
 }
 
@@ -15,7 +20,7 @@ function setTransactionType(type) {
     currentTransactionType = type;
     document.getElementById('transactionType').value = type;
     document.querySelectorAll('#transactionModal .tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+    if (event?.target) event.target.classList.add('active');
     updateCategoryOptions();
 }
 
@@ -33,6 +38,7 @@ function saveTransaction() {
     const desc = document.getElementById('transactionDesc').value;
     const amount = parseFloat(document.getElementById('transactionAmount').value) || 0;
     const walletId = document.getElementById('transactionWallet').value;
+    const cabang = document.getElementById('transactionCabang')?.value || '';
 
     if (!date || !desc || amount <= 0 || !walletId) {
         alert('⚠️ Lengkapi semua field!');
@@ -43,9 +49,9 @@ function saveTransaction() {
     const isModal = modalCategories.includes(category);
     if (id) {
         const idx = transactions.findIndex(t => t.id === id);
-        if (idx >= 0) transactions[idx] = { ...transactions[idx], date, category, description: desc, amount, walletId, isModalKeluar: modalCategories.includes(category) };
+        if (idx >= 0) transactions[idx] = { ...transactions[idx], date, category, description: desc, amount, walletId, cabang, isModalKeluar: modalCategories.includes(category) };
     } else {
-        transactions.push({ id: generateId(), type, date, category, description: desc, amount, walletId, isModalKeluar: isModal, createdAt: Date.now() });
+        transactions.push({ id: generateId(), type, date, category, description: desc, amount, walletId, cabang, isModalKeluar: isModal, createdAt: Date.now() });
     }
 
     saveData(DB.transactions, transactions);
@@ -64,6 +70,8 @@ function editTransaction(id) {
     document.getElementById('transactionDesc').value = t.description;
     document.getElementById('transactionAmount').value = t.amount;
     document.getElementById('transactionWallet').value = t.walletId;
+    const cabangEl = document.getElementById('transactionCabang');
+    if (cabangEl) cabangEl.value = t.cabang || '';
     updateCategoryOptions();
     document.getElementById('transactionCategory').value = t.category;
     document.getElementById('transactionModalTitle').textContent = 'Edit Transaksi';

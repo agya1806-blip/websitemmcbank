@@ -22,6 +22,8 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <!-- LOGIN PAGE -->
@@ -82,6 +84,45 @@
                     <input type="password" class="form-input" id="registerPasswordConfirm" placeholder="Ulangi password">
                 </div>
                 <button class="btn btn-primary" onclick="registerAccount()">✅ Daftar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIN LOCK SCREEN -->
+    <div id="pinLockPage" class="login-page" style="display:none">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="login-logo"><img src="icons/icon-192.png" alt="MB" style="width:100%;height:100%;object-fit:cover;border-radius:20px"></div>
+                <h1 style="font-size:22px">MUGHIS BANK</h1>
+                <p style="font-size:13px;opacity:0.8">Masukkan PIN untuk membuka</p>
+            </div>
+            <div class="login-form" style="text-align:center">
+                <div id="pinDots" style="display:flex;gap:12px;justify-content:center;margin:24px 0">
+                    <span class="pin-dot" id="pinDot0">○</span>
+                    <span class="pin-dot" id="pinDot1">○</span>
+                    <span class="pin-dot" id="pinDot2">○</span>
+                    <span class="pin-dot" id="pinDot3">○</span>
+                    <span class="pin-dot" id="pinDot4">○</span>
+                    <span class="pin-dot" id="pinDot5">○</span>
+                </div>
+                <div style="color:var(--danger);font-size:13px;min-height:20px;margin-bottom:12px" id="pinError"></div>
+                <div class="pin-keypad">
+                    <button class="pin-key" onclick="pinInput('1')">1</button>
+                    <button class="pin-key" onclick="pinInput('2')">2</button>
+                    <button class="pin-key" onclick="pinInput('3')">3</button>
+                    <button class="pin-key" onclick="pinInput('4')">4</button>
+                    <button class="pin-key" onclick="pinInput('5')">5</button>
+                    <button class="pin-key" onclick="pinInput('6')">6</button>
+                    <button class="pin-key" onclick="pinInput('7')">7</button>
+                    <button class="pin-key" onclick="pinInput('8')">8</button>
+                    <button class="pin-key" onclick="pinInput('9')">9</button>
+                    <button class="pin-key" onclick="pinInput('cancel')">✕</button>
+                    <button class="pin-key" onclick="pinInput('0')">0</button>
+                    <button class="pin-key" onclick="pinInput('back')">⌫</button>
+                </div>
+                <div style="margin-top:16px">
+                    <button class="btn btn-link" onclick="logout()" style="font-size:13px">🔒 Ganti Akun</button>
+                </div>
             </div>
         </div>
     </div>
@@ -197,8 +238,15 @@
 
             <!-- Grafik -->
             <div class="card">
-                <div class="card-title"><span class="m-icon" style="font-size:16px">timeline</span> Grafik Keuangan 7 Hari</div>
-                <div class="chart-container" id="financeChart"></div>
+                <div class="card-title"><span class="m-icon" style="font-size:16px">timeline</span> Grafik Keuangan</div>
+                <div class="chart-tabs" style="display:flex;gap:8px;margin-bottom:12px">
+                    <button class="tab active" id="chartTabIE" onclick="switchChart('incomeExpense')">7 Hari</button>
+                    <button class="tab" id="chartTabPie" onclick="switchChart('pie')">Kategori</button>
+                    <button class="tab" id="chartTabMonthly" onclick="switchChart('monthly')">Bulanan</button>
+                </div>
+                <div class="chart-container" style="position:relative;height:220px">
+                    <canvas id="financeChartCanvas"></canvas>
+                </div>
             </div>
 
             <!-- Invoice Terbaru -->
@@ -222,6 +270,7 @@
                 <button class="tab" onclick="switchFinanceTab('modal')">Modal</button>
                 <button class="tab" onclick="switchFinanceTab('transfer')">Transfer</button>
             </div>
+            <div id="cabangFilterContainer" style="padding:0 12px"></div>
             <div id="finance-income"><div id="incomeList"></div></div>
             <div id="finance-expense" style="display:none;"><div id="expenseList"></div></div>
             <div id="finance-modal" style="display:none;"><div id="modalList"></div></div>
@@ -277,6 +326,9 @@
                 <button class="tab" onclick="switchProductTab('product')">Barang</button>
             </div>
             <div id="productList"></div>
+            <div style="padding:0 16px;margin-top:8px">
+                <button class="btn btn-outline" onclick="openProductCatalog()" style="width:100%">📋 Buka Katalog Produk</button>
+            </div>
             <button class="fab" onclick="openProductModal()">+</button>
         </div>
 
@@ -290,6 +342,11 @@
             <button class="fab" onclick="openReceivableModal()">+</button>
         </div>
 
+        <div class="page" id="page-purchase">
+            <div id="purchaseList"></div>
+            <button class="fab" onclick="openPurchaseModal()">+</button>
+        </div>
+
         <div class="page" id="page-reports">
             <div class="tabs">
                 <button class="tab active" onclick="switchReportTab('daily')">Harian</button>
@@ -298,6 +355,9 @@
                 <button class="tab" onclick="switchReportTab('yearly')">Tahunan</button>
             </div>
             <div id="reportContent"></div>
+            <div style="display:flex;gap:8px;margin:12px 16px">
+                <button class="btn btn-primary" onclick="exportReportPDF()" style="flex:1;font-size:13px">📄 Export PDF</button>
+            </div>
         </div>
 
         <div class="page" id="page-settings">
@@ -344,6 +404,34 @@
             <div class="card">
                 <div class="card-title">🎨 Tampilan</div>
                 <div class="toggle"><span>Mode Gelap</span><div class="toggle-switch" id="darkModeToggle" onclick="toggleTheme()"></div></div>
+            </div>
+            <div class="card">
+                <div class="card-title">🔐 Keamanan PIN</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Aktifkan PIN 6 digit untuk mengunci aplikasi setiap kali dibuka.</div>
+                <div class="form-group">
+                    <label class="form-label">PIN 6 Digit</label>
+                    <input type="password" class="form-input" id="settingPin" placeholder="Masukkan PIN 6 digit" maxlength="6" inputmode="numeric" pattern="[0-9]*">
+                </div>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-primary" onclick="savePin()">💾 Simpan PIN</button>
+                    <button class="btn btn-danger" onclick="removePin()">✕ Hapus PIN</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">🏬 Multi-Cabang</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Kelola cabang/toko untuk membedakan transaksi per lokasi.</div>
+                <div id="cabangList"></div>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                    <input type="text" class="form-input" id="cabangInput" placeholder="Nama cabang baru" style="flex:1">
+                    <button class="btn btn-primary" onclick="addCabang()" style="width:auto">+</button>
+                </div>
+                <button class="btn btn-primary" onclick="saveCabang()" style="margin-top:8px">💾 Simpan Cabang</button>
+            </div>
+            <div class="card">
+                <div class="card-title">⚡ Shortcut Cepat</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Pilih menu yang tampil di quick menu dashboard (minimal 4).</div>
+                <div id="shortcutList"></div>
+                <button class="btn btn-primary" onclick="saveShortcuts()" style="margin-top:8px">💾 Simpan Shortcut</button>
             </div>
             <div class="card">
                 <div class="card-title">🤖 AI Assistant</div>
@@ -517,6 +605,7 @@
                     </div>
                     <div class="form-group"><label class="form-label">Nominal (Rp)</label><input type="number" class="form-input" id="transactionAmount" placeholder="0"></div>
                     <div class="form-group"><label class="form-label">Dompet</label><select class="form-select" id="transactionWallet"></select></div>
+                    <div class="form-group"><label class="form-label">Cabang</label><select class="form-select" id="transactionCabang"><option value="">Pusat</option></select></div>
                     <button class="btn btn-primary" onclick="saveTransaction()">Simpan</button>
                 </div>
             </div>
@@ -726,6 +815,13 @@
             </div>
         </div>
 
+        <div class="modal-overlay" id="purchaseDetailModal">
+            <div class="modal">
+                <div class="modal-header"><span class="modal-title">Detail Nota</span><button class="modal-close" onclick="closeModal('purchaseDetailModal')">✕</button></div>
+                <div class="modal-body" id="purchaseDetailContent"></div>
+            </div>
+        </div>
+
         <div class="modal-overlay" id="activityDetailModal">
             <div class="modal">
                 <div class="modal-header"><span class="modal-title">Detail Aktivitas</span><button class="modal-close" onclick="closeModal('activityDetailModal')">✕</button></div>
@@ -733,7 +829,35 @@
             </div>
         </div>
 
+        <div class="modal-overlay" id="purchaseModal">
+            <div class="modal" style="max-height:95vh;overflow-y:auto">
+                <div class="modal-header"><span class="modal-title" id="purchaseModalTitle">Nota Pembelian Baru</span><button class="modal-close" onclick="closeModal('purchaseModal')">✕</button></div>
+                <div class="modal-body">
+                    <input type="hidden" id="purchaseId">
+                    <div class="form-group"><label class="form-label">Nama Supplier</label><input type="text" class="form-input" id="purchaseSupplier" placeholder="Nama supplier"></div>
+                    <div class="form-group"><label class="form-label">Tanggal</label><input type="date" class="form-input" id="purchaseDate"></div>
+                    <div class="form-group"><label class="form-label">Deskripsi</label><textarea class="form-textarea" id="purchaseDesc" placeholder="Deskripsi pembelian"></textarea></div>
+                    <div class="form-group"><label class="form-label">Total (Rp)</label><input type="number" class="form-input" id="purchaseAmount" placeholder="0"></div>
+                    <div class="form-group"><label class="form-label">Dompet</label><select class="form-select" id="purchaseWallet"></select></div>
+                    <div class="form-group"><label class="form-label">Catatan</label><textarea class="form-textarea" id="purchaseNote" placeholder="Catatan tambahan"></textarea></div>
+                    <button class="btn btn-primary" onclick="savePurchase()">Simpan Nota</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="productCatalogModal">
+            <div class="modal" style="max-height:95vh;overflow-y:auto">
+                <div class="modal-header"><span class="modal-title">Katalog Produk</span><button class="modal-close" onclick="closeModal('productCatalogModal')">✕</button></div>
+                <div class="modal-body" id="productCatalogContent"></div>
+                <div class="modal-body no-print" style="padding-top:0">
+                    <button class="btn btn-success" onclick="shareCatalog()" style="margin-bottom:10px">📱 Bagikan via WA</button>
+                    <button class="btn btn-outline" onclick="closeModal('productCatalogModal')">Tutup</button>
+                </div>
+            </div>
+        </div>
+
         <div id="slipCaptureArea" style="position:fixed;left:-9999px;top:0;z-index:-1;width:794px;background:#fff;padding:40px;font-family:'Inter',sans-serif;color:#1a1a2e"></div>
+        <div id="catalogCaptureArea" style="position:fixed;left:-9999px;top:0;z-index:-1;width:794px;background:#fff;padding:40px;font-family:'Inter',sans-serif;color:#1a1a2e"></div>
     </div>
 
     <script src="js/config.js"></script>

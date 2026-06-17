@@ -1694,3 +1694,34 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 ::placeholder { color: var(--text-tertiary); opacity: 0.8; }
 ::selection { background: rgba(13, 59, 102, 0.2); color: var(--text); }
 [data-theme="dark"] ::selection { background: rgba(201, 149, 60, 0.3); }
+
+/* ======================== PIN LOCK ======================== */
+.pin-dot { font-size: 32px; color: var(--text-secondary); transition: all 0.2s; }
+.pin-dot.active { color: var(--gold); }
+.pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 260px; margin: 0 auto; }
+.pin-key { width: 100%; aspect-ratio: 1; border: none; border-radius: 50%; background: var(--surface-2); color: var(--text); font-size: 24px; font-weight: 600; cursor: pointer; transition: all 0.15s; display:flex;align-items:center;justify-content:center; }
+.pin-key:active { transform: scale(0.92); background: var(--surface-3); }
+.pin-key:last-child { font-size: 20px; }
+
+/* ======================== CHART TABS ======================== */
+.chart-tabs .tab { font-size: 12px; padding: 6px 14px; }
+
+/* ======================== CATALOG ======================== */
+.catalog-item { display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid var(--border); }
+.catalog-item:last-child { border-bottom:none; }
+.catalog-img { width:48px;height:48px;border-radius:8px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:24px; }
+.catalog-info { flex:1; }
+.catalog-name { font-weight:600;font-size:14px; }
+.catalog-price { font-size:13px;color:var(--success);font-weight:600; }
+.catalog-category { font-size:11px;color:var(--text-secondary); }
+
+/* ======================== PURCHASE / NOTA ======================== */
+.purchase-card { background:var(--surface);border-radius:12px;padding:14px;margin:8px 12px;position:relative; }
+.purchase-card .card-title { font-size:14px;font-weight:700; }
+.purchase-card .card-sub { font-size:12px;color:var(--text-secondary);margin:4px 0; }
+.purchase-card .card-amount { font-size:16px;font-weight:700;color:var(--danger); }
+
+/* ======================== CABANG TAG ======================== */
+.cabang-tag { display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--surface-3);color:var(--text-secondary); }
+.cabang-list-item { display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border); }
+.cabang-list-item:last-child { border-bottom:none; }

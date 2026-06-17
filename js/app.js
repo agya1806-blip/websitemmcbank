@@ -22,6 +22,7 @@ const DB = {
     debts: 'mughis_debts',
     receivables: 'mughis_receivables',
     invoices: 'mughis_invoices',
+    purchases: 'mughis_purchases',
     settings: 'mughis_settings',
     activities: 'mughis_activities',
     users: 'mughis_users'
@@ -118,6 +119,82 @@ function toggleBalance() {
 function getDisplayBalance(value) {
     if (balanceHidden) return 'Rp •••••••';
     return formatRupiah(value);
+}
+
+// ==================== PIN LOCK ====================
+
+let pinTemp = '';
+
+function showPinLock() {
+    document.getElementById('loginPage').classList.remove('active');
+    const rp = document.getElementById('registerPage');
+    if (rp) rp.classList.remove('active');
+    document.getElementById('pinLockPage').style.display = 'flex';
+    pinTemp = '';
+    updatePinDots();
+    document.getElementById('pinError').textContent = '';
+}
+
+function hidePinLock() {
+    document.getElementById('pinLockPage').style.display = 'none';
+}
+
+function pinInput(val) {
+    if (val === 'cancel') { hidePinLock(); logout(); return; }
+    if (val === 'back') { pinTemp = pinTemp.slice(0, -1); updatePinDots(); return; }
+    if (pinTemp.length >= 6) return;
+    pinTemp += val;
+    updatePinDots();
+    if (pinTemp.length === 6) {
+        const settings = loadData(DB.settings) || {};
+        if (settings.pinHash === simpleHash(pinTemp)) {
+            hidePinLock();
+            document.getElementById('mainApp').style.display = 'block';
+            init();
+        } else {
+            document.getElementById('pinError').textContent = 'PIN salah! Coba lagi.';
+            pinTemp = '';
+            updatePinDots();
+        }
+    }
+}
+
+function updatePinDots() {
+    for (let i = 0; i < 6; i++) {
+        const dot = document.getElementById('pinDot' + i);
+        if (dot) dot.textContent = i < pinTemp.length ? '●' : '○';
+    }
+}
+
+function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); hash = ((hash << 5) - hash) + c; hash |= 0; }
+    return 'h' + Math.abs(hash).toString(36);
+}
+
+function savePin() {
+    const pin = document.getElementById('settingPin').value;
+    if (pin && pin.length !== 6) { alert('PIN harus 6 digit!'); return; }
+    if (pin && !/^\d{6}$/.test(pin)) { alert('PIN hanya boleh angka 0-9!'); return; }
+    const settings = loadData(DB.settings) || {};
+    if (pin) {
+        settings.pinHash = simpleHash(pin);
+        alert('✅ PIN berhasil disimpan!');
+    } else {
+        delete settings.pinHash;
+        alert('PIN dihapus.');
+    }
+    saveData(DB.settings, settings);
+    document.getElementById('settingPin').value = '';
+}
+
+function removePin() {
+    if (!confirm('Hapus PIN keamanan?')) return;
+    const settings = loadData(DB.settings) || {};
+    delete settings.pinHash;
+    saveData(DB.settings, settings);
+    document.getElementById('settingPin').value = '';
+    alert('PIN dihapus.');
 }
 
 // ==================== AUTHENTICATION ====================
@@ -239,9 +316,14 @@ function loginUser(email, name, userId) {
 
     localStorage.setItem('mughis_current_user', JSON.stringify(currentUser));
     document.getElementById('loginPage').classList.remove('active');
-    document.getElementById('mainApp').style.display = 'block';
     
-    init();
+    const settings = loadData(DB.settings) || {};
+    if (settings.pinHash) {
+        showPinLock();
+    } else {
+        document.getElementById('mainApp').style.display = 'block';
+        init();
+    }
 }
 
 function logout() {
@@ -261,7 +343,12 @@ function checkCurrentUser() {
     if (user) {
         currentUser = JSON.parse(user);
         document.getElementById('loginPage').classList.remove('active');
-        document.getElementById('mainApp').style.display = 'block';
+        const settings = loadData(DB.settings) || {};
+        if (settings.pinHash) {
+            showPinLock();
+        } else {
+            document.getElementById('mainApp').style.display = 'block';
+        }
         return true;
     }
     return false;
@@ -334,6 +421,9 @@ function init() {
     loadTelegramConfig();
     recalculateAll();
     renderAll();
+    renderCabangSettings();
+    renderShortcutSettings();
+    renderPurchases();
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -1110,6 +1200,8 @@ function renderAll() {
     renderRecentInvoices();
     renderReports();
     updateWalletSelects();
+    renderCabangFilter();
+    renderQuickMenu();
 }
 
 function renderInsights(stats) {
@@ -1228,18 +1320,124 @@ function renderChart() {
         incomeData.push(inc);
         expenseData.push(exp);
     }
-    const maxVal = Math.max(...incomeData, ...expenseData, 1);
-    document.getElementById('financeChart').innerHTML = days.map((day, i) => {
-        const h1 = (incomeData[i] / maxVal * 100) || 5;
-        const h2 = (expenseData[i] / maxVal * 100) || 5;
-        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
-            <div style="display:flex;gap:2px;align-items:flex-end;height:120px">
-                <div class="chart-bar" style="height:${h1}px;width:8px;background:linear-gradient(to top,var(--success),#34d399)"></div>
-                <div class="chart-bar" style="height:${h2}px;width:8px;background:linear-gradient(to top,var(--danger),#f87171)"></div>
-            </div>
-            <span class="chart-bar-label">${day}</span>
-        </div>`;
-    }).join('');
+
+    window._chartIncome = incomeData;
+    window._chartExpense = expenseData;
+    window._chartDays = days;
+
+    const ctx = document.getElementById('financeChartCanvas');
+    if (!ctx) return;
+    if (window._financeChart) { window._financeChart.destroy(); }
+    
+    window._financeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: days,
+            datasets: [
+                { label: 'Pemasukan', data: incomeData, backgroundColor: 'rgba(45,138,78,0.8)', borderRadius: 4, barPercentage: 0.4 },
+                { label: 'Pengeluaran', data: expenseData, backgroundColor: 'rgba(192,57,43,0.8)', borderRadius: 4, barPercentage: 0.4 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } } },
+            scales: {
+                y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+}
+
+function switchChart(type) {
+    document.querySelectorAll('.chart-tabs .tab').forEach(t => t.classList.remove('active'));
+    const tabMap = { incomeExpense: 'chartTabIE', pie: 'chartTabPie', monthly: 'chartTabMonthly' };
+    const btn = document.getElementById(tabMap[type]);
+    if (btn) btn.classList.add('active');
+
+    const ctx = document.getElementById('financeChartCanvas');
+    if (!ctx) return;
+    if (window._financeChart) { window._financeChart.destroy(); }
+
+    const transactions = loadData(DB.transactions);
+    const invoices = loadData(DB.invoices);
+    const now = new Date();
+
+    if (type === 'incomeExpense') {
+        renderChart();
+        return;
+    }
+
+    if (type === 'pie') {
+        const catIncome = {}, catExpense = {};
+        transactions.forEach(t => {
+            const amt = parseFloat(t.amount);
+            if (t.type === 'income') catIncome[t.category] = (catIncome[t.category] || 0) + amt;
+            else if (t.type === 'expense' && !t.isModalKeluar) catExpense[t.category] = (catExpense[t.category] || 0) + amt;
+        });
+        const labels = [...Object.keys(catIncome), ...Object.keys(catExpense)];
+        const data = [...Object.values(catIncome), ...Object.values(catExpense)];
+        const colors = labels.map((_, i) => `hsla(${i * 45}, 70%, 55%, 0.8)`);
+        
+        window._financeChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { boxWidth: 12, padding: 6, font: { size: 10 } } }
+                }
+            }
+        });
+        return;
+    }
+
+    if (type === 'monthly') {
+        const monthlyData = {};
+        for (let m = 5; m >= 0; m--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+            const key = d.toLocaleDateString('id-ID', { month: 'short' });
+            monthlyData[key] = { income: 0, expense: 0, profit: 0 };
+        }
+        transactions.forEach(t => {
+            const d = new Date(t.date);
+            const key = d.toLocaleDateString('id-ID', { month: 'short' });
+            if (monthlyData[key]) {
+                const amt = parseFloat(t.amount);
+                if (t.type === 'income') monthlyData[key].income += amt;
+                else if (t.type === 'expense') monthlyData[key].expense += amt;
+            }
+        });
+        invoices.forEach(inv => {
+            const d = new Date(inv.date);
+            const key = d.toLocaleDateString('id-ID', { month: 'short' });
+            if (monthlyData[key]) {
+                if (inv.status === 'Lunas') monthlyData[key].profit += parseFloat(inv.total || 0);
+                else if (inv.status === 'DP') monthlyData[key].profit += parseFloat(inv.dp || 0);
+            }
+        });
+        const labels = Object.keys(monthlyData);
+        const incomeArr = labels.map(k => monthlyData[k].income);
+        const expenseArr = labels.map(k => monthlyData[k].expense);
+        const profitArr = labels.map(k => monthlyData[k].profit);
+
+        window._financeChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Pemasukan', data: incomeArr, borderColor: '#2d8a4e', backgroundColor: 'rgba(45,138,78,0.1)', tension: 0.3, pointRadius: 3, fill: true },
+                    { label: 'Pengeluaran', data: expenseArr, borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,0.1)', tension: 0.3, pointRadius: 3, fill: true },
+                    { label: 'Laba Invoice', data: profitArr, borderColor: '#c9953c', backgroundColor: 'rgba(201,149,60,0.1)', tension: 0.3, pointRadius: 3, fill: true }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 6, font: { size: 10 } } } },
+                scales: { y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } }, x: { grid: { display: false }, ticks: { font: { size: 10 } } } }
+            }
+        });
+    }
 }
 
 function renderActivities() {
@@ -1297,10 +1495,16 @@ function renderTransactions() {
     const transactions = loadData(DB.transactions).sort((a, b) => new Date(b.date) - new Date(a.date));
     const wallets = loadData(DB.wallets);
     const walletMap = Object.fromEntries(wallets.map(w => [w.id, w]));
-    const incomeList = transactions.filter(t => t.type === 'income');
-    const expenseList = transactions.filter(t => t.type === 'expense' && !t.isModalKeluar);
-    const modalList = transactions.filter(t => t.type === 'expense' && t.isModalKeluar);
-    const transferList = transactions.filter(t => t.type === 'transfer_in' || t.type === 'transfer_out');
+    
+    // Apply cabang filter
+    const cabangFilter = document.getElementById('cabangFilter');
+    const activeCabang = cabangFilter ? cabangFilter.value : '';
+    const filtered = activeCabang ? transactions.filter(t => t.cabang === activeCabang) : transactions;
+    
+    const incomeList = filtered.filter(t => t.type === 'income');
+    const expenseList = filtered.filter(t => t.type === 'expense' && !t.isModalKeluar);
+    const modalList = filtered.filter(t => t.type === 'expense' && t.isModalKeluar);
+    const transferList = filtered.filter(t => t.type === 'transfer_in' || t.type === 'transfer_out');
     
     const renderList = (list, containerId) => {
         const container = document.getElementById(containerId);
@@ -1317,7 +1521,7 @@ function renderTransactions() {
                     <div class="list-icon" style="background:${isIncome?'#d1fae5':'#fee2e2'}">${isIncome?'📥':'📤'}</div>
                     <div class="list-content">
                         <div class="list-title">${t.description}</div>
-                        <div class="list-subtitle">${formatDate(t.date)} • ${t.category} • ${walletMap[t.walletId]?.name||'-'}</div>
+                        <div class="list-subtitle">${formatDate(t.date)} • ${t.category} • ${walletMap[t.walletId]?.name||'-'}${t.cabang ? ' • <span class="cabang-tag">' + t.cabang + '</span>' : ''}</div>
                     </div>
                     <div class="list-amount ${t.type}">${isIncome?'+':'-'} ${formatRupiah(t.amount)}</div>
                 </div>
@@ -1520,7 +1724,7 @@ function renderInvoices() {
                 <div class="list-icon" style="background:#e0e7ff;font-size:20px"><span class="m-icon">${typeIcon[inv.type] || 'description'}</span></div>
                 <div class="list-content">
                     <div class="list-title">${inv.number}</div>
-                    <div class="list-subtitle">${inv.customerName} • ${formatDate(inv.date)} • ${typeLabel[inv.type] || inv.type}</div>
+                    <div class="list-subtitle">${inv.customerName} • ${formatDate(inv.date)} • ${typeLabel[inv.type] || inv.type}${inv.cabang ? ' • <span class="cabang-tag">' + inv.cabang + '</span>' : ''}</div>
                 </div>
                 <div style="text-align:right">
                     <div class="list-amount">${formatRupiah(inv.total)}</div>
@@ -1668,6 +1872,418 @@ function renderReports() {
     document.getElementById('reportContent').innerHTML = detailHtml;
 }
 
+// ==================== EXPORT PDF ====================
+
+function exportReportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    const content = document.getElementById('reportContent');
+    if (!content || !content.innerHTML || content.innerHTML.includes('Tidak ada transaksi')) {
+        alert('Tidak ada data untuk di-export.');
+        return;
+    }
+    
+    // Collect report data
+    const stats = recalculateDashboard();
+    const tab = window.reportTab || 'monthly';
+    const now = new Date();
+    let periodLabel = '';
+    if (tab === 'daily') periodLabel = `Laporan Harian - ${formatDate(now.toISOString().split('T'))}`;
+    else if (tab === 'weekly') periodLabel = `Laporan Mingguan - ${now.toLocaleDateString('id-ID', { dateStyle: 'long' })}`;
+    else if (tab === 'monthly') periodLabel = `Laporan Bulanan - ${now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`;
+    else periodLabel = `Laporan Tahunan - ${now.getFullYear()}`;
+
+    const settings = loadData(DB.settings) || {};
+    const businessName = settings.businessName || 'MUGHIS BANK';
+
+    let y = 20;
+    doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+    doc.text(businessName, pageWidth / 2, y, { align: 'center' });
+    y += 8;
+    doc.setFontSize(11); doc.setFont('helvetica', 'normal');
+    doc.text(periodLabel, pageWidth / 2, y, { align: 'center' });
+    y += 12;
+
+    // KPI summary
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.text('Ringkasan Keuangan', 14, y); y += 6;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    const kpiItems = [
+        ['Pemasukan Invoice', formatRupiah(stats.invoiceIncome)],
+        ['Total Pengeluaran', formatRupiah(stats.financeExpense)],
+        ['Modal Keluar', formatRupiah(stats.totalModalOut)],
+        ['Laba Bersih', formatRupiah(stats.invoiceNet)],
+        ['Saldo Kas', formatRupiah(stats.totalBalance)]
+    ];
+    kpiItems.forEach(item => {
+        doc.text(item[0], 20, y);
+        doc.text(item[1], pageWidth - 20, y, { align: 'right' });
+        y += 5;
+    });
+    y += 6;
+
+    // Transactions
+    const transactions = loadData(DB.transactions);
+    const filtered = transactions.filter(t => {
+        const d = new Date(t.date);
+        if (tab === 'daily') return t.date === now.toISOString().split('T');
+        if (tab === 'weekly') return new Date(t.date) >= new Date(now - 7 * 24 * 60 * 60 * 1000);
+        if (tab === 'monthly') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        return d.getFullYear() === now.getFullYear();
+    });
+
+    if (filtered.length > 0) {
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+        doc.text('Detail Transaksi', 14, y); y += 6;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+        filtered.slice(0, 30).forEach(t => {
+            if (y > 270) { doc.addPage(); y = 20; }
+            const desc = t.description.length > 30 ? t.description.slice(0, 28) + '..' : t.description;
+            doc.text(`${formatDate(t.date)} - ${desc}`, 18, y);
+            doc.text(formatRupiah(t.amount), pageWidth - 18, y, { align: 'right' });
+            y += 4.5;
+        });
+    }
+
+    doc.save(`Laporan_${tab}_${now.toISOString().split('T')}.pdf`);
+}
+
+// ==================== PURCHASE ORDER (NOTA) ====================
+
+function openPurchaseModal() {
+    document.getElementById('purchaseId').value = '';
+    document.getElementById('purchaseSupplier').value = '';
+    document.getElementById('purchaseDate').value = new Date().toISOString().split('T');
+    document.getElementById('purchaseDesc').value = '';
+    document.getElementById('purchaseAmount').value = '';
+    document.getElementById('purchaseNote').value = '';
+    document.getElementById('purchaseModalTitle').textContent = 'Nota Pembelian Baru';
+    updateWalletSelectsFor('purchaseWallet');
+    openModal('purchaseModal');
+}
+
+function savePurchase() {
+    const id = document.getElementById('purchaseId').value;
+    const supplier = document.getElementById('purchaseSupplier').value.trim();
+    const date = document.getElementById('purchaseDate').value;
+    const desc = document.getElementById('purchaseDesc').value.trim();
+    const amount = parseFloat(document.getElementById('purchaseAmount').value) || 0;
+    const note = document.getElementById('purchaseNote').value.trim();
+    const wallet = document.getElementById('purchaseWallet').value;
+
+    if (!supplier || !amount) { alert('Nama supplier dan nominal harus diisi!'); return; }
+
+    const purchases = loadData(DB.purchases);
+    const cabang = getActiveCabang();
+
+    if (id) {
+        const idx = purchases.findIndex(p => p.id === id);
+        if (idx >= 0) purchases[idx] = { ...purchases[idx], supplier, date, desc, amount, note, wallet };
+    } else {
+        purchases.unshift({ id: generateId(), supplier, date, desc, amount, note, wallet, cabang, createdAt: new Date().toISOString() });
+    }
+    saveData(DB.purchases, purchases);
+
+    // Create expense transaction
+    const transactions = loadData(DB.transactions);
+    transactions.unshift({
+        id: generateId(), type: 'expense', category: 'Pembelian', description: `Nota: ${supplier} - ${desc || 'Pembelian'}`,
+        amount, date, wallet, cabang, isModalKeluar: false, createdAt: new Date().toISOString()
+    });
+    saveData(DB.transactions, transactions);
+
+    addActivity(`Nota pembelian dari ${supplier}: ${formatRupiah(amount)}`);
+    closeModal('purchaseModal');
+    renderPurchases();
+    recalculateAll();
+    renderAll();
+    alert('Nota pembelian disimpan!');
+}
+
+function renderPurchases() {
+    const purchases = loadData(DB.purchases);
+    const container = document.getElementById('purchaseList');
+    if (purchases.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📦</div><p>Belum ada nota pembelian</p></div>';
+        return;
+    }
+    container.innerHTML = purchases.map(p => `
+        <div class="purchase-card" onclick="showPurchaseDetail('${p.id}')">
+            <div class="card-title">${p.supplier}</div>
+            <div class="card-sub">${formatDate(p.date)}${p.desc ? ' • ' + p.desc : ''}</div>
+            <div class="card-amount">- ${formatRupiah(p.amount)}</div>
+        </div>
+    `).join('');
+}
+
+function showPurchaseDetail(id) {
+    const purchases = loadData(DB.purchases);
+    const p = purchases.find(x => x.id === id);
+    if (!p) return;
+    const detail = `
+        <div style="padding:16px">
+            <div style="font-size:20px;font-weight:700;margin-bottom:4px">${p.supplier}</div>
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${formatDate(p.date)}</div>
+            ${p.desc ? `<div style="font-size:14px;margin-bottom:8px">${p.desc}</div>` : ''}
+            <div style="font-size:18px;font-weight:700;color:var(--danger);margin-bottom:8px">- ${formatRupiah(p.amount)}</div>
+            ${p.note ? `<div style="font-size:12px;color:var(--text-secondary)">Catatan: ${p.note}</div>` : ''}
+            <div style="display:flex;gap:8px;margin-top:16px">
+                <button class="btn btn-danger" onclick="if(confirm('Hapus nota ini?')){deletePurchase('${p.id}')}" style="flex:1">🗑️ Hapus</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('purchaseDetailContent').innerHTML = detail;
+    openModal('purchaseDetailModal');
+}
+
+function deletePurchase(id) {
+    let purchases = loadData(DB.purchases);
+    purchases = purchases.filter(p => p.id !== id);
+    saveData(DB.purchases, purchases);
+    closeModal('purchaseDetailModal');
+    renderPurchases();
+    recalculateAll();
+    renderAll();
+}
+
+// ==================== CABANG (Multi-Cabang) ====================
+
+function getCabang() {
+    const settings = loadData(DB.settings) || {};
+    return settings.cabang || [];
+}
+
+function getActiveCabang() {
+    const settings = loadData(DB.settings) || {};
+    return settings.activeCabang || '';
+}
+
+function setActiveCabang(cabang) {
+    const settings = loadData(DB.settings) || {};
+    settings.activeCabang = cabang;
+    saveData(DB.settings, settings);
+}
+
+function renderCabangSettings() {
+    const cabang = getCabang();
+    const container = document.getElementById('cabangList');
+    if (!container) return;
+    if (cabang.length === 0) {
+        container.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);padding:8px 0">Belum ada cabang. Tambahkan cabang baru.</div>';
+        return;
+    }
+    container.innerHTML = cabang.map((c, i) => `
+        <div class="cabang-list-item">
+            <span>🏬 ${c}</span>
+            <button class="btn btn-danger" onclick="removeCabang(${i})" style="width:auto;padding:4px 10px;font-size:12px">✕</button>
+        </div>
+    `).join('');
+}
+
+function addCabang() {
+    const input = document.getElementById('cabangInput');
+    const name = input.value.trim();
+    if (!name) { alert('Masukkan nama cabang!'); return; }
+    const cabang = getCabang();
+    if (cabang.includes(name)) { alert('Cabang sudah ada!'); return; }
+    cabang.push(name);
+    const settings = loadData(DB.settings) || {};
+    settings.cabang = cabang;
+    saveData(DB.settings, settings);
+    input.value = '';
+    renderCabangSettings();
+}
+
+function removeCabang(index) {
+    if (!confirm('Hapus cabang ini?')) return;
+    const cabang = getCabang();
+    cabang.splice(index, 1);
+    const settings = loadData(DB.settings) || {};
+    settings.cabang = cabang;
+    saveData(DB.settings, settings);
+    renderCabangSettings();
+}
+
+function saveCabang() {
+    renderCabangSettings();
+    alert('✅ Cabang disimpan! Gunakan filter cabang di halaman Keuangan.');
+}
+
+// Add cabang filter to finance page
+function renderCabangFilter() {
+    const cabang = getCabang();
+    const container = document.getElementById('cabangFilterContainer');
+    if (!container) return;
+    if (cabang.length === 0) { container.innerHTML = ''; return; }
+    container.innerHTML = `
+        <select class="form-select" id="cabangFilter" onchange="applyCabangFilter()" style="font-size:12px;margin-bottom:8px">
+            <option value="">🏢 Semua Cabang</option>
+            ${cabang.map(c => `<option value="${c}">🏬 ${c}</option>`).join('')}
+        </select>
+    `;
+}
+
+function applyCabangFilter() {
+    renderTransactions();
+}
+
+// ==================== SHORTCUT CEPAT KUSTOM ====================
+
+function getShortcuts() {
+    const settings = loadData(DB.settings) || {};
+    const defaults = [
+        { id: 'finance', icon: 'account_balance', label: 'Keuangan' },
+        { id: 'wallet', icon: 'credit_card', label: 'Dompet' },
+        { id: 'invoice', icon: 'receipt', label: 'Invoice' },
+        { id: 'customer', icon: 'people', label: 'Pelanggan' },
+        { id: 'products', icon: 'inventory_2', label: 'Produk' },
+        { id: 'debt', icon: 'account_balance_wallet', label: 'Hutang' },
+        { id: 'receivable', icon: 'currency_exchange', label: 'Piutang' },
+        { id: 'reports', icon: 'bar_chart', label: 'Laporan' },
+        { id: 'purchase', icon: 'shopping_cart', label: 'Nota' }
+    ];
+    return settings.shortcuts || defaults;
+}
+
+function saveShortcutsList(list) {
+    const settings = loadData(DB.settings) || {};
+    settings.shortcuts = list;
+    saveData(DB.settings, settings);
+}
+
+function renderShortcutSettings() {
+    const container = document.getElementById('shortcutList');
+    if (!container) return;
+    const shortcuts = getShortcuts();
+    container.innerHTML = shortcuts.map((s, i) => `
+        <div class="cabang-list-item">
+            <div style="display:flex;align-items:center;gap:8px">
+                <span class="m-icon" style="font-size:18px">${s.icon}</span>
+                <span>${s.label}</span>
+            </div>
+            <div style="display:flex;gap:4px">
+                <button class="btn btn-outline" onclick="moveShortcut(${i}, -1)" style="width:auto;padding:4px 8px;font-size:12px" ${i === 0 ? 'disabled' : ''}>▲</button>
+                <button class="btn btn-outline" onclick="moveShortcut(${i}, 1)" style="width:auto;padding:4px 8px;font-size:12px" ${i === shortcuts.length - 1 ? 'disabled' : ''}>▼</button>
+                <button class="btn btn-danger" onclick="removeShortcut(${i})" style="width:auto;padding:4px 8px;font-size:12px" ${shortcuts.length <= 4 ? 'disabled' : ''}>✕</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function moveShortcut(index, dir) {
+    const shortcuts = getShortcuts();
+    const target = index + dir;
+    if (target < 0 || target >= shortcuts.length) return;
+    [shortcuts[index], shortcuts[target]] = [shortcuts[target], shortcuts[index]];
+    saveShortcutsList(shortcuts);
+    renderShortcutSettings();
+}
+
+function removeShortcut(index) {
+    const shortcuts = getShortcuts();
+    if (shortcuts.length <= 4) { alert('Minimal 4 shortcut!'); return; }
+    shortcuts.splice(index, 1);
+    saveShortcutsList(shortcuts);
+    renderShortcutSettings();
+}
+
+function saveShortcuts() {
+    renderShortcutSettings();
+    alert('✅ Shortcut disimpan!');
+}
+
+// Override renderQuickMenu to use custom shortcuts
+function renderQuickMenu() {
+    const shortcuts = getShortcuts();
+    const container = document.querySelector('.menu-grid');
+    if (!container) return;
+    const allPages = {
+        finance: { icon: 'account_balance', label: 'Keuangan' },
+        wallet: { icon: 'credit_card', label: 'Dompet' },
+        invoice: { icon: 'receipt', label: 'Invoice' },
+        customer: { icon: 'people', label: 'Pelanggan' },
+        products: { icon: 'inventory_2', label: 'Produk' },
+        debt: { icon: 'account_balance_wallet', label: 'Hutang' },
+        receivable: { icon: 'currency_exchange', label: 'Piutang' },
+        reports: { icon: 'bar_chart', label: 'Laporan' },
+        purchase: { icon: 'shopping_cart', label: 'Nota' }
+    };
+    container.innerHTML = shortcuts.map(s => {
+        const page = allPages[s.id] || s;
+        return `<div class="menu-item" onclick="showPage('${s.id}')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">${page.icon}</span></div><div class="menu-label">${page.label}</div></div>`;
+    }).join('');
+}
+
+// ==================== CATALOG PRODUK SHAREABLE ====================
+
+function openProductCatalog() {
+    const products = loadData(DB.products);
+    const container = document.getElementById('productCatalogContent');
+    if (products.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📦</div><p>Belum ada produk</p></div>';
+        openModal('productCatalogModal');
+        return;
+    }
+    container.innerHTML = products.map(p => `
+        <div class="catalog-item">
+            <div class="catalog-img">${p.type === 'product' ? '📦' : '🔧'}</div>
+            <div class="catalog-info">
+                <div class="catalog-name">${p.name}</div>
+                <div class="catalog-price">${formatRupiah(p.price)}</div>
+                <div class="catalog-category">${p.category || ''}${p.stock !== undefined ? ' • Stok: ' + p.stock : ''}</div>
+            </div>
+        </div>
+    `).join('');
+    openModal('productCatalogModal');
+}
+
+function shareCatalog() {
+    const products = loadData(DB.products);
+    const settings = loadData(DB.settings) || {};
+    const businessName = settings.businessName || 'MUGHIS BANK';
+    if (products.length === 0) { alert('Belum ada produk!'); return; }
+
+    let text = `🏪 *KATALOG PRODUK - ${businessName}*\n`;
+    text += '━'.repeat(20) + '\n\n';
+
+    const grouped = {};
+    products.forEach(p => {
+        const cat = p.category || 'Umum';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(p);
+    });
+
+    Object.keys(grouped).forEach(cat => {
+        text += `*${cat}*\n`;
+        grouped[cat].forEach(p => {
+            text += `• ${p.name} - ${formatRupiah(p.price)}`;
+            if (p.stock !== undefined) text += ` (Stok: ${p.stock})`;
+            text += '\n';
+        });
+        text += '\n';
+    });
+
+    text += '━'.repeat(20) + '\n';
+    text += `📱 ${businessName}\n`;
+    if (settings.whatsApp) text += `WA: ${settings.whatsApp}`;
+
+    const waNumber = settings.whatsApp ? settings.whatsApp.replace(/[^0-9]/g, '') : '';
+    const waUrl = waNumber ? `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
+    closeModal('productCatalogModal');
+}
+
+// ==================== UPDATE WALLET SELECTS ====================
+
+function updateWalletSelectsFor(selectId) {
+    const wallets = loadData(DB.wallets);
+    const el = document.getElementById(selectId);
+    if (!el) return;
+    el.innerHTML = wallets.map(w => `<option value="${w.id}">${w.icon} ${w.name}</option>`).join('');
+}
+
 function updateWalletSelects() {
     const wallets = loadData(DB.wallets);
     const options = wallets.map(w => `<option value="${w.id}">${w.icon} ${w.name}</option>`).join('');
@@ -1694,11 +2310,13 @@ function showPage(pageName) {
     renderAll();
     window.scrollTo(0, 0);
     if (pageName === 'settings') { updateSyncStatus(); loadTelegramConfig(); updateSettingsUI(); }
+    if (pageName === 'purchase') renderPurchases();
 }
 
 function switchFinanceTab(type) {
     document.querySelectorAll('#page-finance .tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+    const btn = event?.target || document.querySelector(`#page-finance .tab[onclick*="'${type}'"]`);
+    if (btn) btn.classList.add('active');
     document.getElementById('finance-income').style.display = type === 'income' ? 'block' : 'none';
     document.getElementById('finance-expense').style.display = type === 'expense' ? 'block' : 'none';
     document.getElementById('finance-modal').style.display = type === 'modal' ? 'block' : 'none';
@@ -1708,21 +2326,24 @@ function switchFinanceTab(type) {
 function switchInvoiceTab(tab) {
     window.invoiceTab = tab;
     document.querySelectorAll('#page-invoice .tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+    const btn = event?.target || document.querySelector(`#page-invoice .tab[onclick*="'${tab}'"]`);
+    if (btn) btn.classList.add('active');
     renderInvoices();
 }
 
 function switchProductTab(type) {
     document.getElementById('productType').value = type;
     document.querySelectorAll('#page-products .tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+    const btn = event?.target || document.querySelector(`#page-products .tab[onclick*="'${type}'"]`);
+    if (btn) btn.classList.add('active');
     renderProducts();
 }
 
 function switchReportTab(tab) {
     window.reportTab = tab;
     document.querySelectorAll('#page-reports .tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+    const btn = event?.target || document.querySelector(`#page-reports .tab[onclick*="'${tab}'"]`);
+    if (btn) btn.classList.add('active');
     renderReports();
 }
 
@@ -1924,6 +2545,8 @@ function updateSettingsUI() {
     renderPaymentMethodsSettings();
     renderServicesSettings();
     renderInvoiceTypesSettings();
+    renderCabangSettings();
+    renderShortcutSettings();
 }
 
 function exportData() {
