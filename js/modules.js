@@ -40,11 +40,12 @@ function saveTransaction() {
     }
 
     const transactions = loadData(DB.transactions);
+    const isModal = modalCategories.includes(category);
     if (id) {
         const idx = transactions.findIndex(t => t.id === id);
-        if (idx >= 0) transactions[idx] = { ...transactions[idx], date, category, description: desc, amount, walletId };
+        if (idx >= 0) transactions[idx] = { ...transactions[idx], date, category, description: desc, amount, walletId, isModalKeluar: modalCategories.includes(category) };
     } else {
-        transactions.push({ id: generateId(), type, date, category, description: desc, amount, walletId, createdAt: Date.now() });
+        transactions.push({ id: generateId(), type, date, category, description: desc, amount, walletId, isModalKeluar: isModal, createdAt: Date.now() });
     }
 
     saveData(DB.transactions, transactions);
@@ -604,8 +605,7 @@ function openInvoiceModal(type) {
     document.getElementById('invoiceTotal').value = '0';
     document.getElementById('invoiceDP').value = '0';
     document.getElementById('invoiceRemaining').value = '0';
-    document.getElementById('invoiceModalKeluar').value = '0';
-    document.getElementById('invoiceStatus').value = 'Belum Lunas';
+    document.getElementById('invoiceStatus').value = 'DP';
     
     document.getElementById('printSpecs').style.display = 'none';
     document.getElementById('laptopSpecs').style.display = 'none';
@@ -709,6 +709,32 @@ function calculateInvoiceTotal() {
     const dp = parseFloat(document.getElementById('invoiceDP').value) || 0;
     document.getElementById('invoiceTotal').value = total;
     document.getElementById('invoiceRemaining').value = total - dp;
+    updateDPProgress();
+}
+
+function updateInvoiceRemaining() {
+    calculateInvoiceTotal();
+}
+
+function updateDPProgress() {
+    const total = parseFloat(document.getElementById('invoiceTotal').value) || 0;
+    const dp = parseFloat(document.getElementById('invoiceDP').value) || 0;
+    const container = document.getElementById('dpProgressContainer');
+    const fill = document.getElementById('dpProgressFill');
+    const label = document.getElementById('dpProgressLabel');
+    if (!container) return;
+    if (total > 0 && dp > 0 && dp < total) {
+        container.style.display = 'block';
+        const percent = Math.round((dp / total) * 100);
+        if (fill) fill.style.width = percent + '%';
+        if (label) label.textContent = 'DP ' + percent + '%';
+    } else if (total > 0 && dp >= total) {
+        container.style.display = 'block';
+        if (fill) fill.style.width = '100%';
+        if (label) label.textContent = 'Lunas 100%';
+    } else {
+        container.style.display = 'none';
+    }
 }
 
 function saveInvoice() {
@@ -720,7 +746,6 @@ function saveInvoice() {
     const customerAddress = document.getElementById('invoiceCustomerAddress').value;
     const total = parseFloat(document.getElementById('invoiceTotal').value) || 0;
     const dp = parseFloat(document.getElementById('invoiceDP').value) || 0;
-    const modalKeluar = parseFloat(document.getElementById('invoiceModalKeluar').value) || 0;
     const status = document.getElementById('invoiceStatus').value;
     const walletId = document.getElementById('invoiceWallet').value;
     
@@ -728,7 +753,7 @@ function saveInvoice() {
         alert('⚠️ Nama pelanggan dan total invoice wajib diisi!');
         return;
     }
-    if (!walletId && ((status === 'Lunas' || status === 'DP') || modalKeluar > 0)) {
+    if (!walletId && (status === 'Lunas' || status === 'DP')) {
         alert('⚠️ Pilih dompet tujuan untuk transaksi ini!');
         return;
     }
@@ -739,7 +764,7 @@ function saveInvoice() {
     
     let invoiceData = {
         type, customerId, customerName, customerPhone, customerAddress,
-        total, dp, modalKeluar, remaining: total - dp, status, walletId,
+        total, dp, modalKeluar: 0, remaining: total - dp, status, walletId,
         items: JSON.parse(JSON.stringify(invoiceItems)),
         note: document.getElementById('invoiceNote').value,
         date: new Date().toISOString(),
@@ -841,10 +866,6 @@ function saveInvoice() {
     // Pelunasan (hanya jika Lunas dan remaining > 0)
     if (status === 'Lunas' && inv.remaining > 0) {
         addInvoiceTrans('Pelunasan Invoice', `Pelunasan Invoice ${inv.number} - ${customerName}`, inv.remaining);
-    }
-    // Modal Keluar (sebagai expense, tidak tampil di slip)
-    if (modalKeluar > 0) {
-        addInvoiceTrans('Modal Keluar', `Modal Keluar ${inv.number} - ${customerName}`, modalKeluar, 'expense');
     }
     
     // Kurangi stok produk untuk invoice tipe umum yang pilih produk

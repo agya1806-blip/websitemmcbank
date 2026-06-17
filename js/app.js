@@ -64,7 +64,8 @@ const defaultSettings = {
 };
 
 const incomeCategories = ['Penjualan', 'Jasa', 'Pendapatan Lain', 'Transfer Masuk'];
-const expenseCategories = ['Pembelian', 'Operasional', 'Gaji', 'Pengeluaran Lain', 'Transfer Keluar'];
+const expenseCategories = ['Pembelian', 'Operasional', 'Gaji', 'Pengeluaran Lain', 'Transfer Keluar', 'Modal Produksi', 'Modal Operasional', 'Modal Marketing', 'Modal Gaji', 'Modal Transportasi', 'Modal Lainnya'];
+const modalCategories = ['Modal Produksi', 'Modal Operasional', 'Modal Marketing', 'Modal Gaji', 'Modal Transportasi', 'Modal Lainnya'];
 
 let currentUser = null;
 let currentTransactionType = 'income';
@@ -73,7 +74,7 @@ let invoiceItems = [];
 
 // ==================== BALANCE TOGGLE ====================
 
-let balanceHidden = false;
+let balanceHidden = true;
 
 // ==================== HELPERS: Payment Methods, Services, Invoice Types ====================
 
@@ -119,6 +120,11 @@ function toggleBalance() {
         el.textContent = formatRupiah(stats.totalBalance);
         if (eye) eye.textContent = 'visibility';
     }
+}
+
+function getDisplayBalance(value) {
+    if (balanceHidden) return 'Rp •••••••';
+    return formatRupiah(value);
 }
 
 // ==================== AUTHENTICATION ====================
@@ -1036,6 +1042,7 @@ function recalculateDashboard() {
         // Ringkasan Invoice
         paidInvoiceCount,
         unpaidInvoiceCount,
+        invoiceDPCount: unpaidInvoiceCount,
         totalInvoiceNominal,
         paidInvoiceNominal,
         unpaidInvoiceNominal
@@ -1051,46 +1058,53 @@ function recalculateAll() {
 
 function renderAll() {
     const stats = recalculateDashboard();
-    document.getElementById('totalBalance').textContent = formatRupiah(stats.totalBalance);
+    
+    // Balance with eye toggle
+    const totalEl = document.getElementById('totalBalance');
+    if (totalEl) {
+        if (balanceHidden) totalEl.textContent = 'Rp •••••••';
+        else totalEl.textContent = formatRupiah(stats.totalBalance);
+    }
+    
+    // Executive KPI Dashboard
+    const fillKPI = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = getDisplayBalance(val); };
+    fillKPI('dashInvoiceIncome', stats.invoiceIncome);
+    fillKPI('dashTotalExpense', stats.financeExpense);
+    fillKPI('dashModalOut', stats.totalModalOut);
+    fillKPI('dashNetProfit', stats.invoiceNet);
+    fillKPI('dashTotalBalance', stats.totalBalance);
+    document.getElementById('dashInvoiceActive') && (document.getElementById('dashInvoiceActive').textContent = stats.unpaidInvoiceCount + stats.paidInvoiceCount);
+    document.getElementById('dashInvoiceDP') && (document.getElementById('dashInvoiceDP').textContent = stats.invoiceDPCount || 0);
+    document.getElementById('dashInvoiceLunas') && (document.getElementById('dashInvoiceLunas').textContent = stats.paidInvoiceCount);
+    const elFNet = document.getElementById('dashFinanceNet');
+    if (elFNet) { elFNet.textContent = getDisplayBalance(stats.financeNet); elFNet.style.color = stats.financeNet >= 0 ? 'var(--success)' : 'var(--danger)'; }
     
     // Keuangan
     const elFI = document.getElementById('dashFinanceIncome');
-    if (elFI) elFI.textContent = formatRupiah(stats.financeIncome);
+    if (elFI) elFI.textContent = getDisplayBalance(stats.financeIncome);
     const elFE = document.getElementById('dashFinanceExpense');
-    if (elFE) elFE.textContent = formatRupiah(stats.financeExpense);
-    const elFN = document.getElementById('dashFinanceNet');
-    if (elFN) { elFN.textContent = formatRupiah(stats.financeNet); elFN.style.color = stats.financeNet >= 0 ? 'var(--success)' : 'var(--danger)'; }
     
-    // Invoice
-    document.getElementById('dashInvoiceIncome').textContent = formatRupiah(stats.invoiceIncome);
-    document.getElementById('dashModalOut').textContent = formatRupiah(stats.totalModalOut);
+    // Invoice summary
+    document.getElementById('dashInvoiceIncome') && (document.getElementById('dashInvoiceIncome').textContent = getDisplayBalance(stats.invoiceIncome));
+    document.getElementById('dashModalOut') && (document.getElementById('dashModalOut').textContent = getDisplayBalance(stats.totalModalOut));
     const elIN = document.getElementById('dashInvoiceNet');
-    if (elIN) { elIN.textContent = formatRupiah(stats.invoiceNet); elIN.style.color = stats.invoiceNet >= 0 ? 'var(--success)' : 'var(--danger)'; }
-    
-    // Hutang & Piutang
-    const elRP = document.getElementById('dashReceivablePaid');
-    if (elRP) elRP.textContent = formatRupiah(stats.receivablePaid);
-    const elDP = document.getElementById('dashDebtPaid');
-    if (elDP) elDP.textContent = formatRupiah(stats.debtPaid);
-    const elDN = document.getElementById('dashDebtNet');
-    if (elDN) { elDN.textContent = formatRupiah(stats.debtNet); elDN.style.color = stats.debtNet >= 0 ? 'var(--success)' : 'var(--danger)'; }
+    if (elIN) { elIN.textContent = getDisplayBalance(stats.invoiceNet); elIN.style.color = stats.invoiceNet >= 0 ? 'var(--success)' : 'var(--danger)'; }
     
     // Bulan Ini
-    document.getElementById('monthInvoiceIncome').textContent = formatRupiah(stats.monthInvoiceIncome);
-    document.getElementById('monthModalOut').textContent = formatRupiah(stats.monthModalOut);
+    const fillMonth = (id, val, isCurrency = true) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (isCurrency) el.textContent = getDisplayBalance(val);
+        else el.textContent = val;
+    };
+    fillMonth('monthInvoiceIncome', stats.monthInvoiceIncome);
+    fillMonth('monthModalOut', stats.monthModalOut);
     const elMP = document.getElementById('monthProfit');
-    if (elMP) { elMP.textContent = formatRupiah(stats.monthInvoiceNet); elMP.style.color = stats.monthInvoiceNet >= 0 ? 'var(--success)' : 'var(--danger)'; }
-    const elMFI = document.getElementById('monthFinanceIncome');
-    if (elMFI) elMFI.textContent = formatRupiah(stats.monthFinanceIncome);
-    const elMFE = document.getElementById('monthFinanceExpense');
-    if (elMFE) elMFE.textContent = formatRupiah(stats.monthFinanceExpense);
+    if (elMP) { elMP.textContent = getDisplayBalance(stats.monthInvoiceNet); elMP.style.color = stats.monthInvoiceNet >= 0 ? 'var(--success)' : 'var(--danger)'; }
+    fillMonth('monthFinanceIncome', stats.monthFinanceIncome);
+    fillMonth('monthFinanceExpense', stats.monthFinanceExpense);
     
-    // Ringkasan Invoice
-    document.getElementById('invoicePaidTotal').textContent = formatRupiah(stats.paidInvoiceNominal);
-    document.getElementById('invoiceUnpaidTotal').textContent = formatRupiah(stats.unpaidInvoiceNominal);
-    document.getElementById('invoicePaidCount').textContent = stats.paidInvoiceCount;
-    document.getElementById('invoiceUnpaidCount').textContent = stats.unpaidInvoiceCount;
-    
+    renderInsights(stats);
     renderChart();
     renderActivities();
     renderWallets();
@@ -1103,6 +1117,104 @@ function renderAll() {
     renderRecentInvoices();
     renderReports();
     updateWalletSelects();
+}
+
+function renderInsights(stats) {
+    const container = document.getElementById('businessInsights');
+    if (!container) return;
+    
+    const insights = [];
+    const invoices = loadData(DB.invoices);
+    const transactions = loadData(DB.transactions);
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    
+    // Last month comparison
+    const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+    const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+    
+    let lastMonthExpense = 0;
+    transactions.forEach(t => {
+        const td = new Date(t.date);
+        if (td.getMonth() === lastMonth && td.getFullYear() === lastMonthYear && t.type === 'expense') {
+            lastMonthExpense += parseFloat(t.amount) || 0;
+        }
+    });
+    
+    if (lastMonthExpense > 0 && stats.monthFinanceExpense > 0) {
+        const change = ((stats.monthFinanceExpense - lastMonthExpense) / lastMonthExpense * 100).toFixed(0);
+        if (change > 0) {
+            insights.push(`Pengeluaran bulan ini meningkat ${change}% dibanding bulan lalu.`);
+        } else if (change < 0) {
+            insights.push(`Pengeluaran bulan ini turun ${Math.abs(change)}% dibanding bulan lalu.`);
+        }
+    }
+    
+    // Top invoice type
+    const typeCount = {};
+    invoices.forEach(inv => {
+        if (inv.status === 'Lunas') {
+            typeCount[inv.type] = (typeCount[inv.type] || 0) + parseFloat(inv.total || 0);
+        }
+    });
+    const topType = Object.entries(typeCount).sort((a, b) => b[1] - a[1])[0];
+    if (topType) {
+        const typeLabel = { print: 'Percetakan', laptop: 'Laptop', handphone: 'Handphone', tiktok: 'TikTok', umum: 'Umum' };
+        insights.push(`${typeLabel[topType[0]] || topType[0]} menjadi sumber pemasukan terbesar.`);
+    }
+    
+    // Consecutive profit growth
+    const monthlyProfits = [];
+    for (let m = 5; m >= 0; m--) {
+        let month = thisMonth - m;
+        let year = thisYear;
+        if (month < 0) { month += 12; year -= 1; }
+        let inc = 0, exp = 0;
+        transactions.forEach(t => {
+            const td = new Date(t.date);
+            if (td.getMonth() === month && td.getFullYear() === year) {
+                const amt = parseFloat(t.amount) || 0;
+                if (t.type === 'income' && !t.invoiceId) inc += amt;
+                else if (t.type === 'expense') exp += amt;
+            }
+        });
+        invoices.forEach(inv => {
+            const id = new Date(inv.date);
+            if (id.getMonth() === month && id.getFullYear() === year && inv.status === 'Lunas') {
+                inc += parseFloat(inv.total) || 0;
+            }
+        });
+        monthlyProfits.push(inc - exp);
+    }
+    
+    let growthCount = 0;
+    for (let i = monthlyProfits.length - 1; i > 0; i--) {
+        if (monthlyProfits[i] > monthlyProfits[i-1]) growthCount++;
+        else break;
+    }
+    if (growthCount >= 2) {
+        insights.push(`Laba bersih meningkat selama ${growthCount} bulan berturut-turut.`);
+    }
+    
+    // Health check
+    if (stats.invoiceNet > 0 && stats.totalBalance > 0) {
+        insights.push(`Performa bisnis dalam kondisi sehat.`);
+    } else if (stats.invoiceNet <= 0) {
+        insights.push(`Evaluasi pengeluaran diperlukan. Laba bersih belum positif.`);
+    }
+    
+    if (insights.length === 0) {
+        insights.push('Belum cukup data untuk analisis. Tambah transaksi dan invoice untuk insight.');
+    }
+    
+    const icons = ['lightbulb', 'trending_up', 'bar_chart', 'health_and_safety', 'analytics'];
+    container.innerHTML = insights.slice(0, 4).map((text, i) => `
+        <div class="insight-item">
+            <span class="m-icon">${icons[i % icons.length]}</span>
+            <span>${text}</span>
+        </div>
+    `).join('');
 }
 
 function renderChart() {
@@ -1194,6 +1306,8 @@ function renderTransactions() {
     const walletMap = Object.fromEntries(wallets.map(w => [w.id, w]));
     const incomeList = transactions.filter(t => t.type === 'income');
     const expenseList = transactions.filter(t => t.type === 'expense' && !t.isModalKeluar);
+    const modalList = transactions.filter(t => t.type === 'expense' && t.isModalKeluar);
+    const transferList = transactions.filter(t => t.type === 'transfer_in' || t.type === 'transfer_out');
     
     const renderList = (list, containerId) => {
         const container = document.getElementById(containerId);
@@ -1201,37 +1315,50 @@ function renderTransactions() {
             container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Belum ada transaksi</p></div>';
             return;
         }
-        container.innerHTML = list.map(t => `
+        container.innerHTML = list.map(t => {
+            const isIncome = t.type === 'income' || t.type === 'transfer_in';
+            const isExpense = t.type === 'expense' || t.type === 'transfer_out';
+            return `
             <div class="card">
                 <div class="list-item" style="padding-top:0">
-                    <div class="list-icon" style="background:${t.type==='income'?'#d1fae5':'#fee2e2'}">${t.type==='income'?'📥':'📤'}</div>
+                    <div class="list-icon" style="background:${isIncome?'#d1fae5':'#fee2e2'}">${isIncome?'📥':'📤'}</div>
                     <div class="list-content">
                         <div class="list-title">${t.description}</div>
                         <div class="list-subtitle">${formatDate(t.date)} • ${t.category} • ${walletMap[t.walletId]?.name||'-'}</div>
                     </div>
-                    <div class="list-amount ${t.type}">${t.type==='income'?'+':'-'} ${formatRupiah(t.amount)}</div>
+                    <div class="list-amount ${t.type}">${isIncome?'+':'-'} ${formatRupiah(t.amount)}</div>
                 </div>
                 <div style="display:flex;gap:8px;padding:0 0 12px;margin-top:8px">
                     <button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="editTransaction('${t.id}')">Edit</button>
                     <button class="btn btn-danger" style="padding:6px;font-size:12px;flex:1" onclick="deleteTransaction('${t.id}')">Hapus</button>
                 </div>
-            </div>`).join('');
+            </div>`;
+        }).join('');
     };
     renderList(incomeList, 'incomeList');
     renderList(expenseList, 'expenseList');
+    renderList(modalList, 'modalList');
+    renderList(transferList, 'transferList');
 }
 
 function renderCustomers() {
     const search = document.getElementById('customerSearch')?.value.toLowerCase() || '';
-    const customers = loadData(DB.customers)
-        .filter(c => !search || c.name.toLowerCase().includes(search) || c.phone.includes(search))
-        .sort((a, b) => a.name.localeCompare(b.name));
+    const sortBy = document.getElementById('customerSort')?.value || 'name';
+    let customers = loadData(DB.customers)
+        .filter(c => !search || c.name.toLowerCase().includes(search) || c.phone.includes(search));
+    if (sortBy === 'name') customers.sort((a, b) => a.name.localeCompare(b.name));
+    else customers.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     const container = document.getElementById('customerList');
     if (customers.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><p>Belum ada pelanggan</p></div>';
         return;
     }
-    container.innerHTML = customers.map(c => `
+    const invoices = loadData(DB.invoices);
+    container.innerHTML = customers.map(c => {
+        const custInvoices = invoices.filter(i => i.customerId === c.id);
+        const totalInv = custInvoices.length;
+        const totalSpent = custInvoices.reduce((s, i) => s + parseFloat(i.total || 0), 0);
+        return `
         <div class="card">
             <div class="list-item" style="padding-top:0">
                 <div class="list-icon" style="background:#dbeafe">👤</div>
@@ -1239,12 +1366,25 @@ function renderCustomers() {
                     <div class="list-title">${c.name}</div>
                     <div class="list-subtitle">${c.phone||'-'} • ${c.address||'-'}</div>
                 </div>
+                <div style="text-align:right">
+                    <div style="font-size:13px;font-weight:700">${totalInv} inv</div>
+                    <div style="font-size:11px;color:var(--text-secondary)">${formatRupiah(totalSpent)}</div>
+                </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:8px">
+                <button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="viewCustomerInvoices('${c.id}')">📄 Invoice</button>
                 <button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="editCustomer('${c.id}')">Edit</button>
                 <button class="btn btn-danger" style="padding:6px;font-size:12px;flex:1" onclick="deleteCustomer('${c.id}')">Hapus</button>
             </div>
-        </div>`).join('');
+        </div>`; }).join('');
+}
+
+function viewCustomerInvoices(customerId) {
+    const customer = loadData(DB.customers).find(c => c.id === customerId);
+    if (!customer) return;
+    document.getElementById('invoiceSearch').value = customer.name;
+    showPage('invoice');
+    renderInvoices();
 }
 
 function renderProducts() {
@@ -1355,14 +1495,20 @@ function renderRecentInvoices() {
 function renderInvoices() {
     const tab = window.invoiceTab || 'all';
     const search = document.getElementById('invoiceSearch')?.value?.toLowerCase() || '';
-    let invoices = loadData(DB.invoices).sort((a, b) => new Date(b.date) - new Date(a.date));
+    let invoices = loadData(DB.invoices);
     if (tab === 'paid') invoices = invoices.filter(i => i.status === 'Lunas');
-    else if (tab === 'unpaid') invoices = invoices.filter(i => i.status !== 'Lunas');
+    else if (tab === 'dp') invoices = invoices.filter(i => i.status === 'DP');
     if (search) invoices = invoices.filter(i => 
         (i.number || '').toLowerCase().includes(search) ||
         (i.customerName || '').toLowerCase().includes(search) ||
         (i.type || '').toLowerCase().includes(search)
     );
+    
+    const sortBy = document.getElementById('invoiceSort')?.value || 'date';
+    if (sortBy === 'date') invoices.sort((a, b) => new Date(b.date) - new Date(a.date));
+    else if (sortBy === 'amount') invoices.sort((a, b) => parseFloat(b.total) - parseFloat(a.total));
+    else if (sortBy === 'status') invoices.sort((a, b) => a.status.localeCompare(b.status));
+    
     const container = document.getElementById('invoiceList');
     if (invoices.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon">📄</div><p>Belum ada invoice</p></div>';
@@ -1373,7 +1519,9 @@ function renderInvoices() {
     const typeIcon = {}; const typeLabel = {};
     invTypes.forEach(t => { typeIcon[t.id] = t.icon || 'description'; typeLabel[t.id] = t.label; });
     
-    container.innerHTML = invoices.map(inv => `
+    container.innerHTML = invoices.map(inv => {
+        const dpPercent = inv.total > 0 ? Math.min(100, Math.round((parseFloat(inv.dp||0) / inv.total) * 100)) : 0;
+        return `
         <div class="card">
             <div class="list-item" style="padding-top:0;cursor:pointer" onclick="showInvoiceDetail('${inv.id}')">
                 <div class="list-icon" style="background:#e0e7ff;font-size:20px"><span class="m-icon">${typeIcon[inv.type] || 'description'}</span></div>
@@ -1383,15 +1531,25 @@ function renderInvoices() {
                 </div>
                 <div style="text-align:right">
                     <div class="list-amount">${formatRupiah(inv.total)}</div>
-                    <span class="badge ${inv.status==='Lunas'?'badge-success':inv.status==='DP'?'badge-warning':'badge-danger'}">${inv.status}</span>
+                    <span class="badge ${inv.status==='Lunas'?'badge-success':'badge-warning'}">${inv.status}</span>
                 </div>
             </div>
-            ${inv.status!=='Lunas'?`
+            ${inv.status === 'DP' ? `
+            <div style="margin:8px 0 4px">
+                <div class="progress-bar-track" style="height:6px">
+                    <div class="progress-bar-fill" style="width:${dpPercent}%"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:2px">
+                    <span>DP ${dpPercent}%</span>
+                    <span>Rp ${formatRupiah(inv.dp||0)} / ${formatRupiah(inv.total)}</span>
+                </div>
+            </div>
             <div style="display:flex;gap:8px;margin-top:8px">
                 <button class="btn btn-success" style="padding:6px;font-size:12px;flex:1" onclick="payInvoice('${inv.id}')">💰 Bayar</button>
                 <button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="event.stopPropagation();showInvoiceDetail('${inv.id}')">📄 Detail</button>
-            </div>`:''}
-        </div>`).join('');
+            </div>` : ''}
+        </div>`;
+    }).join('');
 }
 
 function renderReports() {
@@ -1537,11 +1695,8 @@ function showPage(pageName) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const page = document.getElementById('page-' + pageName);
     if (page) page.classList.add('active');
-    const navMap = { 'dashboard': 0, 'wallet': 1, 'invoice': 2, 'finance': 3, 'products': 4, 'reports': 5, 'customer': 3, 'debt': 3, 'receivable': 3, 'settings': 5, 'about': -1 };
-    const navItems = document.querySelectorAll('.nav-item');
-    if (navMap[pageName] !== undefined && navItems[navMap[pageName]]) {
-        navItems[navMap[pageName]].classList.add('active');
-    }
+    const navItem = document.querySelector(`.nav-item[data-page="${pageName}"]`);
+    if (navItem) navItem.classList.add('active');
     document.getElementById('mainHeader').style.display = pageName === 'settings' ? 'none' : 'block';
     renderAll();
     window.scrollTo(0, 0);
@@ -1553,6 +1708,8 @@ function switchFinanceTab(type) {
     event.target.classList.add('active');
     document.getElementById('finance-income').style.display = type === 'income' ? 'block' : 'none';
     document.getElementById('finance-expense').style.display = type === 'expense' ? 'block' : 'none';
+    document.getElementById('finance-modal').style.display = type === 'modal' ? 'block' : 'none';
+    document.getElementById('finance-transfer').style.display = type === 'transfer' ? 'block' : 'none';
 }
 
 function switchInvoiceTab(tab) {
@@ -1997,11 +2154,21 @@ function showInvoiceDetail(id) {
             </div>
             <div class="invoice-total">
                 <div class="invoice-total-row"><span>Total</span><span>${formatRupiah(inv.total)}</span></div>
-                <div class="invoice-total-row"><span>DP</span><span>${formatRupiah(inv.dp)}</span></div>
+                <div class="invoice-total-row"><span>DP Dibayar</span><span>${formatRupiah(inv.dp)}</span></div>
                 <div class="invoice-total-row final"><span>Sisa</span><span>${formatRupiah(inv.remaining)}</span></div>
             </div>
+            ${inv.status === 'DP' ? `
+            <div style="margin-top:12px">
+                <div class="progress-bar-track" style="height:8px">
+                    <div class="progress-bar-fill" style="width:${inv.total > 0 ? Math.round((inv.dp||0)/inv.total*100) : 0}%"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-top:4px">
+                    <span>DP ${inv.total > 0 ? Math.round((inv.dp||0)/inv.total*100) : 0}%</span>
+                    <span>${formatRupiah(inv.dp||0)} / ${formatRupiah(inv.total)}</span>
+                </div>
+            </div>` : ''}
             <div style="margin-top:12px;text-align:center">
-                <span class="badge ${inv.status==='Lunas'?'badge-success':inv.status==='DP'?'badge-warning':'badge-danger'}" style="font-size:13px;padding:6px 16px">${inv.status}</span>
+                <span class="badge ${inv.status==='Lunas'?'badge-success':'badge-warning'}" style="font-size:13px;padding:6px 16px">${inv.status}${inv.status==='DP' ? ` (${inv.total > 0 ? Math.round((inv.dp||0)/inv.total*100) : 0}%)` : ''}</span>
             </div>
             ${inv.note ? `<div style="margin-top:12px;padding:10px;background:#f8fafc;border-radius:8px;font-size:12px"><strong>Catatan:</strong> ${inv.note}</div>` : ''}
             <div style="margin-top:16px;padding:12px;background:#f0f9ff;border-radius:8px;text-align:center;font-size:11px;color:#0f172a">
@@ -2177,7 +2344,6 @@ function editCurrentInvoice() {
     document.getElementById('invoiceNote').value = inv.note || '';
     document.getElementById('invoiceTotal').value = inv.total;
     document.getElementById('invoiceDP').value = inv.dp;
-    document.getElementById('invoiceModalKeluar').value = inv.modalKeluar || 0;
     document.getElementById('invoiceRemaining').value = inv.remaining;
     document.getElementById('invoiceStatus').value = inv.status;
     document.getElementById('invoiceWallet').value = inv.walletId || '';

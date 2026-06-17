@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no">
     <meta name="HandheldFriendly" content="true">
-    <title>MUGHIS BANK - Keuangan, Pendataan, & Invoicei</title>
+    <title>MUGHIS BANK - Keuangan, Pendataan, & Invoice</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
@@ -90,98 +90,98 @@
     <div class="app" id="mainApp" style="display:none">
         <div class="header" id="mainHeader">
             <div class="header-top">
-                <div class="logo-text"><img id="headerLogo" src="icons/icon-192.png" alt="MB" style="height:28px;width:28px;border-radius:6px;object-fit:cover;vertical-align:middle"> MUGHIS BANK</div>
-                <div class="header-actions">
-                    <button class="icon-btn" onclick="showPage('about')"><span class="m-icon">info</span></button>
-                    <button class="icon-btn" onclick="showPage('settings')"><span class="m-icon">settings</span></button>
-                    <button class="icon-btn" onclick="logout()"><span class="m-icon">logout</span></button>
+                <div class="logo-text">
+                <img id="headerLogo" src="icons/icon-192.png" alt="MB" style="height:28px;width:28px;border-radius:6px;object-fit:cover;vertical-align:middle">
+                <div class="logo-title-group">
+                    <span class="logo-title">MUGHIS BANK</span>
+                    <span class="logo-subtitle">Keuangan, Pendataan, & Invoice</span>
                 </div>
             </div>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="showPage('about')"><span class="m-icon">info</span></button>
+                <button class="icon-btn" onclick="showPage('settings')"><span class="m-icon">settings</span></button>
+                <button class="icon-btn" onclick="logout()"><span class="m-icon">logout</span></button>
+            </div>
+            </div>
             <div class="balance-card">
-                <div class="balance-label">Total Saldo <span id="balanceEye" style="cursor:pointer;user-select:none" onclick="toggleBalance()"><span class="m-icon" style="font-size:18px;vertical-align:middle">visibility</span></span></div>
-                <div class="balance-amount" id="totalBalance">Rp 0</div>
+                <div class="balance-label">Total Saldo <span id="balanceEye" style="cursor:pointer;user-select:none" onclick="toggleBalance()"><span class="m-icon" style="font-size:18px;vertical-align:middle">visibility_off</span></span></div>
+                <div class="balance-amount" id="totalBalance">Rp •••••••</div>
             </div>
         </div>
 
         <div class="page active" id="page-dashboard">
-            <!-- Ringkasan Keuangan -->
-            <div class="card">
-                <div class="card-title">💵 Ringkasan Keuangan</div>
-                <div class="stats-grid">
-                    <div class="stat-card" onclick="showPage('finance')">
-                        <div class="stat-icon income">📥</div>
-                        <div class="stat-label">Pemasukan</div>
-                        <div class="stat-value income" id="dashFinanceIncome">Rp 0</div>
-                    </div>
-                    <div class="stat-card" onclick="showPage('finance')">
-                        <div class="stat-icon expense">📤</div>
-                        <div class="stat-label">Pengeluaran</div>
-                        <div class="stat-value expense" id="dashFinanceExpense">Rp 0</div>
-                    </div>
-                    <div class="stat-card" onclick="showPage('finance')">
-                        <div class="stat-icon warning">💰</div>
-                        <div class="stat-label">Laba Bersih</div>
-                        <div class="stat-value warning" id="dashFinanceNet">Rp 0</div>
-                    </div>
+            <!-- Executive KPI Dashboard -->
+            <div class="kpi-grid">
+                <div class="kpi-card kpi-income-other" onclick="showPage('finance')">
+                    <div class="kpi-icon"><span class="m-icon">payments</span></div>
+                    <div class="kpi-label">Pemasukan Lain</div>
+                    <div class="kpi-value" id="dashFinanceIncome">Rp 0</div>
+                </div>
+                <div class="kpi-card kpi-income" onclick="showPage('invoice')">
+                    <div class="kpi-icon"><span class="m-icon">trending_up</span></div>
+                    <div class="kpi-label">Pemasukan Invoice</div>
+                    <div class="kpi-value" id="dashInvoiceIncome">Rp 0</div>
+                </div>
+                <div class="kpi-card kpi-expense" onclick="showPage('finance')">
+                    <div class="kpi-icon"><span class="m-icon">trending_down</span></div>
+                    <div class="kpi-label">Pengeluaran</div>
+                    <div class="kpi-value" id="dashTotalExpense">Rp 0</div>
+                </div>
+                <div class="kpi-card kpi-modal" onclick="showPage('finance')">
+                    <div class="kpi-icon"><span class="m-icon">money_off</span></div>
+                    <div class="kpi-label">Modal Keluar</div>
+                    <div class="kpi-value" id="dashModalOut">Rp 0</div>
+                </div>
+                <div class="kpi-card kpi-profit" onclick="showPage('reports')">
+                    <div class="kpi-icon"><span class="m-icon">account_balance</span></div>
+                    <div class="kpi-label">Laba Bersih (Invoice)</div>
+                    <div class="kpi-value" id="dashNetProfit">Rp 0</div>
+                </div>
+                <div class="kpi-card kpi-profit-other" onclick="showPage('reports')">
+                    <div class="kpi-icon"><span class="m-icon">account_balance_wallet</span></div>
+                    <div class="kpi-label">Laba Bersih (Lain)</div>
+                    <div class="kpi-value" id="dashFinanceNet">Rp 0</div>
+                </div>
+                <div class="kpi-card kpi-cash" onclick="showPage('wallet')">
+                    <div class="kpi-icon"><span class="m-icon">savings</span></div>
+                    <div class="kpi-label">Saldo Kas</div>
+                    <div class="kpi-value" id="dashTotalBalance">Rp 0</div>
+                </div>
+                <div class="kpi-card kpi-active" onclick="showPage('invoice')">
+                    <div class="kpi-icon"><span class="m-icon">receipt_long</span></div>
+                    <div class="kpi-label">Invoice Aktif</div>
+                    <div class="kpi-value" id="dashInvoiceActive">0</div>
+                </div>
+                <div class="kpi-card kpi-dp" onclick="showPage('invoice')">
+                    <div class="kpi-icon"><span class="m-icon">pending_actions</span></div>
+                    <div class="kpi-label">Invoice DP</div>
+                    <div class="kpi-value" id="dashInvoiceDP">0</div>
+                </div>
+                <div class="kpi-card kpi-lunas" onclick="showPage('invoice')">
+                    <div class="kpi-icon"><span class="m-icon">check_circle</span></div>
+                    <div class="kpi-label">Invoice Lunas</div>
+                    <div class="kpi-value" id="dashInvoiceLunas">0</div>
                 </div>
             </div>
 
-            <!-- Ringkasan Invoice -->
-            <div class="card">
-                <div class="card-title">📄 Ringkasan Invoice</div>
-                <div class="stats-grid">
-                    <div class="stat-card" onclick="showPage('invoice')">
-                        <div class="stat-icon income">📥</div>
-                        <div class="stat-label">Pemasukan</div>
-                        <div class="stat-value income" id="dashInvoiceIncome">Rp 0</div>
-                    </div>
-                    <div class="stat-card" onclick="showPage('finance')">
-                        <div class="stat-icon expense">📤</div>
-                        <div class="stat-label">Modal Keluar</div>
-                        <div class="stat-value expense" id="dashModalOut">Rp 0</div>
-                    </div>
-                    <div class="stat-card" onclick="showPage('invoice')">
-                        <div class="stat-icon warning">💰</div>
-                        <div class="stat-label">Laba Bersih</div>
-                        <div class="stat-value warning" id="dashInvoiceNet">Rp 0</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Ringkasan Hutang & Piutang -->
-            <div class="card">
-                <div class="card-title">💳 Ringkasan Hutang & Piutang</div>
-                <div class="stats-grid">
-                    <div class="stat-card" onclick="showPage('receivable')">
-                        <div class="stat-icon receivable">💰</div>
-                        <div class="stat-label">Pemasukan Piutang</div>
-                        <div class="stat-value receivable" id="dashReceivablePaid">Rp 0</div>
-                    </div>
-                    <div class="stat-card" onclick="showPage('debt')">
-                        <div class="stat-icon debt">💳</div>
-                        <div class="stat-label">Pengeluaran Hutang</div>
-                        <div class="stat-value debt" id="dashDebtPaid">Rp 0</div>
-                    </div>
-                    <div class="stat-card" onclick="showPage('debt')">
-                        <div class="stat-icon warning">⚖️</div>
-                        <div class="stat-label">Laba Bersih</div>
-                        <div class="stat-value warning" id="dashDebtNet">Rp 0</div>
-                    </div>
-                </div>
+            <!-- Insight Bisnis -->
+            <div class="card" id="insightCard">
+                <div class="card-title"><span class="m-icon" style="font-size:16px">insights</span> Insight Bisnis</div>
+                <div id="businessInsights" class="insight-container"></div>
             </div>
 
             <!-- Menu Cepat -->
             <div class="card">
                 <div class="card-title">⚡ Menu Cepat</div>
                 <div class="menu-grid">
-                    <div class="menu-item" onclick="showPage('finance')"><div class="menu-icon">💵</div><div class="menu-label">Keuangan</div></div>
-                    <div class="menu-item" onclick="showPage('wallet')"><div class="menu-icon">💳</div><div class="menu-label">Dompet</div></div>
-                    <div class="menu-item" onclick="showPage('invoice')"><div class="menu-icon">📄</div><div class="menu-label">Invoice</div></div>
-                    <div class="menu-item" onclick="showPage('customer')"><div class="menu-icon">👥</div><div class="menu-label">Pelanggan</div></div>
-                    <div class="menu-item" onclick="showPage('products')"><div class="menu-icon">📦</div><div class="menu-label">Produk</div></div>
-                    <div class="menu-item" onclick="showPage('debt')"><div class="menu-icon">💳</div><div class="menu-label">Hutang</div></div>
-                    <div class="menu-item" onclick="showPage('receivable')"><div class="menu-icon">💰</div><div class="menu-label">Piutang</div></div>
-                    <div class="menu-item" onclick="showPage('reports')"><div class="menu-icon">📊</div><div class="menu-label">Laporan</div></div>
+                    <div class="menu-item" onclick="showPage('finance')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">account_balance</span></div><div class="menu-label">Keuangan</div></div>
+                    <div class="menu-item" onclick="showPage('wallet')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">credit_card</span></div><div class="menu-label">Dompet</div></div>
+                    <div class="menu-item" onclick="showPage('invoice')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">receipt</span></div><div class="menu-label">Invoice</div></div>
+                    <div class="menu-item" onclick="showPage('customer')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">people</span></div><div class="menu-label">Pelanggan</div></div>
+                    <div class="menu-item" onclick="showPage('products')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">inventory_2</span></div><div class="menu-label">Produk</div></div>
+                    <div class="menu-item" onclick="showPage('debt')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">account_balance_wallet</span></div><div class="menu-label">Hutang</div></div>
+                    <div class="menu-item" onclick="showPage('receivable')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">currency_exchange</span></div><div class="menu-label">Piutang</div></div>
+                    <div class="menu-item" onclick="showPage('reports')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">bar_chart</span></div><div class="menu-label">Laporan</div></div>
                 </div>
             </div>
 
@@ -195,18 +195,9 @@
                 <div class="report-item"><span class="report-label">Pengeluaran Keuangan</span><span class="report-value negative" id="monthFinanceExpense">Rp 0</span></div>
             </div>
 
-            <!-- Ringkasan Status Invoice -->
-            <div class="card">
-                <div class="card-title">📋 Ringkasan Status Invoice</div>
-                <div class="report-item"><span class="report-label">Total Nominal Lunas</span><span class="report-value positive" id="invoicePaidTotal">Rp 0</span></div>
-                <div class="report-item"><span class="report-label">Total Nominal Belum Lunas</span><span class="report-value negative" id="invoiceUnpaidTotal">Rp 0</span></div>
-                <div class="report-item"><span class="report-label">Jumlah Invoice Lunas</span><span class="report-value positive" id="invoicePaidCount">0</span></div>
-                <div class="report-item"><span class="report-label">Jumlah Invoice Belum Lunas</span><span class="report-value negative" id="invoiceUnpaidCount">0</span></div>
-            </div>
-
             <!-- Grafik -->
             <div class="card">
-                <div class="card-title">📈 Grafik Keuangan 7 Hari</div>
+                <div class="card-title"><span class="m-icon" style="font-size:16px">timeline</span> Grafik Keuangan 7 Hari</div>
                 <div class="chart-container" id="financeChart"></div>
             </div>
 
@@ -216,7 +207,7 @@
                 <div id="recentInvoices"></div>
             </div>
 
-            <!-- Aktivitas -->
+            <!-- Activity Timeline -->
             <div class="card">
                 <div class="card-title">🕐 Aktivitas Terbaru</div>
                 <div id="recentActivity"></div>
@@ -228,9 +219,13 @@
             <div class="tabs">
                 <button class="tab active" onclick="switchFinanceTab('income')">Pemasukan</button>
                 <button class="tab" onclick="switchFinanceTab('expense')">Pengeluaran</button>
+                <button class="tab" onclick="switchFinanceTab('modal')">Modal</button>
+                <button class="tab" onclick="switchFinanceTab('transfer')">Transfer</button>
             </div>
             <div id="finance-income"><div id="incomeList"></div></div>
             <div id="finance-expense" style="display:none;"><div id="expenseList"></div></div>
+            <div id="finance-modal" style="display:none;"><div id="modalList"></div></div>
+            <div id="finance-transfer" style="display:none;"><div id="transferList"></div></div>
             <button class="fab" onclick="openTransactionModal()">+</button>
         </div>
 
@@ -243,12 +238,19 @@
         <div class="page" id="page-invoice">
             <div class="tabs">
                 <button class="tab active" onclick="switchInvoiceTab('all')">Semua</button>
-                <button class="tab" onclick="switchInvoiceTab('unpaid')">Belum Lunas</button>
+                <button class="tab" onclick="switchInvoiceTab('dp')">DP</button>
                 <button class="tab" onclick="switchInvoiceTab('paid')">Lunas</button>
             </div>
             <div class="search-bar">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" id="invoiceSearch" placeholder="Cari invoice..." oninput="renderInvoices()">
+            </div>
+            <div style="display:flex;gap:8px;margin:0 16px 12px">
+                <select class="form-select" id="invoiceSort" onchange="renderInvoices()" style="flex:1;min-height:40px;font-size:13px;padding:8px 12px">
+                    <option value="date">📅 Urut: Tanggal</option>
+                    <option value="amount">💰 Urut: Nominal</option>
+                    <option value="status">📊 Urut: Status</option>
+                </select>
             </div>
             <div id="invoiceList"></div>
             <button class="fab" onclick="openInvoiceTypeModal()">+</button>
@@ -258,6 +260,12 @@
             <div class="search-bar">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" id="customerSearch" placeholder="Cari pelanggan..." oninput="renderCustomers()">
+            </div>
+            <div style="display:flex;gap:8px;margin:0 16px 12px">
+                <select class="form-select" id="customerSort" onchange="renderCustomers()" style="flex:1;min-height:40px;font-size:13px;padding:8px 12px">
+                    <option value="name">👤 Urut: Nama</option>
+                    <option value="date">📅 Urut: Tanggal</option>
+                </select>
             </div>
             <div id="customerList"></div>
             <button class="fab" onclick="openCustomerModal()">+</button>
@@ -413,61 +421,76 @@
         </div>
 
         <div class="page" id="page-about">
+            <div class="about-hero">
+                <div class="about-logo"><img src="icons/icon-192.png" alt="MB" style="width:100%;height:100%;object-fit:cover;border-radius:20px"></div>
+                <h2 class="about-title">MUGHIS BANK</h2>
+                <p class="about-subtitle">Sistem Manajemen Bisnis All-in-One</p>
+            </div>
             <div class="card">
-                <div class="card-title" style="border:none"><span class="m-icon" style="font-size:20px">info</span> Tentang Mughis Bank</div>
-                <div style="padding:8px 0;line-height:1.8;font-size:13px;color:var(--text)">
-                    <p style="margin-bottom:16px"><strong>MUGHIS BANK</strong> adalah aplikasi manajemen keuangan & bisnis untuk UMKM, khususnya usaha percetakan, laptop, dan jasa. Dibuat untuk menggantikan pembukuan manual dengan sistem digital yang mudah dipakai di HP.</p>
-                    
-                    <div style="background:var(--surface-2);border-radius:12px;padding:16px;margin-bottom:16px">
-                        <div style="font-weight:700;margin-bottom:12px;font-size:14px">📌 Fitur Utama:</div>
-                        <div style="display:grid;gap:10px">
-                            <div><span class="m-icon" style="font-size:18px;color:var(--gold)">account_balance_wallet</span> <strong>Manajemen Dompet</strong> — Kelola saldo SeaBank, BSI, DANA, ShopeePay, Tunai</div>
-                            <div><span class="m-icon" style="font-size:18px;color:var(--gold)">receipt_long</span> <strong>Invoice & Penjualan</strong> — Buat invoice percetakan, laptop, HP, affiliate TikTok, dan umum</div>
-                            <div><span class="m-icon" style="font-size:18px;color:var(--gold)">inventory_2</span> <strong>Manajemen Stok</strong> — Stok produk otomatis berkurang saat terjual via invoice</div>
-                            <div><span class="m-icon" style="font-size:18px;color:var(--gold)">people</span> <strong>Data Pelanggan</strong> — Simpan data pelanggan untuk invoice cepat</div>
-                            <div><span class="m-icon" style="font-size:18px;color:var(--gold)">trending_up</span> <strong>Hutang & Piutang</strong> — Catat & pantau hutang/piutang</div>
-                            <div><span class="m-icon" style="font-size:18px;color:var(--gold)">bar_chart</span> <strong>Laporan Harian s/d Tahunan</strong> — Lihat ringkasan keuangan realtime</div>
-                            <div><span class="m-icon" style="font-size:18px;color:var(--gold)">smart_toy</span> <strong>AI Assistant</strong> — Isi item invoice otomatis pakai AI</div>
-                            <div><span class="m-icon" style="font-size:18px;color:var(--gold)">cloud_upload</span> <strong>Backup Telegram</strong> — Backup data aman via Telegram bot</div>
-                            <div><span class="m-icon" style="font-size:18px;color:var(--gold)">share</span> <strong>Share Slip WhatsApp</strong> — Bagikan slip invoice via WhatsApp</div>
-                        </div>
-                    </div>
-
-                    <div style="background:var(--surface-2);border-radius:12px;padding:16px;margin-bottom:16px">
-                        <div style="font-weight:700;margin-bottom:8px;font-size:14px">👤 Profil Usaha</div>
-                        <div style="font-size:13px"><strong>Mughis Group</strong><br>Samalanga, Bireuen, Aceh<br>085217706587</div>
-                    </div>
-
-                    <div style="background:var(--surface-2);border-radius:12px;padding:16px;margin-bottom:16px">
-                        <div style="font-weight:700;margin-bottom:8px;font-size:14px">📋 Layanan Kami:</div>
-                        <div style="font-size:13px;line-height:1.8">
-                            • Jual Laptop Baru & Bekas<br>
-                            • Penerbit & Percetakan<br>
-                            • Desain Grafis & Logo<br>
-                            • Jasa Bordir & Sablon
-                        </div>
-                    </div>
-
-                    <div style="background:var(--surface-2);border-radius:12px;padding:16px">
-                        <div style="font-weight:700;margin-bottom:8px;font-size:14px">🛡️ Data & Privasi</div>
-                        <div style="font-size:12px;color:var(--text-secondary)">
-                            Semua data tersimpan di <strong>localStorage</strong> perangkat ini.<br>
-                            Tidak ada data yang dikirim ke server pihak ketiga.<br>
-                            Backup ke Telegram bersifat opsional dan dienkripsi.
-                        </div>
-                    </div>
+                <div class="card-title"><span class="m-icon" style="font-size:18px">info</span> Tentang Mughis Bank</div>
+                <div class="about-text">
+                    Mughis Bank adalah sistem manajemen keuangan, pendataan, pengeluaran, dan invoice yang dirancang untuk membantu pelaku usaha mengelola bisnis secara lebih rapi, cepat, dan profesional.
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title"><span class="m-icon" style="font-size:18px">track_changes</span> Visi</div>
+                <div class="about-text">
+                    Menjadi sistem administrasi bisnis yang sederhana, modern, dan dapat digunakan oleh semua pelaku usaha.
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title"><span class="m-icon" style="font-size:18px">flag</span> Misi</div>
+                <div class="about-text">
+                    Membantu bisnis mengambil keputusan berdasarkan data yang akurat dan terstruktur.
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title"><span class="m-icon" style="font-size:18px">stars</span> Fokus Utama</div>
+                <div class="about-features">
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">account_balance</span> Manajemen Keuangan</div>
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">receipt</span> Pengelolaan Invoice</div>
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">money_off</span> Pengelolaan Pengeluaran</div>
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">trending_up</span> Monitoring Laba Bersih</div>
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">timeline</span> Pelacakan Cashflow</div>
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">description</span> Administrasi Bisnis</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title"><span class="m-icon" style="font-size:18px">verified</span> Data & Privasi</div>
+                <div class="about-text" style="font-size:12px;color:var(--text-secondary)">
+                    Semua data tersimpan di <strong>localStorage</strong> perangkat ini.<br>
+                    Tidak ada data yang dikirim ke server pihak ketiga.<br>
+                    Backup ke Telegram bersifat opsional dan dienkripsi.
                 </div>
             </div>
             <div style="height:20px"></div>
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">🏠</span><span class="nav-label">Beranda</span></button>
-            <button class="nav-item" onclick="showPage('wallet')"><span class="nav-icon">💳</span><span class="nav-label">Dompet</span></button>
-            <button class="nav-item" onclick="showPage('invoice')"><span class="nav-icon">📄</span><span class="nav-label">Invoice</span></button>
-            <button class="nav-item" onclick="showPage('finance')"><span class="nav-icon">💵</span><span class="nav-label">Keuangan</span></button>
-            <button class="nav-item" onclick="showPage('products')"><span class="nav-icon">📦</span><span class="nav-label">Produk</span></button>
-            <button class="nav-item" onclick="showPage('reports')"><span class="nav-icon">📊</span><span class="nav-label">Laporan</span></button>
+            <button class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
+                <span class="nav-icon"><span class="m-icon">home</span></span>
+                <span class="nav-label">Beranda</span>
+            </button>
+            <button class="nav-item" onclick="showPage('wallet')" data-page="wallet">
+                <span class="nav-icon"><span class="m-icon">credit_card</span></span>
+                <span class="nav-label">Dompet</span>
+            </button>
+            <button class="nav-item" onclick="showPage('invoice')" data-page="invoice">
+                <span class="nav-icon"><span class="m-icon">receipt</span></span>
+                <span class="nav-label">Invoice</span>
+            </button>
+            <button class="nav-item" onclick="showPage('finance')" data-page="finance">
+                <span class="nav-icon"><span class="m-icon">account_balance</span></span>
+                <span class="nav-label">Keuangan</span>
+            </button>
+            <button class="nav-item" onclick="showPage('products')" data-page="products">
+                <span class="nav-icon"><span class="m-icon">inventory_2</span></span>
+                <span class="nav-label">Produk</span>
+            </button>
+            <button class="nav-item" onclick="showPage('reports')" data-page="reports">
+                <span class="nav-icon"><span class="m-icon">bar_chart</span></span>
+                <span class="nav-label">Laporan</span>
+            </button>
         </nav>
 
         <!-- MODALS -->
@@ -669,10 +692,20 @@
 
                     <div class="card-title" style="margin-top:20px">Pembayaran</div>
                     <div class="form-group"><label class="form-label">Total</label><input type="number" class="form-input" id="invoiceTotal" readonly></div>
-                    <div class="form-group"><label class="form-label">DP (Uang Muka)</label><input type="number" class="form-input" id="invoiceDP" value="0" onchange="calculateInvoiceTotal()"></div>
+                    <div class="form-group"><label class="form-label">Uang Muka / DP (Rp)</label><input type="number" class="form-input" id="invoiceDP" value="0" onchange="calculateInvoiceTotal()"></div>
                     <div class="form-group"><label class="form-label">Sisa</label><input type="number" class="form-input" id="invoiceRemaining" readonly></div>
-                    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="invoiceStatus"><option value="Belum Lunas">Belum Lunas</option><option value="DP">DP</option><option value="Lunas">Lunas</option></select></div>
-                    <div class="form-group"><label class="form-label">Modal Keluar (Rp) <span style="font-size:11px;color:var(--text-secondary)">— tidak tampil di slip</span></label><input type="number" class="form-input" id="invoiceModalKeluar" value="0" placeholder="0" style="border-color:var(--warning)"></div>
+                    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="invoiceStatus"><option value="DP">DP — Bayar Sebagian</option><option value="Lunas">Lunas — Bayar Penuh</option></select></div>
+                    <div id="dpProgressContainer" style="display:none;margin-bottom:16px">
+                        <label class="form-label">Progress Pembayaran</label>
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill" id="dpProgressFill" style="width:0%"></div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-top:4px">
+                            <span>DP 0%</span>
+                            <span id="dpProgressLabel">0%</span>
+                            <span>Lunas 100%</span>
+                        </div>
+                    </div>
                     <div class="form-group"><label class="form-label">Dompet Penerima</label><select class="form-select" id="invoiceWallet"></select></div>
                     <button class="btn btn-primary" onclick="saveInvoice()">Simpan Invoice</button>
                 </div>
