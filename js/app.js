@@ -110,16 +110,9 @@ function saveInvoiceTypes(list) {
 
 function toggleBalance() {
     balanceHidden = !balanceHidden;
-    const el = document.getElementById('totalBalance');
     const eye = document.querySelector('#balanceEye .m-icon');
-    if (balanceHidden) {
-        el.textContent = 'Rp •••••••';
-        if (eye) eye.textContent = 'visibility_off';
-    } else {
-        const stats = recalculateDashboard();
-        el.textContent = formatRupiah(stats.totalBalance);
-        if (eye) eye.textContent = 'visibility';
-    }
+    if (eye) eye.textContent = balanceHidden ? 'visibility_off' : 'visibility';
+    renderAll();
 }
 
 function getDisplayBalance(value) {
