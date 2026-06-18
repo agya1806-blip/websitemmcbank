@@ -642,7 +642,12 @@
                 <div class="modal-header"><span class="modal-title" id="customerModalTitle">Tambah Pelanggan</span><button class="modal-close" onclick="closeModal('customerModal')">✕</button></div>
                 <div class="modal-body">
                     <input type="hidden" id="customerId">
-                    <div class="form-group"><label class="form-label">Nama</label><input type="text" class="form-input" id="customerName" placeholder="Nama pelanggan"></div>
+                    <div class="form-group"><label class="form-label">Nama</label>
+                        <div style="display:flex;gap:8px">
+                            <input type="text" class="form-input" id="customerName" placeholder="Nama pelanggan" style="flex:1">
+                            <button class="btn btn-outline" onclick="pickContact()" style="width:auto;padding:12px;font-size:12px" title="Ambil dari Kontak HP">📱</button>
+                        </div>
+                    </div>
                     <div class="form-group"><label class="form-label">Nomor HP</label><input type="text" class="form-input" id="customerPhone" placeholder="08xxxxxxxxxx"></div>
                     <div class="form-group"><label class="form-label">Alamat</label><textarea class="form-textarea" id="customerAddress" placeholder="Alamat lengkap"></textarea></div>
                     <div class="form-group"><label class="form-label">Catatan</label><textarea class="form-textarea" id="customerNote" placeholder="Catatan tambahan"></textarea></div>
@@ -807,7 +812,7 @@
                 <div class="modal-body" id="invoiceDetailContent"></div>
                 <div class="modal-body no-print" style="padding-top:0">
                     <button class="btn btn-success" onclick="payInvoiceFromDetail()" id="invoicePayBtn" style="margin-bottom:10px;display:none">💰 Bayar / Lunas</button>
-                    <button class="btn btn-primary" onclick="shareInvoiceAsImage()" style="margin-bottom:10px">📸 Bagikan Slip (Foto)</button>
+                    <button class="btn btn-primary" onclick="shareInvoiceAsImage(this)" style="margin-bottom:10px">📸 Bagikan Slip (Foto)</button>
                     <button class="btn btn-success" onclick="sendWhatsAppInvoice()" style="margin-bottom:10px">📱 Kirim WhatsApp</button>
                     <button class="btn btn-outline" onclick="editCurrentInvoice()" style="margin-bottom:10px">✏️ Edit</button>
                     <button class="btn btn-danger" onclick="deleteInvoice()">🗑️ Hapus Invoice</button>

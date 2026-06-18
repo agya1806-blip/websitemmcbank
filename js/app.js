@@ -2809,11 +2809,11 @@ function showInvoiceDetail(id) {
     openModal('invoiceDetailModal');
 }
 
-async function shareInvoiceAsImage() {
+async function shareInvoiceAsImage(btnEl) {
     const printArea = document.getElementById('printArea');
-    if (!printArea) return;
+    if (!printArea) { alert('Tidak ada invoice untuk di-share.'); return; }
     
-    const btn = event?.target || document.querySelector('#invoiceDetailModal .btn-primary');
+    const btn = btnEl || event?.target || document.querySelector('#invoiceDetailModal .btn-primary');
     if (!btn) return;
     const orig = btn.textContent;
     
@@ -2821,7 +2821,6 @@ async function shareInvoiceAsImage() {
         btn.textContent = '⏳ Membuat gambar...';
         btn.disabled = true;
         
-        // Clone ke area A4 agar lebih lebar dan teks panjang muat
         const captureArea = document.getElementById('slipCaptureArea');
         captureArea.innerHTML = '';
         const clone = printArea.cloneNode(true);
@@ -2833,12 +2832,12 @@ async function shareInvoiceAsImage() {
         clone.style.lineHeight = '1.6';
         captureArea.appendChild(clone);
         
-        // Tunggu render
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 500));
         
         const canvas = await html2canvas(clone, {
             scale: 2,
             useCORS: true,
+            allowTaint: true,
             backgroundColor: '#ffffff',
             logging: false,
             width: 750,
@@ -3054,3 +3053,22 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('beforeunload', () => {
     syncToCloud(true);
 });
+
+// ==================== CONTACT PICKER API ====================
+
+async function pickContact() {
+    if (!navigator.contacts || !navigator.contacts.select) {
+        alert('❌ Fitur kontak hanya tersedia di Android via Chrome.\n\nDi iPhone, silakan isi manual.');
+        return;
+    }
+    try {
+        const contacts = await navigator.contacts.select(['name', 'tel'], { multiple: false });
+        if (contacts && contacts.length > 0) {
+            const c = contacts[0];
+            if (c.name && document.getElementById('customerName')) document.getElementById('customerName').value = c.name;
+            if (c.tel && c.tel.length > 0 && document.getElementById('customerPhone')) document.getElementById('customerPhone').value = c.tel[0];
+        }
+    } catch (err) {
+        if (err.name !== 'NotAllowedError') console.error(err);
+    }
+}
