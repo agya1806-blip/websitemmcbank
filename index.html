@@ -315,6 +315,8 @@
                     <option value="name">👤 Urut: Nama</option>
                     <option value="date">📅 Urut: Tanggal</option>
                 </select>
+                <button class="btn btn-outline" onclick="document.getElementById('importContactFile').click()" style="width:auto;padding:8px 12px;font-size:12px" title="Import Kontak dari File">📂</button>
+                <input type="file" id="importContactFile" accept=".vcf,.csv" style="display:none" onchange="importContactsFromFile(this)">
             </div>
             <div id="customerList"></div>
             <button class="fab" onclick="openCustomerModal()">+</button>

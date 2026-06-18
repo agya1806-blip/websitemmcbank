@@ -3072,3 +3072,53 @@ async function pickContact() {
         if (err.name !== 'NotAllowedError') console.error(err);
     }
 }
+
+// ==================== IMPORT KONTAK DARI FILE (vCard/CSV) ====================
+
+function importContactsFromFile(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        const customers = loadData(DB.customers);
+        let imported = 0;
+
+        if (file.name.endsWith('.vcf')) {
+            const vcards = text.split('BEGIN:VCARD');
+            vcards.forEach(v => {
+                const nameMatch = v.match(/FN[^:]*:(.+)/);
+                const telMatch = v.match(/TEL[^:]*:([+\d\s\-()]+)/);
+                const name = nameMatch ? nameMatch[1].trim() : '';
+                const phone = telMatch ? telMatch[1].trim().replace(/[\s\-]/g, '') : '';
+                if (name && phone) {
+                    if (!customers.some(c => c.phone === phone)) {
+                        customers.push({ id: generateId(), name, phone, address: '', note: '', createdAt: Date.now() });
+                        imported++;
+                    }
+                }
+            });
+        } else if (file.name.endsWith('.csv')) {
+            const lines = text.split('\n');
+            const headers = lines[0].toLowerCase().split(',');
+            const nameIdx = headers.findIndex(h => h.includes('nama') || h.includes('name'));
+            const phoneIdx = headers.findIndex(h => h.includes('tel') || h.includes('hp') || h.includes('phone') || h.includes('nomor'));
+            if (nameIdx === -1) { alert('❌ Format CSV tidak dikenal. Pastikan ada kolom "Nama" dan "No HP" atau "Telepon".'); return; }
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',');
+                const name = cols[nameIdx]?.trim() || '';
+                const phone = (cols[phoneIdx]?.trim() || '').replace(/[\s\-]/g, '');
+                if (name && phone && !customers.some(c => c.phone === phone)) {
+                    customers.push({ id: generateId(), name, phone, address: '', note: '', createdAt: Date.now() });
+                    imported++;
+                }
+            }
+        }
+
+        saveData(DB.customers, customers);
+        renderCustomers();
+        input.value = '';
+        alert(`✅ ${imported} kontak berhasil diimport!\n${customers.length} total pelanggan.`);
+    };
+    reader.readAsText(file);
+}
