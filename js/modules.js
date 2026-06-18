@@ -605,10 +605,12 @@ function openInvoiceModal(type) {
     document.getElementById('invoiceId').value = '';
     document.getElementById('invoiceType').value = type;
     document.getElementById('invoiceModalTitle').textContent = 'Invoice Baru';
-    document.getElementById('invoiceCustomer').value = '';
+    document.getElementById('invoiceCustomerId').value = '';
+    document.getElementById('invoiceCustomerSearch').value = '';
     document.getElementById('invoiceCustomerName').value = '';
     document.getElementById('invoiceCustomerPhone').value = '';
     document.getElementById('invoiceCustomerAddress').value = '';
+    document.getElementById('customerSearchResults').style.display = 'none';
     document.getElementById('invoiceNote').value = '';
     document.getElementById('invoiceTotal').value = '0';
     document.getElementById('invoiceDP').value = '0';
@@ -643,8 +645,6 @@ function openInvoiceModal(type) {
         document.getElementById('customSpecsNote').value = '';
     }
     
-    const customers = loadData(DB.customers);
-    document.getElementById('invoiceCustomer').innerHTML = '<option value="">Pilih Pelanggan</option>' + customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     invoiceItems = [];
     renderInvoiceItems();
     openModal('invoiceModal');
@@ -667,7 +667,7 @@ function fillUmumProduct() {
 }
 
 function fillCustomerData() {
-    const customerId = document.getElementById('invoiceCustomer').value;
+    const customerId = document.getElementById('invoiceCustomerId').value;
     if (!customerId) return;
     const customer = loadData(DB.customers).find(c => c.id === customerId);
     if (customer) {
@@ -675,6 +675,42 @@ function fillCustomerData() {
         document.getElementById('invoiceCustomerPhone').value = customer.phone || '';
         document.getElementById('invoiceCustomerAddress').value = customer.address || '';
     }
+}
+
+function filterCustomerDropdown() {
+    const q = document.getElementById('invoiceCustomerSearch').value.toLowerCase().trim();
+    const container = document.getElementById('customerSearchResults');
+    if (!q) { container.style.display = 'none'; return; }
+    const customers = loadData(DB.customers).filter(c => c.name.toLowerCase().includes(q) || c.phone.includes(q));
+    if (customers.length === 0) { container.style.display = 'none'; return; }
+    container.innerHTML = customers.slice(0, 20).map(c => `
+        <div class="list-item" style="cursor:pointer;padding:10px 12px;border-bottom:1px solid var(--border)" onclick="selectCustomerResult('${c.id}','${c.name.replace(/'/g,"\\'")}','${(c.phone||'').replace(/'/g,"\\'")}','${(c.address||'').replace(/'/g,"\\'")}')">
+            <div class="list-icon" style="background:var(--surface-2);font-size:14px">👤</div>
+            <div class="list-content">
+                <div class="list-title" style="font-size:13px">${c.name}</div>
+                <div class="list-subtitle" style="font-size:11px">${c.phone||'-'}</div>
+            </div>
+        </div>
+    `).join('');
+    container.style.display = 'block';
+}
+
+function selectCustomerResult(id, name, phone, address) {
+    document.getElementById('invoiceCustomerId').value = id;
+    document.getElementById('invoiceCustomerSearch').value = name;
+    document.getElementById('invoiceCustomerName').value = name;
+    document.getElementById('invoiceCustomerPhone').value = phone;
+    document.getElementById('invoiceCustomerAddress').value = address;
+    document.getElementById('customerSearchResults').style.display = 'none';
+}
+
+function clearCustomerSearch() {
+    document.getElementById('invoiceCustomerId').value = '';
+    document.getElementById('invoiceCustomerSearch').value = '';
+    document.getElementById('invoiceCustomerName').value = '';
+    document.getElementById('invoiceCustomerPhone').value = '';
+    document.getElementById('invoiceCustomerAddress').value = '';
+    document.getElementById('customerSearchResults').style.display = 'none';
 }
 
 function addInvoiceItem() {
@@ -748,7 +784,7 @@ function updateDPProgress() {
 function saveInvoice() {
     const id = document.getElementById('invoiceId').value;
     const type = document.getElementById('invoiceType').value;
-    const customerId = document.getElementById('invoiceCustomer').value;
+    const customerId = document.getElementById('invoiceCustomerId').value;
     const customerName = document.getElementById('invoiceCustomerName').value;
     const customerPhone = document.getElementById('invoiceCustomerPhone').value;
     const customerAddress = document.getElementById('invoiceCustomerAddress').value;

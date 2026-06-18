@@ -2953,6 +2953,8 @@ function editCurrentInvoice() {
     document.getElementById('invoiceId').value = inv.id;
     document.getElementById('invoiceType').value = inv.type;
     document.getElementById('invoiceModalTitle').textContent = 'Edit Invoice';
+    document.getElementById('invoiceCustomerId').value = inv.customerId || '';
+    document.getElementById('invoiceCustomerSearch').value = inv.customerName || '';
     document.getElementById('invoiceCustomerName').value = inv.customerName;
     document.getElementById('invoiceCustomerPhone').value = inv.customerPhone || '';
     document.getElementById('invoiceCustomerAddress').value = inv.customerAddress || '';
