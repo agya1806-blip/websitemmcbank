@@ -1574,8 +1574,8 @@ function renderChart() {
         data: {
             labels: days,
             datasets: [
-                { label: 'Pemasukan', data: incomeData, backgroundColor: 'rgba(94,138,106,0.8)', borderRadius: 4, barPercentage: 0.4 },
-                { label: 'Pengeluaran', data: expenseData, backgroundColor: 'rgba(184,74,74,0.8)', borderRadius: 4, barPercentage: 0.4 }
+                { label: 'Pemasukan', data: incomeData, backgroundColor: 'rgba(201,168,122,0.8)', borderRadius: 4, barPercentage: 0.4 },
+                { label: 'Pengeluaran', data: expenseData, backgroundColor: 'rgba(119,91,91,0.8)', borderRadius: 4, barPercentage: 0.4 }
             ]
         },
         options: {
@@ -1617,7 +1617,8 @@ function switchChart(type) {
         });
         const labels = [...Object.keys(catIncome), ...Object.keys(catExpense)];
         const data = [...Object.values(catIncome), ...Object.values(catExpense)];
-        const colors = labels.map((_, i) => `hsla(${i * 45}, 70%, 55%, 0.8)`);
+        const palette = ['#C9A87A','#775B5B','#D4B88E','#9B7E7E','#B8945E','#5E4646','#E2C9A0','#EDE4E1'];
+        const colors = labels.map((_, i) => palette[i % palette.length]);
         
         window._financeChart = new Chart(ctx, {
             type: 'doughnut',
@@ -1666,9 +1667,9 @@ function switchChart(type) {
             data: {
                 labels,
                 datasets: [
-                    { label: 'Pemasukan', data: incomeArr, borderColor: '#5E8A6A', backgroundColor: 'rgba(94,138,106,0.1)', tension: 0.3, pointRadius: 3, fill: true },
-                    { label: 'Pengeluaran', data: expenseArr, borderColor: '#B84A4A', backgroundColor: 'rgba(184,74,74,0.1)', tension: 0.3, pointRadius: 3, fill: true },
-                    { label: 'Laba Invoice', data: profitArr, borderColor: '#C9A87A', backgroundColor: 'rgba(201,168,122,0.1)', tension: 0.3, pointRadius: 3, fill: true }
+                    { label: 'Pemasukan', data: incomeArr, borderColor: '#C9A87A', backgroundColor: 'rgba(201,168,122,0.1)', tension: 0.3, pointRadius: 3, fill: true },
+                    { label: 'Pengeluaran', data: expenseArr, borderColor: '#775B5B', backgroundColor: 'rgba(119,91,91,0.1)', tension: 0.3, pointRadius: 3, fill: true },
+                    { label: 'Laba Invoice', data: profitArr, borderColor: '#C9A87A', backgroundColor: 'rgba(201,168,122,0.05)', tension: 0.3, pointRadius: 3, fill: true, borderDash: [5,3] }
                 ]
             },
             options: {
@@ -1758,7 +1759,7 @@ function renderTransactions() {
             return `
             <div class="card">
                 <div class="list-item" style="padding-top:0">
-                    <div class="list-icon" style="background:${isIncome?'#d1fae5':'#fee2e2'}">${isIncome?'📥':'📤'}</div>
+                    <div class="list-icon" style="background:${isIncome?'rgba(201,168,122,0.15)':'rgba(119,91,91,0.12)'}">${isIncome?'📥':'📤'}</div>
                     <div class="list-content">
                         <div class="list-title">${t.description}</div>
                         <div class="list-subtitle">${formatDate(t.date)} • ${t.category} • ${walletMap[t.walletId]?.name||'-'}${t.cabang ? ' • <span class="cabang-tag">' + t.cabang + '</span>' : ''}</div>
@@ -1961,7 +1962,7 @@ function renderInvoices() {
         return `
         <div class="card">
             <div class="list-item" style="padding-top:0;cursor:pointer" onclick="showInvoiceDetail('${inv.id}')">
-                <div class="list-icon" style="background:#e0e7ff;font-size:20px"><span class="m-icon">${typeIcon[inv.type] || 'description'}</span></div>
+                <div class="list-icon" style="background:rgba(201,168,122,0.15);font-size:20px"><span class="m-icon">${typeIcon[inv.type] || 'description'}</span></div>
                 <div class="list-content">
                     <div class="list-title">${inv.number}</div>
                     <div class="list-subtitle">${inv.customerName} • ${formatDate(inv.date)} • ${typeLabel[inv.type] || inv.type}${inv.cabang ? ' • <span class="cabang-tag">' + inv.cabang + '</span>' : ''}</div>
