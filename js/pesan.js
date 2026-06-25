@@ -63,6 +63,10 @@ function openPesanKategoriModal() {
                 <span class="m-icon" style="font-size:32px;color:var(--primary)">smart_display</span>
                 <span>Affiliate TikTok</span>
             </div>
+            <div class="kategori-card" onclick="closeModal('pesanKategoriModal');openPesanForm('handphone')">
+                <span class="m-icon" style="font-size:32px;color:var(--primary)">phone_android</span>
+                <span>Handphone</span>
+            </div>
         </div>`;
     openModal('pesanKategoriModal');
 }
@@ -86,7 +90,7 @@ function openPesanForm(type, editData) {
     document.getElementById('pesanType').value = type;
 
     // Hide all spec sections
-    ['printSpecsPesan', 'laptopSpecsPesan', 'umumSpecsPesan', 'tiktokSpecsPesan'].forEach(id => {
+    ['printSpecsPesan', 'laptopSpecsPesan', 'umumSpecsPesan', 'tiktokSpecsPesan', 'handphoneSpecsPesan'].forEach(id => {
         document.getElementById(id).style.display = 'none';
     });
 
@@ -140,6 +144,21 @@ function openPesanForm(type, editData) {
             if (s.productId) {
                 const sel = document.getElementById('psnUmumProductSelect');
                 if (sel) { sel.value = s.productId; }
+            }
+        } else if (type === 'handphone') {
+            setChipByValue('psnHpMerk', s.merk);
+            setChipByValue('psnHpStorage', s.storage);
+            setChipByValue('psnHpColor', s.color);
+            setChipByValue('psnHpCondition', s.condition);
+            setChipByValue('psnHpWarranty', s.warranty);
+            if (s.hpName) document.getElementById('psnHpManualName').value = s.hpName;
+            if (s.manualMerk) {
+                document.getElementById('psnHpManualMerk').value = s.manualMerk;
+                showPesanManualInput('psnHpMerk','psnHpManualMerkCont');
+            }
+            if (s.manualColor) {
+                document.getElementById('psnHpManualColor').value = s.manualColor;
+                showPesanManualInput('psnHpColor','psnHpManualColorCont');
             }
         }
     }
@@ -369,6 +388,19 @@ function savePesan() {
             umumItem: document.getElementById('psnUmumManualItem').value,
             umumType: getChipValue('psnUmumType')
         };
+    } else if (type === 'handphone') {
+        const merkVal = getChipValue('psnHpMerk');
+        const colorVal = getChipValue('psnHpColor');
+        specs = {
+            hpName: document.getElementById('psnHpManualName').value,
+            merk: merkVal,
+            manualMerk: merkVal === '' ? document.getElementById('psnHpManualMerk').value : '',
+            storage: getChipValue('psnHpStorage'),
+            color: colorVal,
+            manualColor: colorVal === '' ? document.getElementById('psnHpManualColor').value : '',
+            condition: getChipValue('psnHpCondition'),
+            warranty: getChipValue('psnHpWarranty')
+        };
     }
 
     let allPesanan = getPesanData();
@@ -490,8 +522,8 @@ function renderPesan() {
         return;
     }
 
-    const typeIcon = { print: 'auto_stories', laptop: 'laptop', umum: 'shopping_cart', tiktok: 'smart_display' };
-    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', umum: 'Umum', tiktok: 'TikTok' };
+    const typeIcon = { print: 'auto_stories', laptop: 'laptop', umum: 'shopping_cart', tiktok: 'smart_display', handphone: 'phone_android' };
+    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', umum: 'Umum', tiktok: 'TikTok', handphone: 'Handphone' };
     const orderBadge = { Baru: 'badge-info', Diproses: 'badge-warning', Selesai: 'badge-success', Dibatalkan: 'badge-danger' };
 
         container.innerHTML = pesanan.map(p => {
@@ -535,7 +567,7 @@ function renderRecentPesan() {
     const container = document.getElementById('recentPesan');
     if (!container) return;
     const pesanan = getPesanData().sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
-    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', umum: 'Umum', tiktok: 'TikTok' };
+    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', umum: 'Umum', tiktok: 'TikTok', handphone: 'Handphone' };
     if (pesanan.length === 0) {
         container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-secondary);font-size:13px">Belum ada pesanan</div>';
         return;
@@ -574,7 +606,7 @@ function showPesanDetail(id) {
     const settings = loadData(DB.settings);
     const services = getServices();
     const payMethods = getPaymentMethods();
-    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', umum: 'Umum', tiktok: 'TikTok' };
+    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', umum: 'Umum', tiktok: 'TikTok', handphone: 'Handphone' };
 
     let specsHtml = '';
     if (p.type === 'print') {
@@ -597,6 +629,14 @@ function showPesanDetail(id) {
     } else if (p.type === 'umum') {
         specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Keterangan</div>
             <p><strong>Item:</strong> ${p.specs?.umumItem||p.specs?.productName||'-'} | <strong>Tipe:</strong> ${p.specs?.umumType||'-'}</p>
+        </div>`;
+    } else if (p.type === 'handphone') {
+        const merk = p.specs?.manualMerk || p.specs?.merk || '';
+        const color = p.specs?.manualColor || p.specs?.color || '';
+        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Spesifikasi Handphone</div>
+            <p><strong>${p.specs?.hpName||merk||'-'}</strong></p>
+            <p><strong>Merk:</strong> ${merk||'-'} | <strong>Storage:</strong> ${p.specs?.storage||'-'}</p>
+            <p><strong>Warna:</strong> ${color||'-'} | <strong>Kondisi:</strong> ${p.specs?.condition||'-'} | <strong>Garansi:</strong> ${p.specs?.warranty||'-'}</p>
         </div>`;
     }
 
@@ -849,7 +889,7 @@ function sendWhatsAppPesan() {
     const settings = loadData(DB.settings);
     const services = getServices();
     const payMethods = getPaymentMethods();
-    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', umum: 'Umum', tiktok: 'TikTok' };
+    const typeLabel = { print: 'Percetakan', laptop: 'Laptop', umum: 'Umum', tiktok: 'TikTok', handphone: 'Handphone' };
 
     let text = `*${settings.businessName}*\n`;
     text += `${settings.address}\n`;
@@ -875,6 +915,13 @@ function sendWhatsAppPesan() {
     } else if (p.type === 'umum') {
         text += `*Keterangan:*\n`;
         text += `Item: ${p.specs?.umumItem||p.specs?.productName||'-'}\nTipe: ${p.specs?.umumType||'-'}\n\n`;
+    } else if (p.type === 'handphone') {
+        const merk = p.specs?.manualMerk || p.specs?.merk || '';
+        const color = p.specs?.manualColor || p.specs?.color || '';
+        text += `*Spesifikasi Handphone:*\n`;
+        text += `${p.specs?.hpName||merk||'-'}\n`;
+        text += `Merk: ${merk||'-'}\nStorage: ${p.specs?.storage||'-'}\n`;
+        text += `Warna: ${color||'-'}\nKondisi: ${p.specs?.condition||'-'}\nGaransi: ${p.specs?.warranty||'-'}\n\n`;
     }
 
     text += `*Daftar Item:*\n`;

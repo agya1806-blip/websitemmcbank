@@ -1038,6 +1038,61 @@
                         </div>
                     </div>
 
+                    <!-- HANDPHONE SPECS -->
+                    <div id="handphoneSpecsPesan" style="display:none">
+                        <div class="card-title" style="margin-top:20px">Spesifikasi Handphone</div>
+
+                        <label class="form-label">Nama HP</label>
+                        <input type="text" class="form-input" id="psnHpManualName" placeholder="Contoh: iPhone 14 Pro Max">
+
+                        <label class="form-label">Merk</label>
+                        <div class="chip-group" id="psnHpMerk">
+                            <button class="chip default active" data-value="iPhone" onclick="selectChip(this,'psnHpMerk')">iPhone</button>
+                            <button class="chip" data-value="Samsung" onclick="selectChip(this,'psnHpMerk')">Samsung</button>
+                            <button class="chip" data-value="Xiaomi" onclick="selectChip(this,'psnHpMerk')">Xiaomi</button>
+                            <button class="chip" data-value="OPPO" onclick="selectChip(this,'psnHpMerk')">OPPO</button>
+                            <button class="chip" data-value="Vivo" onclick="selectChip(this,'psnHpMerk')">Vivo</button>
+                            <button class="chip" data-value="" onclick="selectChip(this,'psnHpMerk');showPesanManualInput('psnHpMerk','psnHpManualMerkCont')">✏️ Lain</button>
+                        </div>
+                        <div id="psnHpManualMerkCont" style="display:none"><input type="text" class="form-input" id="psnHpManualMerk" placeholder="Merk lain..." style="margin-top:4px"></div>
+
+                        <label class="form-label">Storage</label>
+                        <div class="chip-group" id="psnHpStorage">
+                            <button class="chip default active" data-value="128GB" onclick="selectChip(this,'psnHpStorage')">128GB</button>
+                            <button class="chip" data-value="256GB" onclick="selectChip(this,'psnHpStorage')">256GB</button>
+                            <button class="chip" data-value="512GB" onclick="selectChip(this,'psnHpStorage')">512GB</button>
+                            <button class="chip" data-value="1TB" onclick="selectChip(this,'psnHpStorage')">1TB</button>
+                        </div>
+
+                        <label class="form-label">Warna</label>
+                        <div class="chip-group" id="psnHpColor">
+                            <button class="chip default active" data-value="Hitam" onclick="selectChip(this,'psnHpColor')">Hitam</button>
+                            <button class="chip" data-value="Putih" onclick="selectChip(this,'psnHpColor')">Putih</button>
+                            <button class="chip" data-value="Gold" onclick="selectChip(this,'psnHpColor')">Gold</button>
+                            <button class="chip" data-value="Silver" onclick="selectChip(this,'psnHpColor')">Silver</button>
+                            <button class="chip" data-value="Blue" onclick="selectChip(this,'psnHpColor')">Blue</button>
+                            <button class="chip" data-value="" onclick="selectChip(this,'psnHpColor');showPesanManualInput('psnHpColor','psnHpManualColorCont')">✏️ Lain</button>
+                        </div>
+                        <div id="psnHpManualColorCont" style="display:none"><input type="text" class="form-input" id="psnHpManualColor" placeholder="Warna lain..." style="margin-top:4px"></div>
+
+                        <label class="form-label">Kondisi</label>
+                        <div class="chip-group" id="psnHpCondition">
+                            <button class="chip default active" data-value="Baru Segel" onclick="selectChip(this,'psnHpCondition')">Baru Segel</button>
+                            <button class="chip" data-value="Like New" onclick="selectChip(this,'psnHpCondition')">Like New</button>
+                            <button class="chip" data-value="Bekas Normal" onclick="selectChip(this,'psnHpCondition')">Bekas Normal</button>
+                            <button class="chip" data-value="Ada Kerusakan" onclick="selectChip(this,'psnHpCondition')">Ada Kerusakan</button>
+                        </div>
+
+                        <label class="form-label">Garansi</label>
+                        <div class="chip-group" id="psnHpWarranty">
+                            <button class="chip default active" data-value="1 Bulan" onclick="selectChip(this,'psnHpWarranty')">1 Bln</button>
+                            <button class="chip" data-value="3 Bulan" onclick="selectChip(this,'psnHpWarranty')">3 Bln</button>
+                            <button class="chip" data-value="6 Bulan" onclick="selectChip(this,'psnHpWarranty')">6 Bln</button>
+                            <button class="chip" data-value="1 Tahun" onclick="selectChip(this,'psnHpWarranty')">1 Thn</button>
+                            <button class="chip" data-value="Tidak" onclick="selectChip(this,'psnHpWarranty')">Tidak</button>
+                        </div>
+                    </div>
+
                     <!-- TIKTOK SPECS -->
                     <div id="tiktokSpecsPesan" style="display:none">
                         <div class="card-title" style="margin-top:20px">Affiliate TikTok</div>
