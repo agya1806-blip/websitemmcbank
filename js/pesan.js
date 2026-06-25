@@ -373,7 +373,7 @@ function savePesan() {
 
     let allPesanan = getPesanData();
     let transactions = loadData(DB.transactions);
-    const now = Date.now();
+    let now = Date.now();
 
     let pesanData = {
         type, customerId, customerName, customerPhone, customerAddress,
@@ -382,7 +382,6 @@ function savePesan() {
         specs,
         note: document.getElementById('pesanNote').value,
         orderStatus: 'Baru',
-    cabang: '',
         date: new Date().toISOString(),
         createdAt: now
     };
@@ -403,6 +402,8 @@ function savePesan() {
         allPesanan.push(pesanData);
         pesan = pesanData;
     }
+
+    if (!pesan) { alert('⚠️ Pesanan tidak ditemukan!'); return; }
 
     pesan.transactionIds = pesan.transactionIds || [];
 
