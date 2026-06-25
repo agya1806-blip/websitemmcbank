@@ -92,6 +92,16 @@ function openPesanForm(type, editData) {
 
     document.getElementById(type + 'SpecsPesan').style.display = 'block';
 
+    // Populate product dropdown for umum
+    if (type === 'umum') {
+        const sel = document.getElementById('psnUmumProductSelect');
+        if (sel) {
+            const products = (loadData(DB.products) || []).filter(p => p.stock > 0);
+            sel.innerHTML = '<option value="">Pilih produk...</option>' +
+                products.map(p => `<option value="${p.id}">${p.name} (stok: ${p.stock})</option>`).join('');
+        }
+    }
+
     // Reset chips
     document.querySelectorAll('#pesanForm .chip-group').forEach(g => {
         const def = g.querySelector('.chip.default');
@@ -127,6 +137,10 @@ function openPesanForm(type, editData) {
         } else if (type === 'umum') {
             setChipByValue('psnUmumType', s.umumType);
             if (s.umumItem) document.getElementById('psnUmumManualItem').value = s.umumItem;
+            if (s.productId) {
+                const sel = document.getElementById('psnUmumProductSelect');
+                if (sel) { sel.value = s.productId; }
+            }
         }
     }
 
@@ -205,6 +219,24 @@ function clearPesanCustomerSearch() {
     document.getElementById('pesanCustomerName').value = '';
     document.getElementById('pesanCustomerPhone').value = '';
     document.getElementById('pesanCustomerAddress').value = '';
+}
+
+// ===== PRODUCT SELECT FOR UMUM =====
+function fillPesanUmumProduct() {
+    const sel = document.getElementById('psnUmumProductSelect');
+    if (!sel || !sel.value) return;
+    const products = loadData(DB.products);
+    const prod = products.find(p => p.id === sel.value);
+    if (!prod) return;
+    document.getElementById('psnUmumManualItem').value = prod.name;
+    // Add item row with product price
+    const existing = pesanItems.find(i => i.productId === prod.id);
+    if (existing) {
+        existing.qty = (existing.qty || 0) + 1;
+    } else {
+        pesanItems.push({ id: generateId(), productId: prod.id, name: prod.name, qty: 1, price: prod.price || 0 });
+    }
+    renderPesanItems();
 }
 
 // ===== ITEMS =====
@@ -330,7 +362,10 @@ function savePesan() {
             komisi: getChipValue('psnTiktokKomisi')
         };
     } else if (type === 'umum') {
+        const prodSelect = document.getElementById('psnUmumProductSelect');
         specs = {
+            productId: prodSelect?.value || '',
+            productName: prodSelect?.options[prodSelect.selectedIndex]?.text || '',
             umumItem: document.getElementById('psnUmumManualItem').value,
             umumType: getChipValue('psnUmumType')
         };
@@ -393,6 +428,20 @@ function savePesan() {
     }
     if (status === 'Lunas' && pesan.remaining > 0) {
         addPesanTrans('Pelunasan Pesanan', `Pelunasan ${pesan.number} - ${customerName}`, pesan.remaining);
+    }
+
+    // Kurangi stok produk untuk tipe umum
+    if (type === 'umum') {
+        const prodSelect = document.getElementById('psnUmumProductSelect');
+        if (prodSelect && prodSelect.value) {
+            const products = loadData(DB.products);
+            const prod = products.find(p => p.id === prodSelect.value);
+            if (prod && prod.stock > 0) {
+                const totalQty = pesanItems.filter(i => i.productId === prodSelect.value).reduce((s, i) => s + i.qty, 0);
+                prod.stock = Math.max(0, prod.stock - totalQty);
+                saveData(DB.products, products);
+            }
+        }
     }
 
     savePesanData(allPesanan);
@@ -546,7 +595,7 @@ function showPesanDetail(id) {
         </div>`;
     } else if (p.type === 'umum') {
         specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Keterangan</div>
-            <p><strong>Item:</strong> ${p.specs?.umumItem||'-'} | <strong>Tipe:</strong> ${p.specs?.umumType||'-'}</p>
+            <p><strong>Item:</strong> ${p.specs?.umumItem||p.specs?.productName||'-'} | <strong>Tipe:</strong> ${p.specs?.umumType||'-'}</p>
         </div>`;
     }
 
@@ -824,7 +873,7 @@ function sendWhatsAppPesan() {
         text += `Komisi: ${p.specs?.komisi||'-'}${p.specs?.komisi ? '%' : ''}\n\n`;
     } else if (p.type === 'umum') {
         text += `*Keterangan:*\n`;
-        text += `Item: ${p.specs?.umumItem||'-'}\nTipe: ${p.specs?.umumType||'-'}\n\n`;
+        text += `Item: ${p.specs?.umumItem||p.specs?.productName||'-'}\nTipe: ${p.specs?.umumType||'-'}\n\n`;
     }
 
     text += `*Daftar Item:*\n`;

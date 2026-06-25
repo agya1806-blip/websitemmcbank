@@ -1076,7 +1076,9 @@
                     <!-- UMUM SPECS -->
                     <div id="umumSpecsPesan" style="display:none">
                         <div class="card-title" style="margin-top:20px">Pesanan Umum</div>
-                        <label class="form-label">Nama Item</label>
+                        <div class="form-group"><label class="form-label">Pilih Produk (stok akan berkurang)</label><select class="form-select" id="psnUmumProductSelect" onchange="fillPesanUmumProduct()"><option value="">Pilih produk...</option></select></div>
+
+                        <label class="form-label">Atau Ketik Nama Item</label>
                         <input type="text" class="form-input" id="psnUmumManualItem" placeholder="Nama barang/jasa">
 
                         <label class="form-label">Tipe</label>
