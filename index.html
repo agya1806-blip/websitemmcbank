@@ -153,20 +153,29 @@
         <div class="page active" id="page-dashboard">
             <!-- Executive KPI Dashboard -->
             <div class="kpi-grid">
+
+                <div class="kpi-section">Keuangan Lain</div>
                 <div class="kpi-card kpi-income-other" onclick="showPage('finance')">
                     <div class="kpi-icon"><span class="m-icon">payments</span></div>
                     <div class="kpi-label">Pemasukan Lain</div>
                     <div class="kpi-value" id="dashFinanceIncome">Rp 0</div>
                 </div>
+                <div class="kpi-card kpi-expense" onclick="showPage('finance')">
+                    <div class="kpi-icon"><span class="m-icon">trending_down</span></div>
+                    <div class="kpi-label">Pengeluaran Lain</div>
+                    <div class="kpi-value" id="dashTotalExpense">Rp 0</div>
+                </div>
+                <div class="kpi-card kpi-profit-other" onclick="showPage('reports')">
+                    <div class="kpi-icon"><span class="m-icon">account_balance_wallet</span></div>
+                    <div class="kpi-label">Laba Bersih Lain</div>
+                    <div class="kpi-value" id="dashFinanceNet">Rp 0</div>
+                </div>
+
+                <div class="kpi-section">Invoice & Pesanan</div>
                 <div class="kpi-card kpi-income" onclick="showPage('invoice')">
                     <div class="kpi-icon"><span class="m-icon">trending_up</span></div>
                     <div class="kpi-label">Pemasukan Invoice</div>
                     <div class="kpi-value" id="dashInvoiceIncome">Rp 0</div>
-                </div>
-                <div class="kpi-card kpi-expense" onclick="showPage('finance')">
-                    <div class="kpi-icon"><span class="m-icon">trending_down</span></div>
-                    <div class="kpi-label">Pengeluaran</div>
-                    <div class="kpi-value" id="dashTotalExpense">Rp 0</div>
                 </div>
                 <div class="kpi-card kpi-modal" onclick="showPage('finance')">
                     <div class="kpi-icon"><span class="m-icon">money_off</span></div>
@@ -175,14 +184,11 @@
                 </div>
                 <div class="kpi-card kpi-profit" onclick="showPage('reports')">
                     <div class="kpi-icon"><span class="m-icon">account_balance</span></div>
-                    <div class="kpi-label">Laba Bersih (Invoice)</div>
+                    <div class="kpi-label">Laba Bersih Invoice</div>
                     <div class="kpi-value" id="dashNetProfit">Rp 0</div>
                 </div>
-                <div class="kpi-card kpi-profit-other" onclick="showPage('reports')">
-                    <div class="kpi-icon"><span class="m-icon">account_balance_wallet</span></div>
-                    <div class="kpi-label">Laba Bersih (Lain)</div>
-                    <div class="kpi-value" id="dashFinanceNet">Rp 0</div>
-                </div>
+
+                <div class="kpi-section">Ringkasan</div>
                 <div class="kpi-card kpi-cash" onclick="showPage('wallet')">
                     <div class="kpi-icon"><span class="m-icon">savings</span></div>
                     <div class="kpi-label">Saldo Kas</div>

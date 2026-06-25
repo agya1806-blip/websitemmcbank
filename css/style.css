@@ -471,10 +471,10 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 
 .stat-card:hover .stat-icon { transform: scale(1.05); }
 
-.stat-icon.income { background: rgba(45, 138, 78, 0.1); color: var(--success); }
-.stat-icon.expense { background: rgba(192, 57, 43, 0.1); color: var(--danger); }
-.stat-icon.debt { background: rgba(212, 137, 60, 0.1); color: var(--warning); }
-.stat-icon.receivable { background: rgba(59, 111, 160, 0.1); color: var(--info); }
+.stat-icon.income { background: rgba(201, 168, 122, 0.12); color: var(--gold); }
+.stat-icon.expense { background: rgba(94, 70, 70, 0.12); color: var(--primary-dark); }
+.stat-icon.debt { background: rgba(119, 91, 91, 0.1); color: var(--primary); }
+.stat-icon.receivable { background: rgba(119, 91, 91, 0.1); color: var(--primary); }
 .stat-icon.warning { background: rgba(201, 168, 122, 0.1); color: var(--gold); }
 
 .stat-label {
@@ -503,6 +503,19 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
     gap: 10px;
     margin: 12px 16px;
 }
+.kpi-section {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 2px 0;
+    margin-top: 4px;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 6px;
+}
+.kpi-section:first-of-type { margin-top: 0; }
 
 .kpi-card {
     background: var(--surface);
@@ -529,16 +542,16 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
     border-radius: 0 0 2px 2px;
 }
 
-.kpi-income::before { background: linear-gradient(90deg, var(--success), #34d399); }
-.kpi-income-other::before { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
-.kpi-expense::before { background: linear-gradient(90deg, var(--danger), #f87171); }
-.kpi-modal::before { background: linear-gradient(90deg, var(--warning), #fbbf24); }
-.kpi-profit::before { background: linear-gradient(90deg, var(--navy), var(--gold)); }
-.kpi-profit-other::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
-.kpi-cash::before { background: linear-gradient(90deg, var(--info), #60a5fa); }
-.kpi-active::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
-.kpi-dp::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-.kpi-lunas::before { background: linear-gradient(90deg, #10b981, #34d399); }
+.kpi-income::before,
+.kpi-income-other::before,
+.kpi-lunas::before { background: linear-gradient(90deg, var(--gold), var(--secondary-light)); }
+.kpi-expense::before,
+.kpi-modal::before { background: linear-gradient(90deg, var(--primary-dark), var(--primary)); }
+.kpi-profit::before,
+.kpi-profit-other::before,
+.kpi-cash::before { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
+.kpi-active::before,
+.kpi-dp::before { background: linear-gradient(90deg, var(--gold), var(--primary)); }
 
 .kpi-icon {
     width: 36px;
@@ -551,16 +564,16 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
     font-size: 18px;
 }
 
-.kpi-income .kpi-icon { background: rgba(45, 138, 78, 0.1); color: var(--success); }
-.kpi-income-other .kpi-icon { background: rgba(6, 182, 212, 0.1); color: #06b6d4; }
-.kpi-expense .kpi-icon { background: rgba(192, 57, 43, 0.1); color: var(--danger); }
-.kpi-modal .kpi-icon { background: rgba(212, 137, 60, 0.1); color: var(--warning); }
-.kpi-profit .kpi-icon { background: rgba(119, 91, 91, 0.1); color: var(--navy); }
-.kpi-profit-other .kpi-icon { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
-.kpi-cash .kpi-icon { background: rgba(59, 111, 160, 0.1); color: var(--info); }
-.kpi-active .kpi-icon { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
-.kpi-dp .kpi-icon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-.kpi-lunas .kpi-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.kpi-income .kpi-icon,
+.kpi-income-other .kpi-icon,
+.kpi-lunas .kpi-icon { background: rgba(201, 168, 122, 0.12); color: var(--gold); }
+.kpi-expense .kpi-icon,
+.kpi-modal .kpi-icon { background: rgba(94, 70, 70, 0.12); color: var(--primary-dark); }
+.kpi-profit .kpi-icon,
+.kpi-profit-other .kpi-icon,
+.kpi-cash .kpi-icon { background: rgba(119, 91, 91, 0.1); color: var(--primary); }
+.kpi-active .kpi-icon,
+.kpi-dp .kpi-icon { background: rgba(201, 168, 122, 0.08); color: var(--gold); }
 
 .kpi-label {
     font-size: 11px;
@@ -575,16 +588,16 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
     letter-spacing: -0.3px;
 }
 
-.kpi-income .kpi-value { color: var(--success); }
-.kpi-income-other .kpi-value { color: #06b6d4; }
-.kpi-expense .kpi-value { color: var(--danger); }
-.kpi-modal .kpi-value { color: var(--warning); }
-.kpi-profit .kpi-value { color: var(--navy); }
-.kpi-profit-other .kpi-value { color: #7c3aed; }
-.kpi-cash .kpi-value { color: var(--info); }
-.kpi-active .kpi-value { color: #8b5cf6; }
-.kpi-dp .kpi-value { color: #f59e0b; }
-.kpi-lunas .kpi-value { color: #10b981; }
+.kpi-income .kpi-value,
+.kpi-income-other .kpi-value,
+.kpi-lunas .kpi-value { color: var(--gold); }
+.kpi-expense .kpi-value,
+.kpi-modal .kpi-value { color: var(--primary-dark); }
+.kpi-profit .kpi-value,
+.kpi-profit-other .kpi-value,
+.kpi-cash .kpi-value { color: var(--primary); }
+.kpi-active .kpi-value,
+.kpi-dp .kpi-value { color: var(--gold); }
 
 /* ==================== MENU ====================*/
 .menu-grid {
