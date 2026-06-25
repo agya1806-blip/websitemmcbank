@@ -1749,3 +1749,353 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 .customer-result-item { padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;transition:background 0.15s; }
 .customer-result-item:last-child { border-bottom:none; }
 .customer-result-item:hover { background:var(--surface-2); }
+
+/* ==================== TOAST NOTIFICATION ==================== */
+.toast-container {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    width: calc(100% - 32px);
+    max-width: 400px;
+}
+.toast {
+    background: var(--text);
+    color: var(--bg);
+    padding: 14px 24px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    pointer-events: auto;
+    animation: toastIn 0.35s cubic-bezier(0.22,1,0.36,1);
+    transition: all 0.35s cubic-bezier(0.22,1,0.36,1);
+    text-align: center;
+    width: 100%;
+    backdrop-filter: blur(10px);
+}
+.toast.out {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+}
+.toast.success { background: var(--success); color: #fff; }
+.toast.error { background: var(--danger); color: #fff; }
+.toast.warning { background: var(--warning); color: #fff; }
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ==================== CONFIRM BOTTOM SHEET ==================== */
+.confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99998;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+.confirm-overlay.active { display: flex; }
+.confirm-sheet {
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 430px;
+    padding: 24px 20px calc(24px + var(--sab));
+    animation: sheetUp 0.4s cubic-bezier(0.22,1,0.36,1);
+    box-shadow: var(--shadow-xl);
+}
+.confirm-sheet-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    margin: 0 auto 20px;
+}
+.confirm-sheet-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 28px;
+}
+.confirm-sheet-icon.warning { background: var(--warning-light); color: var(--warning); }
+.confirm-sheet-icon.danger { background: var(--danger-light); color: var(--danger); }
+.confirm-sheet-icon.info { background: var(--info-light); color: var(--info); }
+.confirm-sheet-title {
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 8px;
+    color: var(--text);
+}
+.confirm-sheet-desc {
+    font-size: 14px;
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+.confirm-sheet-actions {
+    display: flex;
+    gap: 12px;
+}
+.confirm-sheet-actions .btn { flex: 1; padding: 14px; font-size: 15px; border-radius: 14px; }
+@keyframes sheetUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+/* ==================== SKELETON LOADING ==================== */
+.skeleton-container {
+    padding: 16px;
+    display: none;
+}
+.skeleton-container.active { display: block; }
+.skeleton-card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+}
+.skeleton-line {
+    height: 14px;
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+    background-size: 200% 100%;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    animation: skeletonPulse 1.5s ease infinite;
+}
+.skeleton-line:last-child { margin-bottom: 0; }
+.skeleton-line.w40 { width: 40%; }
+.skeleton-line.w60 { width: 60%; }
+.skeleton-line.w80 { width: 80%; }
+.skeleton-line.h12 { height: 12px; }
+.skeleton-line.h16 { height: 16px; }
+.skeleton-line.h20 { height: 20px; }
+.skeleton-line.h40 { height: 40px; }
+.skeleton-row { display: flex; gap: 12px; align-items: center; }
+.skeleton-row .skeleton-line:first-child { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; }
+.skeleton-row .skeleton-line:last-child { flex: 1; }
+@keyframes skeletonPulse {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ==================== PAGE TRANSITIONS ==================== */
+.page {
+    animation: pageFadeIn 0.3s ease;
+}
+@keyframes pageFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.page.slide-left {
+    animation: slideLeft 0.3s cubic-bezier(0.22,1,0.36,1);
+}
+@keyframes slideLeft {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+.page.slide-right {
+    animation: slideRight 0.3s cubic-bezier(0.22,1,0.36,1);
+}
+@keyframes slideRight {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* ==================== RIPPLE EFFECT ==================== */
+.ripple-btn {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.ripple-btn .ripple-effect {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+    pointer-events: none;
+    animation: rippleAnim 0.6s ease-out;
+}
+@keyframes rippleAnim {
+    from { transform: scale(0); opacity: 0.6; }
+    to { transform: scale(4); opacity: 0; }
+}
+
+/* ==================== PULL TO REFRESH ==================== */
+.ptr-container {
+    position: relative;
+    overflow: hidden;
+}
+.ptr-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 50px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: opacity 0.2s;
+    opacity: 0;
+}
+.ptr-indicator.visible { opacity: 1; }
+.ptr-indicator .ptr-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: ptrSpin 0.8s linear infinite;
+}
+@keyframes ptrSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==================== EMPTY STATE ILLUSTRATED ==================== */
+.empty-state-illus {
+    text-align: center;
+    padding: 40px 20px;
+}
+.empty-state-illus .empty-icon-wrap {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--surface-2), var(--surface-3));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 48px;
+    position: relative;
+}
+.empty-state-illus h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+.empty-state-illus p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+/* ==================== CONFETTI ==================== */
+.confetti-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999999;
+    overflow: hidden;
+}
+.confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+    to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* ==================== COLOR ENHANCEMENT - MUGHIS BANK DOMINANCE ==================== */
+.header {
+    background: linear-gradient(145deg, var(--navy), var(--primary-light));
+    position: relative;
+}
+.header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.bottom-nav {
+    background: linear-gradient(180deg, var(--surface) 30%, var(--navy) 100%);
+    border-top: 1px solid var(--gold);
+}
+.bottom-nav .nav-item.active {
+    color: var(--gold);
+}
+.bottom-nav .nav-item.active .nav-label {
+    color: var(--gold);
+}
+.btn-primary {
+    background: linear-gradient(145deg, var(--navy), var(--primary-light));
+    box-shadow: 0 4px 16px rgba(13,59,102,0.3);
+}
+.btn-primary:active {
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(13,59,102,0.2);
+}
+.btn-success {
+    background: linear-gradient(145deg, var(--success), #3da55e);
+}
+.btn-gold {
+    background: linear-gradient(145deg, var(--gold), var(--secondary-light));
+    color: #fff;
+}
+.badge-gold {
+    background: linear-gradient(145deg, var(--gold), var(--secondary-light));
+    color: #fff;
+}
+.stat-card .stat-value {
+    background: linear-gradient(145deg, var(--navy), var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.stats-grid .stat-card.current {
+    border: 2px solid var(--gold);
+    box-shadow: var(--shadow-glow);
+}
+.card.current {
+    border: 1.5px solid var(--gold);
+    box-shadow: var(--shadow-glow);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .header {
+    background: linear-gradient(145deg, #0d1b2a, #1b2838);
+}
+[data-theme="dark"] .header::after {
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+[data-theme="dark"] .bottom-nav {
+    background: linear-gradient(180deg, var(--surface) 30%, #0d1b2a 100%);
+}
+[data-theme="dark"] .btn-primary {
+    background: linear-gradient(145deg, var(--gold), var(--secondary-light));
+    box-shadow: 0 4px 16px rgba(201,149,60,0.3);
+}
+
+/* ===== NEW RIPPLE ADDITION FOR ALL BUTTONS ===== */
+.card:not(.no-ripple):active,
+.list-item:active,
+.kategori-card:active,
+.pesan-stat-card:active,
+.wallet-card:active,
+.menu-item:active,
+.stat-card:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+}

@@ -1230,6 +1230,23 @@
             </div>
         </div>
 
+        <!-- TOAST NOTIFICATION -->
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- CONFIRM BOTTOM SHEET -->
+        <div class="confirm-overlay" id="confirmOverlay">
+            <div class="confirm-sheet">
+                <div class="confirm-sheet-handle"></div>
+                <div class="confirm-sheet-icon" id="confirmIcon">⚠️</div>
+                <div class="confirm-sheet-title" id="confirmTitle">Konfirmasi</div>
+                <div class="confirm-sheet-desc" id="confirmDesc">Apakah kamu yakin?</div>
+                <div class="confirm-sheet-actions">
+                    <button class="btn btn-outline" onclick="confirmResponse(false)" id="confirmCancelBtn">Batal</button>
+                    <button class="btn btn-primary" onclick="confirmResponse(true)" id="confirmOkBtn">Ya, Lanjutkan</button>
+                </div>
+            </div>
+        </div>
+
         <div id="slipCaptureArea" style="position:fixed;left:-9999px;top:0;z-index:-1;width:794px;background:#fff;padding:40px;font-family:'Inter',sans-serif;color:#1a1a2e"></div>
         <div id="pesanSlipCaptureArea" style="position:fixed;left:-9999px;top:0;z-index:-1;width:794px;background:#fff;padding:40px;font-family:'Inter',sans-serif;color:#1a1a2e"></div>
         <div id="catalogCaptureArea" style="position:fixed;left:-9999px;top:0;z-index:-1;width:794px;background:#fff;padding:40px;font-family:'Inter',sans-serif;color:#1a1a2e"></div>

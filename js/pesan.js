@@ -586,13 +586,14 @@ function renderRecentPesan() {
 }
 
 // ===== UPDATE ORDER STATUS =====
-function updatePesanStatus(id, newStatus) {
+async function updatePesanStatus(id, newStatus) {
     const pesanan = getPesanData();
     const p = pesanan.find(x => x.id === id);
     if (!p) return;
     const label = { Baru: 'Baru', Diproses: 'Diproses', Selesai: 'Selesai', Dibatalkan: 'Dibatalkan' };
-    if (!confirm(`Ubah status pesanan ${p.number} menjadi "${label[newStatus] || newStatus}"?`)) return;
+    if (!await showConfirm(`Ubah status pesanan ${p.number} menjadi "${label[newStatus] || newStatus}"?`)) return;
     p.orderStatus = newStatus;
+    if (newStatus === 'Selesai') showConfetti();
     savePesanData(pesanan);
     addActivity(`📋 Status pesanan ${p.number} → ${label[newStatus] || newStatus}`);
     renderAll();
@@ -769,6 +770,7 @@ function payPesan(id) {
         p.status = 'Lunas';
         p.dp = parseFloat(p.dp) + payAmt;
         p.remaining = 0;
+        showConfetti();
     } else {
         p.dp = parseFloat(p.dp) + payAmt;
         p.remaining = Math.max(0, remaining - payAmt);
@@ -795,10 +797,10 @@ function editPesan() {
 }
 
 // ===== DELETE PESAN =====
-function deletePesan() {
+async function deletePesan() {
     if (!currentPesanId) return;
-    if (!confirm('⚠️ Yakin hapus pesanan ini? Data tidak bisa dikembalikan!')) return;
-    if (!confirm('⚠️⚠️ Pesanan dan semua transaksinya akan dihapus permanen. Lanjutkan?')) return;
+    if (!await showConfirm('⚠️ Yakin hapus pesanan ini? Data tidak bisa dikembalikan!')) return;
+    if (!await showConfirm('⚠️⚠️ Pesanan dan semua transaksinya akan dihapus permanen. Lanjutkan?')) return;
 
     let pesanan = getPesanData();
     let transactions = loadData(DB.transactions);

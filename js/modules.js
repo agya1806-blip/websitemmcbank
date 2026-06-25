@@ -78,8 +78,8 @@ function editTransaction(id) {
     openModal('transactionModal');
 }
 
-function deleteTransaction(id) {
-    if (!confirm('❌ Hapus transaksi ini?')) return;
+async function deleteTransaction(id) {
+    if (!await showConfirm('❌ Hapus transaksi ini?')) return;
     const transactions = loadData(DB.transactions).filter(t => t.id !== id);
     saveData(DB.transactions, transactions);
     addActivity('🗑️ Menghapus transaksi');
@@ -129,13 +129,13 @@ function editWallet(id) {
     openModal('walletModal');
 }
 
-function deleteWallet(id) {
+async function deleteWallet(id) {
     const transactions = loadData(DB.transactions);
     if (transactions.some(t => t.walletId === id)) {
         alert('⚠️ Dompet ini memiliki transaksi. Hapus transaksi terlebih dahulu!');
         return;
     }
-    if (!confirm('❌ Hapus dompet ini?')) return;
+    if (!await showConfirm('❌ Hapus dompet ini?')) return;
     saveData(DB.wallets, loadData(DB.wallets).filter(w => w.id !== id));
     addActivity('🗑️ Menghapus dompet');
     recalculateAll();
@@ -222,12 +222,12 @@ function editCustomer(id) {
     openModal('customerModal');
 }
 
-function deleteCustomer(id) {
+async function deleteCustomer(id) {
     if (loadData(DB.invoices).some(i => i.customerId === id)) {
         alert('⚠️ Pelanggan ini memiliki invoice. Hapus invoice terlebih dahulu!');
         return;
     }
-    if (!confirm('❌ Hapus pelanggan ini?')) return;
+    if (!await showConfirm('❌ Hapus pelanggan ini?')) return;
     saveData(DB.customers, loadData(DB.customers).filter(c => c.id !== id));
     addActivity('🗑️ Menghapus pelanggan');
     renderAll();
@@ -293,8 +293,8 @@ function editProduct(id) {
     openModal('productModal');
 }
 
-function deleteProduct(id) {
-    if (!confirm('❌ Hapus item ini?')) return;
+async function deleteProduct(id) {
+    if (!await showConfirm('❌ Hapus item ini?')) return;
     saveData(DB.products, loadData(DB.products).filter(p => p.id !== id));
     addActivity('🗑️ Menghapus produk/jasa');
     renderAll();
@@ -358,8 +358,8 @@ function editDebt(id) {
     openModal('debtModal');
 }
 
-function deleteDebt(id) {
-    if (!confirm('❌ Hapus hutang ini?')) return;
+async function deleteDebt(id) {
+    if (!await showConfirm('❌ Hapus hutang ini?')) return;
     saveData(DB.debts, loadData(DB.debts).filter(d => d.id !== id));
     addActivity('🗑️ Menghapus hutang');
     recalculateAll();
@@ -438,7 +438,7 @@ function confirmPayDebt(debtId, walletId) {
     debt.status = 'Lunas';
     debt.paidAt = new Date().toISOString().split('T');
     debt.paidWalletId = walletId;
-    
+    showConfetti();
     saveData(DB.transactions, transactions);
     saveData(DB.debts, debts);
     addActivity(`💳 Membayar hutang ${debt.name} ${formatRupiah(debt.amount)}`);
@@ -504,8 +504,8 @@ function editReceivable(id) {
     openModal('receivableModal');
 }
 
-function deleteReceivable(id) {
-    if (!confirm('❌ Hapus piutang ini?')) return;
+async function deleteReceivable(id) {
+    if (!await showConfirm('❌ Hapus piutang ini?')) return;
     saveData(DB.receivables, loadData(DB.receivables).filter(r => r.id !== id));
     addActivity('🗑️ Menghapus piutang');
     recalculateAll();
@@ -577,7 +577,7 @@ function confirmPayReceivable(receivableId, walletId) {
     rec.status = 'Lunas';
     rec.receivedAt = new Date().toISOString().split('T');
     rec.receivedWalletId = walletId;
-    
+    showConfetti();
     saveData(DB.transactions, transactions);
     saveData(DB.receivables, receivables);
     addActivity(`💳 Menerima piutang ${rec.name} ${formatRupiah(rec.amount)}`);
@@ -1069,6 +1069,7 @@ function confirmPayInvoice(invoiceId) {
         inv.status = inv.remaining <= 0 ? 'Lunas' : 'DP';
     }
     
+    if (inv.status === 'Lunas') showConfetti();
     saveData(DB.transactions, filteredTrans);
     saveData(DB.invoices, invoices);
     addActivity(`💰 Pembayaran invoice ${inv.number} - ${inv.status}`);

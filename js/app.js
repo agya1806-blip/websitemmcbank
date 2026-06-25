@@ -73,6 +73,215 @@ let currentTransactionType = 'income';
 let currentInvoiceId = null;
 let invoiceItems = [];
 
+// ==================== TOAST NOTIFICATION ====================
+function showToast(message, type) {
+    const container = document.getElementById('toastContainer');
+    if (!container) { originalAlert(message); return; }
+    const toast = document.createElement('div');
+    toast.className = 'toast' + (type ? ' ' + type : '');
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => toast.classList.add('out'), 2500);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+const originalAlert = window.alert;
+window.alert = function(msg) {
+    if (msg && (msg.includes('⚠️') || msg.includes('❌') || msg.includes('Gagal') || msg.includes('gagal') || msg.includes('tidak bisa') || msg.includes('tidak valid') || msg.includes('harus') || msg.includes('wajib') || msg.includes('belum') || msg.includes('Tidak ada') || msg.includes('Minimal') || msg.includes('Bawaan'))) {
+        showToast(msg, 'error');
+    } else if (msg && (msg.includes('✅') || msg.includes('berhasil') || msg.includes('disimpan') || msg.includes('tersimpan'))) {
+        showToast(msg, 'success');
+    } else if (msg && (msg.includes('⚠️') && (msg.includes('Ini akan') || msg.includes('Yakin') || msg.includes('menimpa') || msg.includes('hapus')))) {
+        originalAlert(msg);
+    } else {
+        showToast(msg);
+    }
+};
+
+// ==================== CONFIRM BOTTOM SHEET ====================
+let _confirmResolve = null;
+
+function showConfirm(message) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('confirmOverlay');
+        const titleEl = document.getElementById('confirmTitle');
+        const descEl = document.getElementById('confirmDesc');
+        const iconEl = document.getElementById('confirmIcon');
+        const okBtn = document.getElementById('confirmOkBtn');
+        const cancelBtn = document.getElementById('confirmCancelBtn');
+        if (!overlay) { resolve(originalConfirm(message)); return; }
+
+        let icon = '⚠️';
+        let iconClass = 'warning';
+        let okText = 'Ya, Lanjutkan';
+        let okClass = 'btn-primary';
+        if (message.includes('❌') || message.includes('Hapus') || message.includes('hapus') || message.includes('reset') || message.includes('Reset')) {
+            icon = '🗑️'; iconClass = 'danger'; okText = 'Ya, Hapus'; okClass = 'btn-danger';
+        } else if (message.includes('logout') || message.includes('Logout')) {
+            icon = '🚪'; iconClass = 'warning'; okText = 'Ya, Logout'; okClass = 'btn-danger';
+        } else if (message.includes('timpa') || message.includes('Timpa') || message.includes('menimpa') || message.includes('Menimpa')) {
+            icon = '⚠️'; iconClass = 'warning'; okText = 'Ya, Timpa'; okClass = 'btn-primary';
+        }
+
+        let title = 'Konfirmasi';
+        let desc = message;
+        if (message.length > 80) {
+            const parts = message.split('\n');
+            title = parts[0].replace(/[⚠️❌✅]/g, '').trim();
+            desc = parts.slice(1).join('\n') || message;
+        }
+
+        iconEl.textContent = icon;
+        iconEl.className = 'confirm-sheet-icon ' + iconClass;
+        titleEl.textContent = title;
+        descEl.textContent = desc;
+        okBtn.textContent = okText;
+        okBtn.className = 'btn ' + okClass;
+
+        _confirmResolve = resolve;
+        overlay.classList.add('active');
+    });
+}
+
+function confirmResponse(result) {
+    const overlay = document.getElementById('confirmOverlay');
+    if (overlay) overlay.classList.remove('active');
+    if (_confirmResolve) {
+        _confirmResolve(result);
+        _confirmResolve = null;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('confirmOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) confirmResponse(false);
+        });
+    }
+});
+
+const originalConfirm = window.confirm;
+window.confirm = function(msg) {
+    showConfirm(msg);
+    return true;
+};
+
+// ==================== SKELETON LOADING ====================
+function showSkeleton(containerId, count) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.style.display = 'none';
+    let skel = document.getElementById(containerId + '-skeleton');
+    if (!skel) {
+        skel = document.createElement('div');
+        skel.className = 'skeleton-container';
+        skel.id = containerId + '-skeleton';
+        container.parentNode.insertBefore(skel, container.nextSibling);
+    }
+    skel.innerHTML = '';
+    for (let i = 0; i < (count || 3); i++) {
+        skel.innerHTML += `
+            <div class="skeleton-card">
+                <div class="skeleton-row">
+                    <div class="skeleton-line h40"></div>
+                    <div><div class="skeleton-line w60 h16"></div><div class="skeleton-line w80 h12" style="margin-top:6px"></div></div>
+                </div>
+            </div>`;
+    }
+    skel.classList.add('active');
+}
+
+function hideSkeleton(containerId) {
+    const skel = document.getElementById(containerId + '-skeleton');
+    if (skel) { skel.classList.remove('active'); skel.innerHTML = ''; }
+    const container = document.getElementById(containerId);
+    if (container) container.style.display = '';
+}
+
+// ==================== PAGE TRANSITIONS ====================
+// Handled inline in showPage() below
+
+// ==================== RIPPLE EFFECT ====================
+function initRipple() {
+    document.querySelectorAll('.btn, .nav-item, .kategori-card, .menu-item, .stat-card, .wallet-card').forEach(el => {
+        if (el.classList.contains('ripple-btn')) return;
+        el.classList.add('ripple-btn');
+        el.addEventListener('click', function(e) {
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple-effect';
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            this.appendChild(ripple);
+            ripple.addEventListener('animationend', () => ripple.remove());
+        });
+    });
+}
+
+// ==================== CONFETTI ====================
+function showConfetti() {
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+    const colors = ['#c9953c', '#0d3b66', '#2d8a4e', '#d4893c', '#3b6fa0', '#ff3b30'];
+    for (let i = 0; i < 60; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const size = 6 + Math.random() * 8;
+        const left = Math.random() * 100;
+        const dur = 2 + Math.random() * 2;
+        const delay = Math.random() * 0.5;
+        const shape = Math.random() > 0.5 ? '50%' : '2px';
+        piece.style.cssText = `
+            left: ${left}%; width: ${size}px; height: ${size}px;
+            background: ${color}; border-radius: ${shape};
+            animation-duration: ${dur}s; animation-delay: ${delay}s;`;
+        container.appendChild(piece);
+    }
+    setTimeout(() => container.remove(), 4000);
+}
+
+// ==================== PULL TO REFRESH ====================
+let _ptrEnabled = false;
+function enablePullToRefresh(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container || _ptrEnabled) return;
+    _ptrEnabled = true;
+    let startY = 0, pulling = false;
+    container.addEventListener('touchstart', e => {
+        if (container.scrollTop <= 0) { startY = e.touches[0].clientY; pulling = true; }
+    }, { passive: true });
+    container.addEventListener('touchmove', e => {
+        if (!pulling) return;
+        const diff = e.touches[0].clientY - startY;
+        if (diff > 60) { pulling = false; refreshData(); }
+    }, { passive: true });
+}
+
+function refreshData() {
+    const el = document.querySelector('.ptr-indicator');
+    if (el) {
+        el.classList.add('visible');
+        el.innerHTML = '<span class="ptr-spinner"></span> Memperbarui...';
+    }
+    setTimeout(() => {
+        renderAll();
+        if (el) { el.classList.remove('visible'); el.innerHTML = ''; }
+        showToast('✅ Data diperbarui', 'success');
+    }, 600);
+}
+
+// ==================== ORIGINAL ALERT FALLBACK ====================
+// Keep original functions for cases where toast can't be used
+function showAlertError(msg) { showToast(msg, 'error'); }
+function showAlertSuccess(msg) { showToast(msg, 'success'); }
+
 // ==================== BALANCE TOGGLE ====================
 
 let balanceHidden = true;
@@ -188,8 +397,8 @@ function savePin() {
     document.getElementById('settingPin').value = '';
 }
 
-function removePin() {
-    if (!confirm('Hapus PIN keamanan?')) return;
+async function removePin() {
+    if (!await showConfirm('Hapus PIN keamanan?')) return;
     const settings = loadData(DB.settings) || {};
     delete settings.pinHash;
     saveData(DB.settings, settings);
@@ -326,8 +535,8 @@ function loginUser(email, name, userId) {
     }
 }
 
-function logout() {
-    if (!confirm('Yakin ingin logout?')) return;
+async function logout() {
+    if (!await showConfirm('Yakin ingin logout?')) return;
     currentUser = null;
     localStorage.removeItem('mughis_current_user');
     document.getElementById('mainApp').style.display = 'none';
@@ -424,6 +633,8 @@ function init() {
     renderCabangSettings();
     renderShortcutSettings();
     renderPurchases();
+
+    setTimeout(initRipple, 500);
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -558,7 +769,7 @@ async function restoreFromCloud() {
         return;
     }
     
-    if (!confirm('⚠️ Ini akan MENIMPA semua data lokal kamu dengan data dari cloud.\nLanjutkan?')) return;
+    if (!await showConfirm('⚠️ Ini akan MENIMPA semua data lokal kamu dengan data dari cloud.\nLanjutkan?')) return;
     
     try {
         const response = await fetch(`${JSONBIN_API}/${settings.cloudBinId}/latest`, {
@@ -662,7 +873,7 @@ async function restoreFromTelegram() {
         return;
     }
 
-    if (!confirm('⚠️ Ini akan MENIMPA semua data lokal dengan data backup Telegram terbaru.\nLanjutkan?')) return;
+    if (!await showConfirm('⚠️ Ini akan MENIMPA semua data lokal dengan data backup Telegram terbaru.\nLanjutkan?')) return;
 
     try {
         // Ambil daftar file backup terbaru
@@ -801,8 +1012,8 @@ function connectDrive() {
     }
 }
 
-function disconnectDrive() {
-    if (!confirm('Putuskan koneksi Google Drive?')) return;
+async function disconnectDrive() {
+    if (!await showConfirm('Putuskan koneksi Google Drive?')) return;
     localStorage.removeItem(`mughis_drive_token_${currentUser?.userId || 'guest'}`);
     localStorage.removeItem(`mughis_drive_fileid_${currentUser?.userId || 'guest'}`);
     driveAccessToken = null;
@@ -906,7 +1117,7 @@ async function restoreFromDrive(silent = false) {
         return;
     }
     
-    if (!silent && !confirm('⚠️ Timpa data lokal dengan data dari Google Drive?')) return;
+    if (!silent && !await showConfirm('⚠️ Timpa data lokal dengan data dari Google Drive?')) return;
     
     driveAccessToken = tokenData.token;
     const fileId = getDriveFileId();
@@ -2048,7 +2259,7 @@ function showPurchaseDetail(id) {
             <div style="font-size:18px;font-weight:700;color:var(--danger);margin-bottom:8px">- ${formatRupiah(p.amount)}</div>
             ${p.note ? `<div style="font-size:12px;color:var(--text-secondary)">Catatan: ${p.note}</div>` : ''}
             <div style="display:flex;gap:8px;margin-top:16px">
-                <button class="btn btn-danger" onclick="if(confirm('Hapus nota ini?')){deletePurchase('${p.id}')}" style="flex:1">🗑️ Hapus</button>
+                <button class="btn btn-danger" onclick="showConfirm('Hapus nota ini?').then(ok=>{if(ok)deletePurchase('${p.id}')})" style="flex:1">🗑️ Hapus</button>
             </div>
         </div>
     `;
@@ -2114,8 +2325,8 @@ function addCabang() {
     renderCabangSettings();
 }
 
-function removeCabang(index) {
-    if (!confirm('Hapus cabang ini?')) return;
+async function removeCabang(index) {
+    if (!await showConfirm('Hapus cabang ini?')) return;
     const cabang = getCabang();
     cabang.splice(index, 1);
     const settings = loadData(DB.settings) || {};
@@ -2318,10 +2529,18 @@ function updateWalletSelects() {
 // ==================== NAVIGATION ====================
 
 function showPage(pageName) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const current = document.querySelector('.page.active');
+    const navOrder = ['dashboard','finance','invoice','pesan','customer','products','debt','receivable','reports','purchase','settings'];
+    const curIdx = current ? navOrder.indexOf(current.id.replace('page-','')) : -1;
+    const nextIdx = navOrder.indexOf(pageName);
+    const dir = nextIdx > curIdx ? 'slide-left' : 'slide-right';
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active', 'slide-left', 'slide-right'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const page = document.getElementById('page-' + pageName);
-    if (page) page.classList.add('active');
+    if (page) {
+        page.classList.add(dir);
+        requestAnimationFrame(() => page.classList.add('active'));
+    }
     const navItem = document.querySelector(`.nav-item[data-page="${pageName}"]`);
     if (navItem) navItem.classList.add('active');
     document.getElementById('mainHeader').style.display = pageName === 'settings' ? 'none' : 'block';
@@ -2537,10 +2756,10 @@ function showAddInvoiceType() {
     renderInvoiceTypesSettings();
 }
 
-function removeInvoiceType(index) {
+async function removeInvoiceType(index) {
     const types = getInvoiceTypes();
     if (types[index]?.builtIn) { alert('⚠️ Tipe bawaan tidak bisa dihapus.'); return; }
-    if (!confirm(`Hapus tipe "${types[index]?.label}"?`)) return;
+    if (!await showConfirm(`Hapus tipe "${types[index]?.label}"?`)) return;
     types.splice(index, 1);
     saveInvoiceTypes(types);
     renderInvoiceTypesSettings();
@@ -2593,7 +2812,7 @@ function importData(input) {
         return;
     }
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
         try {
             const data = JSON.parse(e.target.result);
             // Cek apakah ini file backup MUGHIS BANK
@@ -2603,7 +2822,7 @@ function importData(input) {
                 input.value = '';
                 return;
             }
-            if (!confirm('⚠️ Ini akan MENIMPA semua data akun kamu saat ini dengan data dari file backup.\nLanjutkan?')) {
+            if (!await showConfirm('⚠️ Ini akan MENIMPA semua data akun kamu saat ini dengan data dari file backup.\nLanjutkan?')) {
                 input.value = '';
                 return;
             }
@@ -2627,9 +2846,9 @@ function importData(input) {
     input.value = '';
 }
 
-function resetData() {
-    if (!confirm('⚠️ Yakin reset SEMUA data? Ini tidak bisa dibatalkan!')) return;
-    if (!confirm('⚠️⚠️ Ini akan menghapus SEMUA data Anda. Lanjutkan?')) return;
+async function resetData() {
+    if (!await showConfirm('⚠️ Yakin reset SEMUA data? Ini tidak bisa dibatalkan!')) return;
+    if (!await showConfirm('⚠️⚠️ Ini akan menghapus SEMUA data Anda. Lanjutkan?')) return;
     Object.values(DB).forEach(key => {
         const storageKey = getStorageKey(key);
         localStorage.removeItem(storageKey);
@@ -3035,10 +3254,10 @@ function editCurrentInvoice() {
     openModal('invoiceModal');
 }
 
-function deleteInvoice() {
+async function deleteInvoice() {
     if (!currentInvoiceId) return;
-    if (!confirm('⚠️ Yakin hapus invoice ini? Data tidak bisa dikembalikan!')) return;
-    if (!confirm('⚠️⚠️ Invoice dan semua transaksinya akan dihapus permanen. Lanjutkan?')) return;
+    if (!await showConfirm('⚠️ Yakin hapus invoice ini? Data tidak bisa dikembalikan!')) return;
+    if (!await showConfirm('⚠️⚠️ Invoice dan semua transaksinya akan dihapus permanen. Lanjutkan?')) return;
     
     let invoices = loadData(DB.invoices);
     let transactions = loadData(DB.transactions);
