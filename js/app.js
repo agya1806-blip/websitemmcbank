@@ -1032,9 +1032,9 @@ function recalculateDashboard() {
     let totalInvoiceNominal = 0, paidInvoiceNominal = 0, unpaidInvoiceNominal = 0;
     let paidInvoiceCount = 0, unpaidInvoiceCount = 0;
     
-    // Proses transaksi keuangan (skip income invoice, tapi tetap hitung modal keluar)
+    // Proses transaksi keuangan (skip income invoice & pesan, tapi tetap hitung modal keluar)
     transactions.forEach(t => {
-        if (t.invoiceId && !t.isModalKeluar) return;
+        if ((t.invoiceId || t.pesanId) && !t.isModalKeluar) return;
         const amt = parseFloat(t.amount) || 0;
         const tDate = new Date(t.date);
         const isMonth = tDate.getMonth() === thisMonth && tDate.getFullYear() === thisYear;
@@ -1079,6 +1079,22 @@ function recalculateDashboard() {
         }
     });
     
+    // Proses pesanan (pendapatan digabung ke invoiceIncome)
+    const pesanList = typeof getPesanData === 'function' ? getPesanData() : [];
+    pesanList.forEach(p => {
+        const pDate = new Date(p.date);
+        const pTotal = parseFloat(p.total || 0);
+        const isMonth = pDate.getMonth() === thisMonth && pDate.getFullYear() === thisYear;
+        if (p.status === 'Lunas') {
+            invoiceIncome += pTotal;
+            if (isMonth) monthInvoiceIncome += pTotal;
+        } else if (p.status === 'DP') {
+            const dp = parseFloat(p.dp || 0);
+            invoiceIncome += dp;
+            if (isMonth) monthInvoiceIncome += dp;
+        }
+    });
+
     // Proses hutang (yang sudah lunas = pengeluaran)
     debts.forEach(d => {
         if (d.status === 'Lunas') {
