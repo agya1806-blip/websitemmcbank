@@ -1164,6 +1164,7 @@ button:active, .nav-item:active, .menu-item:active, .stat-card:active, .list-ite
     letter-spacing: 0.2px;
 }
 
+.badge-info { background: var(--info-light); color: var(--info); }
 .badge-success { background: var(--success-light); color: var(--success); }
 .badge-warning { background: var(--warning-light); color: var(--warning); }
 .badge-danger { background: var(--danger-light); color: var(--danger); }
@@ -1725,3 +1726,26 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 .cabang-tag { display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--surface-3);color:var(--text-secondary); }
 .cabang-list-item { display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border); }
 .cabang-list-item:last-child { border-bottom:none; }
+
+/* ======================== PESAN MODULE ======================== */
+.chip-group { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px; }
+.chip { padding:6px 14px;border:1.5px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text);font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;white-space:nowrap;font-family:var(--font); }
+.chip:hover { border-color:var(--primary);background:var(--surface-2); }
+.chip.active { border-color:var(--primary);background:var(--primary);color:#fff; }
+.chip:active { transform:scale(0.95); }
+
+.kategori-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 0; }
+.kategori-card { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 16px;border-radius:var(--radius-md);background:var(--surface-2);cursor:pointer;transition:all 0.2s;border:1px solid var(--border); }
+.kategori-card:hover { background:var(--surface-3);border-color:var(--primary); }
+.kategori-card:active { transform:scale(0.97); }
+.kategori-card span:last-child { font-weight:600;font-size:14px;color:var(--text); }
+
+.pesan-summary { display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto; }
+.pesan-stat-card { display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:80px;padding:12px 16px;border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;border:1px solid var(--border);transition:all 0.15s; }
+.pesan-stat-card:active { transform:scale(0.95); }
+.pesan-stat-num { font-size:24px;font-weight:800;color:var(--primary); }
+.pesan-stat-label { font-size:11px;color:var(--text-secondary);margin-top:2px; }
+
+.customer-result-item { padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;transition:background 0.15s; }
+.customer-result-item:last-child { border-bottom:none; }
+.customer-result-item:hover { background:var(--surface-2); }

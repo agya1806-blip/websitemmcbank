@@ -1198,6 +1198,8 @@ function renderAll() {
     renderReceivables();
     renderInvoices();
     renderRecentInvoices();
+    if (typeof renderPesan === 'function') renderPesan();
+    if (typeof renderRecentPesan === 'function') renderRecentPesan();
     renderReports();
     updateWalletSelects();
     renderCabangFilter();

@@ -255,6 +255,12 @@
                 <div id="recentInvoices"></div>
             </div>
 
+            <!-- Pesanan Terbaru -->
+            <div class="card">
+                <div class="card-title">📋 Pesanan Terbaru <span style="font-size:12px;color:var(--text-secondary);font-weight:400">(5 terakhir) <a href="#" onclick="event.preventDefault();showPage('pesan')" style="font-size:12px;float:right">Lihat Semua →</a></span></div>
+                <div id="recentPesan"></div>
+            </div>
+
             <!-- Activity Timeline -->
             <div class="card">
                 <div class="card-title">🕐 Aktivitas Terbaru</div>
@@ -303,6 +309,46 @@
             </div>
             <div id="invoiceList"></div>
             <button class="fab" onclick="openInvoiceTypeModal()">+</button>
+        </div>
+
+        <div class="page" id="page-pesan">
+            <div class="pesan-summary" style="display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto">
+                <div class="pesan-stat-card" onclick="switchPesanTab('baru')">
+                    <span class="pesan-stat-num" id="pesanStatBaru">0</span>
+                    <span class="pesan-stat-label">Baru</span>
+                </div>
+                <div class="pesan-stat-card" onclick="switchPesanTab('proses')">
+                    <span class="pesan-stat-num" id="pesanStatProses">0</span>
+                    <span class="pesan-stat-label">Diproses</span>
+                </div>
+                <div class="pesan-stat-card" onclick="switchPesanTab('selesai')">
+                    <span class="pesan-stat-num" id="pesanStatSelesai">0</span>
+                    <span class="pesan-stat-label">Selesai</span>
+                </div>
+                <div class="pesan-stat-card" onclick="switchPesanTab('batal')">
+                    <span class="pesan-stat-num" id="pesanStatBatal">0</span>
+                    <span class="pesan-stat-label">Dibatalkan</span>
+                </div>
+            </div>
+            <div class="tabs">
+                <button class="tab active" onclick="switchPesanTab('all')">📋 Semua</button>
+                <button class="tab" onclick="switchPesanTab('baru')">🆕 Baru</button>
+                <button class="tab" onclick="switchPesanTab('proses')">⚙️ Proses</button>
+                <button class="tab" onclick="switchPesanTab('selesai')">✅ Selesai</button>
+                <button class="tab" onclick="switchPesanTab('batal')">❌ Batal</button>
+            </div>
+            <div class="search-bar">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="pesanSearch" placeholder="Cari pesanan..." oninput="renderPesan()">
+            </div>
+            <div style="display:flex;gap:8px;margin:0 16px 12px">
+                <select class="form-select" id="pesanSort" onchange="renderPesan()" style="flex:1;min-height:40px;font-size:13px;padding:8px 12px">
+                    <option value="date">📅 Urut: Tanggal</option>
+                    <option value="total">💰 Urut: Nominal</option>
+                </select>
+            </div>
+            <div id="pesanList"></div>
+            <button class="fab" onclick="openPesanKategoriModal()">+</button>
         </div>
 
         <div class="page" id="page-customer">
@@ -565,9 +611,9 @@
                 <span class="nav-icon"><span class="m-icon">credit_card</span></span>
                 <span class="nav-label">Dompet</span>
             </button>
-            <button class="nav-item" onclick="showPage('invoice')" data-page="invoice">
-                <span class="nav-icon"><span class="m-icon">receipt</span></span>
-                <span class="nav-label">Invoice</span>
+            <button class="nav-item" onclick="showPage('pesan')" data-page="pesan">
+                <span class="nav-icon"><span class="m-icon">note</span></span>
+                <span class="nav-label">Pesan</span>
             </button>
             <button class="nav-item" onclick="showPage('finance')" data-page="finance">
                 <span class="nav-icon"><span class="m-icon">account_balance</span></span>
@@ -830,6 +876,262 @@
             </div>
         </div>
 
+        <!-- PESAN KATEGORI MODAL -->
+        <div class="modal-overlay" id="pesanKategoriModal">
+            <div class="modal">
+                <div class="modal-header"><span class="modal-title">Pilih Kategori Pesanan</span><button class="modal-close" onclick="closeModal('pesanKategoriModal')">✕</button></div>
+                <div class="modal-body" id="pesanKategoriContent"></div>
+            </div>
+        </div>
+
+        <!-- PESAN FORM MODAL -->
+        <div class="modal-overlay" id="pesanModal">
+            <div class="modal" style="max-height:95vh">
+                <div class="modal-header"><span class="modal-title" id="pesanModalTitle">Pesanan Baru</span><button class="modal-close" onclick="closeModal('pesanModal')">✕</button></div>
+                <div class="modal-body" id="pesanForm">
+                    <input type="hidden" id="pesanId"><input type="hidden" id="pesanType" value="print">
+
+                    <div class="form-group">
+                        <label class="form-label">Cari Pelanggan</label>
+                        <div style="display:flex;gap:8px">
+                            <input type="text" class="form-input" id="pesanCustomerSearch" placeholder="Ketik nama..." style="flex:1" autocomplete="off" oninput="filterPesanCustomerDropdown()" onblur="setTimeout(()=>document.getElementById('pesanCustomerResults').style.display='none',200)">
+                            <button class="btn btn-outline" onclick="clearPesanCustomerSearch()" style="width:auto;padding:12px;font-size:12px">✕</button>
+                        </div>
+                        <div id="pesanCustomerResults" style="max-height:200px;overflow-y:auto;display:none;margin-top:4px;border:1px solid var(--border);border-radius:8px;background:var(--surface)"></div>
+                    </div>
+                    <input type="hidden" id="pesanCustomerId">
+                    <div class="form-group"><label class="form-label">Nama</label><input type="text" class="form-input" id="pesanCustomerName"></div>
+                    <div class="form-group"><label class="form-label">Nomor HP</label><input type="text" class="form-input" id="pesanCustomerPhone"></div>
+                    <div class="form-group"><label class="form-label">Alamat</label><textarea class="form-textarea" id="pesanCustomerAddress"></textarea></div>
+
+                    <!-- PRINT SPECS -->
+                    <div id="printSpecsPesan">
+                        <div class="card-title" style="margin-top:20px">Spesifikasi Percetakan</div>
+                        <label class="form-label">Ukuran Buku</label>
+                        <div class="chip-group" id="psnPrintBookSize">
+                            <button class="chip default active" data-value="A4" onclick="selectChip(this,'psnPrintBookSize')">A4</button>
+                            <button class="chip" data-value="A5" onclick="selectChip(this,'psnPrintBookSize')">A5</button>
+                            <button class="chip" data-value="B5" onclick="selectChip(this,'psnPrintBookSize')">B5</button>
+                            <button class="chip" data-value="F4" onclick="selectChip(this,'psnPrintBookSize')">F4</button>
+                            <button class="chip" data-value="" onclick="selectChip(this,'psnPrintBookSize');showPesanManualInput('psnPrintBookSize','psnPrintManualSizeCont')">✏️ Lain</button>
+                        </div>
+                        <div id="psnPrintManualSizeCont" style="display:none"><input type="text" class="form-input" id="psnPrintManualSize" placeholder="Ukuran lain..." style="margin-top:4px"></div>
+
+                        <label class="form-label">Jenis Jilid</label>
+                        <div class="chip-group" id="psnPrintBinding">
+                            <button class="chip default active" data-value="Lem Panas" onclick="selectChip(this,'psnPrintBinding')">Lem Panas</button>
+                            <button class="chip" data-value="Spiral" onclick="selectChip(this,'psnPrintBinding')">Spiral</button>
+                            <button class="chip" data-value="Jahit Kawat" onclick="selectChip(this,'psnPrintBinding')">Jahit Kawat</button>
+                            <button class="chip" data-value="Ring" onclick="selectChip(this,'psnPrintBinding')">Ring</button>
+                        </div>
+
+                        <label class="form-label">Ukuran Jadi</label>
+                        <div class="chip-group" id="psnPrintFinalSize">
+                            <button class="chip default active" data-value="21 x 29.7 cm" onclick="selectChip(this,'psnPrintFinalSize')">21x29.7</button>
+                            <button class="chip" data-value="14.8 x 21 cm" onclick="selectChip(this,'psnPrintFinalSize')">14.8x21</button>
+                            <button class="chip" data-value="18 x 25 cm" onclick="selectChip(this,'psnPrintFinalSize')">18x25</button>
+                            <button class="chip" data-value="" onclick="selectChip(this,'psnPrintFinalSize');showPesanManualInput('psnPrintFinalSize','psnPrintManualFinalCont')">✏️ Lain</button>
+                        </div>
+                        <div id="psnPrintManualFinalCont" style="display:none"><input type="text" class="form-input" id="psnPrintManualFinal" placeholder="Ukuran lain..." style="margin-top:4px"></div>
+
+                        <label class="form-label">Kertas Isi</label>
+                        <div class="chip-group" id="psnPrintPaperType">
+                            <button class="chip default active" data-value="HVS 70gr" onclick="selectChip(this,'psnPrintPaperType')">HVS 70gr</button>
+                            <button class="chip" data-value="HVS 80gr" onclick="selectChip(this,'psnPrintPaperType')">HVS 80gr</button>
+                            <button class="chip" data-value="Bookpaper" onclick="selectChip(this,'psnPrintPaperType')">Bookpaper</button>
+                            <button class="chip" data-value="Art Paper" onclick="selectChip(this,'psnPrintPaperType')">Art Paper</button>
+                        </div>
+
+                        <label class="form-label">Kertas Cover</label>
+                        <div class="chip-group" id="psnPrintCoverType">
+                            <button class="chip default active" data-value="Art Carton 260gr" onclick="selectChip(this,'psnPrintCoverType')">Art Carton 260</button>
+                            <button class="chip" data-value="Ivory 230gr" onclick="selectChip(this,'psnPrintCoverType')">Ivory 230</button>
+                            <button class="chip" data-value="Hardcover" onclick="selectChip(this,'psnPrintCoverType')">Hardcover</button>
+                        </div>
+
+                        <label class="form-label">Laminating</label>
+                        <div class="chip-group" id="psnPrintLaminating">
+                            <button class="chip default active" data-value="Glossy" onclick="selectChip(this,'psnPrintLaminating')">Glossy</button>
+                            <button class="chip" data-value="Doff" onclick="selectChip(this,'psnPrintLaminating')">Doff</button>
+                            <button class="chip" data-value="Tidak" onclick="selectChip(this,'psnPrintLaminating')">Tidak</button>
+                        </div>
+
+                        <label class="form-label">Wrapping</label>
+                        <div class="chip-group" id="psnPrintWrapping">
+                            <button class="chip default active" data-value="Ya" onclick="selectChip(this,'psnPrintWrapping')">Ya ✅</button>
+                            <button class="chip" data-value="Tidak" onclick="selectChip(this,'psnPrintWrapping')">Tidak</button>
+                        </div>
+                    </div>
+
+                    <!-- LAPTOP SPECS -->
+                    <div id="laptopSpecsPesan" style="display:none">
+                        <div class="card-title" style="margin-top:20px">Spesifikasi Laptop</div>
+
+                        <label class="form-label">Nama Laptop</label>
+                        <input type="text" class="form-input" id="psnLaptopManualName" placeholder="Contoh: ASUS VivoBook X1404">
+
+                        <label class="form-label">Merk</label>
+                        <div class="chip-group" id="psnLaptopMerk">
+                            <button class="chip default active" data-value="ASUS" onclick="selectChip(this,'psnLaptopMerk')">ASUS</button>
+                            <button class="chip" data-value="ACER" onclick="selectChip(this,'psnLaptopMerk')">ACER</button>
+                            <button class="chip" data-value="Lenovo" onclick="selectChip(this,'psnLaptopMerk')">Lenovo</button>
+                            <button class="chip" data-value="HP" onclick="selectChip(this,'psnLaptopMerk')">HP</button>
+                            <button class="chip" data-value="Dell" onclick="selectChip(this,'psnLaptopMerk')">Dell</button>
+                            <button class="chip" data-value="Apple" onclick="selectChip(this,'psnLaptopMerk')">Apple</button>
+                        </div>
+
+                        <label class="form-label">Processor</label>
+                        <div class="chip-group" id="psnLaptopProcessor">
+                            <button class="chip" data-value="Intel i3" onclick="selectChip(this,'psnLaptopProcessor')">i3</button>
+                            <button class="chip default active" data-value="Intel i5" onclick="selectChip(this,'psnLaptopProcessor')">i5</button>
+                            <button class="chip" data-value="Intel i7" onclick="selectChip(this,'psnLaptopProcessor')">i7</button>
+                            <button class="chip" data-value="Intel i9" onclick="selectChip(this,'psnLaptopProcessor')">i9</button>
+                            <button class="chip" data-value="Ryzen 3" onclick="selectChip(this,'psnLaptopProcessor')">Ryzen 3</button>
+                            <button class="chip" data-value="Ryzen 5" onclick="selectChip(this,'psnLaptopProcessor')">Ryzen 5</button>
+                            <button class="chip" data-value="Ryzen 7" onclick="selectChip(this,'psnLaptopProcessor')">Ryzen 7</button>
+                            <button class="chip" data-value="Apple M1" onclick="selectChip(this,'psnLaptopProcessor')">M1</button>
+                            <button class="chip" data-value="Apple M2" onclick="selectChip(this,'psnLaptopProcessor')">M2</button>
+                            <button class="chip" data-value="Apple M3" onclick="selectChip(this,'psnLaptopProcessor')">M3</button>
+                        </div>
+
+                        <label class="form-label">RAM</label>
+                        <div class="chip-group" id="psnLaptopRam">
+                            <button class="chip" data-value="4GB" onclick="selectChip(this,'psnLaptopRam')">4GB</button>
+                            <button class="chip default active" data-value="8GB" onclick="selectChip(this,'psnLaptopRam')">8GB</button>
+                            <button class="chip" data-value="16GB" onclick="selectChip(this,'psnLaptopRam')">16GB</button>
+                            <button class="chip" data-value="32GB" onclick="selectChip(this,'psnLaptopRam')">32GB</button>
+                        </div>
+
+                        <label class="form-label">Storage</label>
+                        <div class="chip-group" id="psnLaptopStorage">
+                            <button class="chip" data-value="128GB SSD" onclick="selectChip(this,'psnLaptopStorage')">128GB</button>
+                            <button class="chip default active" data-value="256GB SSD" onclick="selectChip(this,'psnLaptopStorage')">256GB</button>
+                            <button class="chip" data-value="512GB SSD" onclick="selectChip(this,'psnLaptopStorage')">512GB</button>
+                            <button class="chip" data-value="1TB SSD" onclick="selectChip(this,'psnLaptopStorage')">1TB SSD</button>
+                            <button class="chip" data-value="500GB HDD" onclick="selectChip(this,'psnLaptopStorage')">500GB HDD</button>
+                            <button class="chip" data-value="1TB HDD" onclick="selectChip(this,'psnLaptopStorage')">1TB HDD</button>
+                        </div>
+
+                        <label class="form-label">Ukuran Layar</label>
+                        <div class="chip-group" id="psnLaptopScreen">
+                            <button class="chip" data-value="13 inch" onclick="selectChip(this,'psnLaptopScreen')">13"</button>
+                            <button class="chip default active" data-value="14 inch" onclick="selectChip(this,'psnLaptopScreen')">14"</button>
+                            <button class="chip" data-value="15.6 inch" onclick="selectChip(this,'psnLaptopScreen')">15.6"</button>
+                            <button class="chip" data-value="17 inch" onclick="selectChip(this,'psnLaptopScreen')">17"</button>
+                        </div>
+
+                        <label class="form-label">Kondisi</label>
+                        <div class="chip-group" id="psnLaptopCondition">
+                            <button class="chip" data-value="Baru" onclick="selectChip(this,'psnLaptopCondition')">Baru</button>
+                            <button class="chip default active" data-value="Like New" onclick="selectChip(this,'psnLaptopCondition')">Like New</button>
+                            <button class="chip" data-value="Bekas Normal" onclick="selectChip(this,'psnLaptopCondition')">Bekas Normal</button>
+                            <button class="chip" data-value="Ada Kerusakan" onclick="selectChip(this,'psnLaptopCondition')">Ada Kerusakan</button>
+                        </div>
+
+                        <label class="form-label">Garansi</label>
+                        <div class="chip-group" id="psnLaptopWarranty">
+                            <button class="chip default active" data-value="1 Bulan" onclick="selectChip(this,'psnLaptopWarranty')">1 Bln</button>
+                            <button class="chip" data-value="3 Bulan" onclick="selectChip(this,'psnLaptopWarranty')">3 Bln</button>
+                            <button class="chip" data-value="6 Bulan" onclick="selectChip(this,'psnLaptopWarranty')">6 Bln</button>
+                            <button class="chip" data-value="1 Tahun" onclick="selectChip(this,'psnLaptopWarranty')">1 Thn</button>
+                            <button class="chip" data-value="Tidak" onclick="selectChip(this,'psnLaptopWarranty')">Tidak</button>
+                        </div>
+                    </div>
+
+                    <!-- TIKTOK SPECS -->
+                    <div id="tiktokSpecsPesan" style="display:none">
+                        <div class="card-title" style="margin-top:20px">Affiliate TikTok</div>
+
+                        <label class="form-label">Nama Produk</label>
+                        <input type="text" class="form-input" id="psnTiktokManualProduct" placeholder="Nama produk affiliate">
+
+                        <label class="form-label">Platform</label>
+                        <div class="chip-group" id="psnTiktokPlatform">
+                            <button class="chip default active" data-value="TikTok Shop" onclick="selectChip(this,'psnTiktokPlatform')">TikTok Shop</button>
+                            <button class="chip" data-value="TikTok Live" onclick="selectChip(this,'psnTiktokPlatform')">TikTok Live</button>
+                            <button class="chip" data-value="Shopee" onclick="selectChip(this,'psnTiktokPlatform')">Shopee</button>
+                            <button class="chip" data-value="Lazada" onclick="selectChip(this,'psnTiktokPlatform')">Lazada</button>
+                            <button class="chip" data-value="Tokopedia" onclick="selectChip(this,'psnTiktokPlatform')">Tokopedia</button>
+                        </div>
+
+                        <label class="form-label">Kategori Produk</label>
+                        <div class="chip-group" id="psnTiktokCategory">
+                            <button class="chip default active" data-value="Fashion" onclick="selectChip(this,'psnTiktokCategory')">Fashion</button>
+                            <button class="chip" data-value="Gadget" onclick="selectChip(this,'psnTiktokCategory')">Gadget</button>
+                            <button class="chip" data-value="Beauty" onclick="selectChip(this,'psnTiktokCategory')">Beauty</button>
+                            <button class="chip" data-value="Makanan" onclick="selectChip(this,'psnTiktokCategory')">Makanan</button>
+                            <button class="chip" data-value="Home & Living" onclick="selectChip(this,'psnTiktokCategory')">Home</button>
+                        </div>
+
+                        <label class="form-label">Komisi</label>
+                        <div class="chip-group" id="psnTiktokKomisi">
+                            <button class="chip" data-value="10" onclick="selectChip(this,'psnTiktokKomisi')">10%</button>
+                            <button class="chip default active" data-value="15" onclick="selectChip(this,'psnTiktokKomisi')">15%</button>
+                            <button class="chip" data-value="20" onclick="selectChip(this,'psnTiktokKomisi')">20%</button>
+                            <button class="chip" data-value="25" onclick="selectChip(this,'psnTiktokKomisi')">25%</button>
+                            <button class="chip" data-value="30" onclick="selectChip(this,'psnTiktokKomisi')">30%</button>
+                        </div>
+                    </div>
+
+                    <!-- UMUM SPECS -->
+                    <div id="umumSpecsPesan" style="display:none">
+                        <div class="card-title" style="margin-top:20px">Pesanan Umum</div>
+                        <label class="form-label">Nama Item</label>
+                        <input type="text" class="form-input" id="psnUmumManualItem" placeholder="Nama barang/jasa">
+
+                        <label class="form-label">Tipe</label>
+                        <div class="chip-group" id="psnUmumType">
+                            <button class="chip default active" data-value="Penjualan" onclick="selectChip(this,'psnUmumType')">Penjualan</button>
+                            <button class="chip" data-value="Jasa" onclick="selectChip(this,'psnUmumType')">Jasa</button>
+                            <button class="chip" data-value="Servis" onclick="selectChip(this,'psnUmumType')">Servis</button>
+                            <button class="chip" data-value="Lainnya" onclick="selectChip(this,'psnUmumType')">Lainnya</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group"><label class="form-label">Catatan</label><textarea class="form-textarea" id="pesanNote"></textarea></div>
+
+                    <div class="card-title" style="margin-top:20px">Daftar Item</div>
+                    <div id="pesanItems"></div>
+                    <button class="btn btn-outline" onclick="addPesanItem()" style="margin:6px 0">+ Tambah Item</button>
+
+                    <div class="card-title" style="margin-top:20px">Pembayaran</div>
+                    <div class="form-group"><label class="form-label">Total</label><input type="number" class="form-input" id="pesanTotal" readonly></div>
+                    <div class="form-group"><label class="form-label">Uang Muka / DP (Rp)</label><input type="number" class="form-input" id="pesanDP" value="0" onchange="calculatePesanTotal()"></div>
+                    <div class="form-group"><label class="form-label">Sisa</label><input type="number" class="form-input" id="pesanRemaining" readonly></div>
+                    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="pesanStatus"><option value="DP">DP — Bayar Sebagian</option><option value="Lunas">Lunas — Bayar Penuh</option></select></div>
+                    <div id="pesanDPProgress" style="display:none;margin-bottom:16px">
+                        <label class="form-label">Progress Pembayaran</label>
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill" id="pesanDPFill" style="width:0%"></div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-top:4px">
+                            <span>DP 0%</span>
+                            <span id="pesanDPFillLabel">0%</span>
+                            <span>Lunas 100%</span>
+                        </div>
+                    </div>
+                    <div class="form-group"><label class="form-label">Dompet Penerima</label><select class="form-select" id="pesanWallet"></select></div>
+                    <button class="btn btn-primary" onclick="savePesan()">Simpan Pesanan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESAN DETAIL MODAL -->
+        <div class="modal-overlay" id="pesanDetailModal">
+            <div class="modal" style="max-height:95vh;overflow-y:auto">
+                <div class="modal-header no-print"><span class="modal-title">Detail Pesanan</span><button class="modal-close" onclick="closeModal('pesanDetailModal')">✕</button></div>
+                <div class="modal-body" id="pesanDetailContent"></div>
+                <div class="modal-body no-print" style="padding-top:0">
+                    <div id="pesanStatusActions" style="margin-bottom:8px"></div>
+                    <button class="btn btn-success" onclick="payPesanFromDetail()" id="pesanPayBtn" style="margin-bottom:10px;display:none">💰 Bayar / Lunas</button>
+                    <button class="btn btn-primary" onclick="sharePesanAsImage(this)" style="margin-bottom:10px">📸 Bagikan Slip (Foto)</button>
+                    <button class="btn btn-success" onclick="sendWhatsAppPesan()" style="margin-bottom:10px">📱 Kirim WhatsApp</button>
+                    <button class="btn btn-outline" onclick="editPesan()" style="margin-bottom:10px">✏️ Edit</button>
+                    <button class="btn btn-danger" onclick="deletePesan()">🗑️ Hapus Pesanan</button>
+                </div>
+            </div>
+        </div>
+
         <div class="modal-overlay" id="purchaseDetailModal">
             <div class="modal">
                 <div class="modal-header"><span class="modal-title">Detail Nota</span><button class="modal-close" onclick="closeModal('purchaseDetailModal')">✕</button></div>
@@ -872,11 +1174,13 @@
         </div>
 
         <div id="slipCaptureArea" style="position:fixed;left:-9999px;top:0;z-index:-1;width:794px;background:#fff;padding:40px;font-family:'Inter',sans-serif;color:#1a1a2e"></div>
+        <div id="pesanSlipCaptureArea" style="position:fixed;left:-9999px;top:0;z-index:-1;width:794px;background:#fff;padding:40px;font-family:'Inter',sans-serif;color:#1a1a2e"></div>
         <div id="catalogCaptureArea" style="position:fixed;left:-9999px;top:0;z-index:-1;width:794px;background:#fff;padding:40px;font-family:'Inter',sans-serif;color:#1a1a2e"></div>
     </div>
 
     <script src="js/config.js"></script>
     <script src="js/app.js"></script>
     <script src="js/modules.js"></script>
+    <script src="js/pesan.js"></script>
 </body>
 </html>
