@@ -657,7 +657,7 @@ function showPesanDetail(id) {
     const html = `
         <div class="invoice-preview" id="printAreaPesan" style="background:white;color:#0f172a;padding:24px">
             <div class="invoice-header">
-                <div class="invoice-logo" style="background:linear-gradient(145deg,#0d3b66,#1a5276,#c9953c);font-size:0;overflow:hidden">
+                <div class="invoice-logo" style="background:linear-gradient(145deg,#775B5B,#9B7E7E,#C9A87A);font-size:0;overflow:hidden">
                     <img src="${getLogoUrl()}" style="width:100%;height:100%;object-fit:cover" alt="MG">
                 </div>
                 <div class="invoice-title">${settings.businessName}</div>

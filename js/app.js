@@ -228,7 +228,7 @@ function showConfetti() {
     const container = document.createElement('div');
     container.className = 'confetti-container';
     document.body.appendChild(container);
-    const colors = ['#c9953c', '#0d3b66', '#2d8a4e', '#d4893c', '#3b6fa0', '#ff3b30'];
+    const colors = ['#C9A87A', '#775B5B', '#5E8A6A', '#C9A87A', '#7A9B9B', '#B84A4A'];
     for (let i = 0; i < 60; i++) {
         const piece = document.createElement('div');
         piece.className = 'confetti-piece';
@@ -1573,8 +1573,8 @@ function renderChart() {
         data: {
             labels: days,
             datasets: [
-                { label: 'Pemasukan', data: incomeData, backgroundColor: 'rgba(45,138,78,0.8)', borderRadius: 4, barPercentage: 0.4 },
-                { label: 'Pengeluaran', data: expenseData, backgroundColor: 'rgba(192,57,43,0.8)', borderRadius: 4, barPercentage: 0.4 }
+                { label: 'Pemasukan', data: incomeData, backgroundColor: 'rgba(94,138,106,0.8)', borderRadius: 4, barPercentage: 0.4 },
+                { label: 'Pengeluaran', data: expenseData, backgroundColor: 'rgba(184,74,74,0.8)', borderRadius: 4, barPercentage: 0.4 }
             ]
         },
         options: {
@@ -1665,9 +1665,9 @@ function switchChart(type) {
             data: {
                 labels,
                 datasets: [
-                    { label: 'Pemasukan', data: incomeArr, borderColor: '#2d8a4e', backgroundColor: 'rgba(45,138,78,0.1)', tension: 0.3, pointRadius: 3, fill: true },
-                    { label: 'Pengeluaran', data: expenseArr, borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,0.1)', tension: 0.3, pointRadius: 3, fill: true },
-                    { label: 'Laba Invoice', data: profitArr, borderColor: '#c9953c', backgroundColor: 'rgba(201,149,60,0.1)', tension: 0.3, pointRadius: 3, fill: true }
+                    { label: 'Pemasukan', data: incomeArr, borderColor: '#5E8A6A', backgroundColor: 'rgba(94,138,106,0.1)', tension: 0.3, pointRadius: 3, fill: true },
+                    { label: 'Pengeluaran', data: expenseArr, borderColor: '#B84A4A', backgroundColor: 'rgba(184,74,74,0.1)', tension: 0.3, pointRadius: 3, fill: true },
+                    { label: 'Laba Invoice', data: profitArr, borderColor: '#C9A87A', backgroundColor: 'rgba(201,168,122,0.1)', tension: 0.3, pointRadius: 3, fill: true }
                 ]
             },
             options: {
@@ -2982,7 +2982,7 @@ function showInvoiceDetail(id) {
     const invoiceHtml = `
         <div class="invoice-preview" id="printArea" style="background:white;color:#0f172a;padding:24px">
             <div class="invoice-header">
-                <div class="invoice-logo" style="background:linear-gradient(145deg,#0d3b66,#1a5276,#c9953c);font-size:0;overflow:hidden">
+                <div class="invoice-logo" style="background:linear-gradient(145deg,#775B5B,#9B7E7E,#C9A87A);font-size:0;overflow:hidden">
                     <img src="${getLogoUrl()}" style="width:100%;height:100%;object-fit:cover" alt="MG">
                 </div>
                 <div class="invoice-title">${settings.businessName}</div>
