@@ -282,6 +282,16 @@ function refreshData() {
 function showAlertError(msg) { showToast(msg, 'error'); }
 function showAlertSuccess(msg) { showToast(msg, 'success'); }
 
+// ==================== SETTINGS ACCORDION ====================
+function toggleSettingsGroup(el) {
+    const header = el.classList.contains('settings-group-header') ? el : el.closest('.settings-group-header');
+    if (!header) return;
+    const body = header.nextElementSibling;
+    if (!body || !body.classList.contains('settings-group-body')) return;
+    body.classList.toggle('open');
+    header.classList.toggle('open');
+}
+
 // ==================== BALANCE TOGGLE ====================
 
 let balanceHidden = true;

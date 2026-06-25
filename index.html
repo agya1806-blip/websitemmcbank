@@ -409,150 +409,203 @@
         </div>
 
         <div class="page" id="page-settings">
-            <div class="card">
-                <div class="card-title">👤 Profil Pengguna</div>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" id="settingEmail" readonly style="background:var(--surface-2);color:var(--text-secondary)">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Nama Pengguna</label>
-                    <input type="text" class="form-input" id="settingUserName" readonly style="background:var(--surface-2);color:var(--text-secondary)">
-                </div>
-                <div style="padding:8px 0">
-                    <span style="font-size:12px;color:var(--text-secondary)">📌 Data tersimpan khusus untuk akun ini. Login dengan akun lain untuk data berbeda.</span>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-title">🏪 Profil Usaha</div>
-                <div class="form-group">
-                    <label class="form-label">Nama Usaha</label>
-                    <input type="text" class="form-input" id="settingBusinessName" placeholder="Nama usaha Anda">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Nomor WhatsApp</label>
-                    <input type="text" class="form-input" id="settingWhatsApp" placeholder="08xxxxxxxxxx">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Alamat Usaha</label>
-                    <textarea class="form-textarea" id="settingAddress" placeholder="Alamat lengkap usaha Anda"></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Logo Usaha</label>
-                    <div style="display:flex;gap:12px;align-items:center">
-                        <img id="logoPreview" src="icons/icon-192.png" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:2px solid var(--border)">
-                        <input type="file" id="logoUploadInput" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
-                        <button class="btn btn-outline" onclick="document.getElementById('logoUploadInput').click()" style="font-size:13px">Ganti Logo</button>
-                        <button class="btn btn-danger" onclick="removeLogo()" style="font-size:13px;padding:8px 12px">✕ Hapus</button>
+            <div class="settings-accordion">
+
+                <!-- ===== GRUP 1: PROFIL ===== -->
+                <div class="settings-group">
+                    <div class="settings-group-header open" onclick="toggleSettingsGroup(this)">
+                        <span class="m-icon">person</span> Profil
+                        <span class="settings-arrow">expand_more</span>
                     </div>
-                    <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Format PNG/JPG, akan otomatis di-resize. Logo tampil di slip foto invoice.</div>
+                    <div class="settings-group-body open">
+                        <div class="card">
+                            <div class="card-title">👤 Profil Pengguna</div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-input" id="settingEmail" readonly style="background:var(--surface-2);color:var(--text-secondary)">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nama Pengguna</label>
+                                <input type="text" class="form-input" id="settingUserName" readonly style="background:var(--surface-2);color:var(--text-secondary)">
+                            </div>
+                            <div style="padding:8px 0">
+                                <span style="font-size:12px;color:var(--text-secondary)">📌 Data tersimpan khusus untuk akun ini. Login dengan akun lain untuk data berbeda.</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">🏪 Profil Usaha</div>
+                            <div class="form-group">
+                                <label class="form-label">Nama Usaha</label>
+                                <input type="text" class="form-input" id="settingBusinessName" placeholder="Nama usaha Anda">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nomor WhatsApp</label>
+                                <input type="text" class="form-input" id="settingWhatsApp" placeholder="08xxxxxxxxxx">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Alamat Usaha</label>
+                                <textarea class="form-textarea" id="settingAddress" placeholder="Alamat lengkap usaha Anda"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Logo Usaha</label>
+                                <div style="display:flex;gap:12px;align-items:center">
+                                    <img id="logoPreview" src="icons/icon-192.png" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:2px solid var(--border)">
+                                    <input type="file" id="logoUploadInput" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+                                    <button class="btn btn-outline" onclick="document.getElementById('logoUploadInput').click()" style="font-size:13px">Ganti Logo</button>
+                                    <button class="btn btn-danger" onclick="removeLogo()" style="font-size:13px;padding:8px 12px">✕ Hapus</button>
+                                </div>
+                                <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Format PNG/JPG, akan otomatis di-resize. Logo tampil di slip foto invoice.</div>
+                            </div>
+                            <button class="btn btn-primary" onclick="saveSettings()">💾 Simpan Pengaturan</button>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">🎨 Tampilan</div>
+                            <div class="toggle"><span>Mode Gelap</span><div class="toggle-switch" id="darkModeToggle" onclick="toggleTheme()"></div></div>
+                        </div>
+                    </div>
                 </div>
-                <button class="btn btn-primary" onclick="saveSettings()">💾 Simpan Pengaturan</button>
-            </div>
-            <div class="card">
-                <div class="card-title">🎨 Tampilan</div>
-                <div class="toggle"><span>Mode Gelap</span><div class="toggle-switch" id="darkModeToggle" onclick="toggleTheme()"></div></div>
-            </div>
-            <div class="card">
-                <div class="card-title">🔐 Keamanan PIN</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Aktifkan PIN 6 digit untuk mengunci aplikasi setiap kali dibuka.</div>
-                <div class="form-group">
-                    <label class="form-label">PIN 6 Digit</label>
-                    <input type="password" class="form-input" id="settingPin" placeholder="Masukkan PIN 6 digit" maxlength="6" inputmode="numeric" pattern="[0-9]*">
+
+                <!-- ===== GRUP 2: KEAMANAN ===== -->
+                <div class="settings-group">
+                    <div class="settings-group-header" onclick="toggleSettingsGroup(this)">
+                        <span class="m-icon">lock</span> Keamanan
+                        <span class="settings-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-group-body">
+                        <div class="card">
+                            <div class="card-title">🔐 Keamanan PIN</div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Aktifkan PIN 6 digit untuk mengunci aplikasi setiap kali dibuka.</div>
+                            <div class="form-group">
+                                <label class="form-label">PIN 6 Digit</label>
+                                <input type="password" class="form-input" id="settingPin" placeholder="Masukkan PIN 6 digit" maxlength="6" inputmode="numeric" pattern="[0-9]*">
+                            </div>
+                            <div style="display:flex;gap:8px">
+                                <button class="btn btn-primary" onclick="savePin()">💾 Simpan PIN</button>
+                                <button class="btn btn-danger" onclick="removePin()">✕ Hapus PIN</button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">🏬 Multi-Cabang</div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Kelola cabang/toko untuk membedakan transaksi per lokasi.</div>
+                            <div id="cabangList"></div>
+                            <div style="display:flex;gap:8px;margin-top:8px">
+                                <input type="text" class="form-input" id="cabangInput" placeholder="Nama cabang baru" style="flex:1">
+                                <button class="btn btn-primary" onclick="addCabang()" style="width:auto">+</button>
+                            </div>
+                            <button class="btn btn-primary" onclick="saveCabang()" style="margin-top:8px">💾 Simpan Cabang</button>
+                        </div>
+                    </div>
                 </div>
-                <div style="display:flex;gap:8px">
-                    <button class="btn btn-primary" onclick="savePin()">💾 Simpan PIN</button>
-                    <button class="btn btn-danger" onclick="removePin()">✕ Hapus PIN</button>
+
+                <!-- ===== GRUP 3: KONTEN BISNIS ===== -->
+                <div class="settings-group">
+                    <div class="settings-group-header" onclick="toggleSettingsGroup(this)">
+                        <span class="m-icon">description</span> Konten Bisnis
+                        <span class="settings-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-group-body">
+                        <div class="card">
+                            <div class="card-title">💳 Metode Pembayaran</div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Metode ini akan tampil di slip invoice dan pesan WhatsApp.</div>
+                            <div id="paymentMethodsList"></div>
+                            <button class="btn btn-outline" onclick="showAddPaymentMethod()" style="margin-top:8px">+ Tambah Metode Bayar</button>
+                            <button class="btn btn-primary" onclick="savePaymentMethodsFromUI()" style="margin-top:8px;display:block">💾 Simpan Metode Bayar</button>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">📋 Layanan Usaha</div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Layanan ini tampil di slip foto invoice.</div>
+                            <div id="servicesList"></div>
+                            <button class="btn btn-outline" onclick="addServiceItem()" style="margin-top:8px">+ Tambah Layanan</button>
+                            <button class="btn btn-primary" onclick="saveServicesFromUI()" style="margin-top:8px;display:block">💾 Simpan Layanan</button>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">📑 Tipe Invoice</div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Tipe invoice yang tampil di menu buat invoice. Tipe bawaan tidak bisa dihapus.</div>
+                            <div id="invoiceTypesList"></div>
+                            <button class="btn btn-outline" onclick="showAddInvoiceType()" style="margin-top:8px">+ Tambah Tipe Invoice</button>
+                            <button class="btn btn-primary" onclick="saveInvoiceTypesFromUI()" style="margin-top:8px;display:block">💾 Simpan Tipe Invoice</button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="card">
-                <div class="card-title">🏬 Multi-Cabang</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Kelola cabang/toko untuk membedakan transaksi per lokasi.</div>
-                <div id="cabangList"></div>
-                <div style="display:flex;gap:8px;margin-top:8px">
-                    <input type="text" class="form-input" id="cabangInput" placeholder="Nama cabang baru" style="flex:1">
-                    <button class="btn btn-primary" onclick="addCabang()" style="width:auto">+</button>
+
+                <!-- ===== GRUP 4: PERSONALISASI ===== -->
+                <div class="settings-group">
+                    <div class="settings-group-header" onclick="toggleSettingsGroup(this)">
+                        <span class="m-icon">tune</span> Personalisasi
+                        <span class="settings-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-group-body">
+                        <div class="card">
+                            <div class="card-title">⚡ Shortcut Cepat</div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Pilih menu yang tampil di quick menu dashboard (minimal 4).</div>
+                            <div id="shortcutList"></div>
+                            <button class="btn btn-primary" onclick="saveShortcuts()" style="margin-top:8px">💾 Simpan Shortcut</button>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">🤖 AI Assistant</div>
+                            <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">
+                                AI bisa bantu isi item invoice dan kategorisasi transaksi.<br>
+                                Dapatkan API Key gratis di <strong>https://aistudio.google.com/apikey</strong>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Gemini API Key</label>
+                                <input type="text" class="form-input" id="settingAiKey" placeholder="Masukkan API Key Gemini">
+                            </div>
+                            <button class="btn btn-primary" onclick="saveAiKey()" style="background:linear-gradient(90deg,#775B5B,#9B7E7E)">💾 Simpan API Key</button>
+                        </div>
+                    </div>
                 </div>
-                <button class="btn btn-primary" onclick="saveCabang()" style="margin-top:8px">💾 Simpan Cabang</button>
-            </div>
-            <div class="card">
-                <div class="card-title">⚡ Shortcut Cepat</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Pilih menu yang tampil di quick menu dashboard (minimal 4).</div>
-                <div id="shortcutList"></div>
-                <button class="btn btn-primary" onclick="saveShortcuts()" style="margin-top:8px">💾 Simpan Shortcut</button>
-            </div>
-            <div class="card">
-                <div class="card-title">🤖 AI Assistant</div>
-                <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">
-                    AI bisa bantu isi item invoice dan kategorisasi transaksi.<br>
-                    Dapatkan API Key gratis di <strong>https://aistudio.google.com/apikey</strong>
+
+                <!-- ===== GRUP 5: DATA ===== -->
+                <div class="settings-group">
+                    <div class="settings-group-header" onclick="toggleSettingsGroup(this)">
+                        <span class="m-icon">cloud</span> Backup & Data
+                        <span class="settings-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-group-body">
+                        <div class="card">
+                            <div class="card-title"><span class="m-icon" style="font-size:18px">cloud_upload</span> Backup Telegram</div>
+                            <div style="padding:8px 0;font-size:12px;color:var(--text-secondary);line-height:1.8">
+                                <div>📱 Lokal: ✅ Tersimpan di perangkat ini</div>
+                                <div id="syncStatus">📡 Telegram: Backup tersimpan lokal</div>
+                            </div>
+                            <div style="font-size:12px;color:var(--text-secondary);background:var(--surface-2);padding:12px;border-radius:8px;margin-bottom:12px;line-height:1.6">
+                                <strong>🔐 Cara Backup via Telegram:</strong><br>
+                                1. Buka Telegram cari <strong>@BotFather</strong><br>
+                                2. Ketik <strong>/newbot</strong> → ikuti petunjuk<br>
+                                3. Copy <strong>Bot Token</strong> (format: 123456:ABC-DEF)<br>
+                                4. Kirim pesan ke bot kamu lalu buka <strong>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</strong><br>
+                                5. Copy angka <strong>chat_id</strong> (dari "chat":{"id":...})<br>
+                                6. Masukkan Token & Chat ID di bawah
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Bot Token Telegram</label>
+                                <input type="text" class="form-input" id="settingTelegramToken" placeholder="123456:ABC-DEF...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Chat ID Telegram</label>
+                                <input type="text" class="form-input" id="settingTelegramChatId" placeholder="123456789">
+                            </div>
+                            <button class="btn btn-primary" onclick="saveTelegramConfig()" style="margin-bottom:6px">💾 Simpan Konfigurasi Telegram</button>
+                            <button class="btn btn-success" onclick="syncToTelegram()" style="margin-bottom:6px">⬆️ Backup Data ke Telegram</button>
+                            <button class="btn btn-outline" onclick="restoreFromTelegram()">⬇️ Restore Data dari Telegram</button>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">💾 Data & Sharing</div>
+                            <button class="btn btn-outline" onclick="exportData()" style="margin-bottom:8px">📥 Export Data (JSON)</button>
+                            <button class="btn btn-outline" onclick="document.getElementById('importFile').click()" style="margin-bottom:8px">📤 Import Data dari File</button>
+                            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(this)">
+                            <button class="btn btn-danger" onclick="resetData()" style="margin-bottom:8px">🗑️ Reset Semua Data</button>
+                            <div style="padding:8px;background:var(--surface-2);border-radius:8px;font-size:11px;color:var(--text-secondary);line-height:1.6;margin-top:8px">
+                                <strong>📱 Cara Sharing Data ke HP/User Lain:</strong><br>
+                                1. Export data → file JSON tersimpan<br>
+                                2. Kirim file JSON via WhatsApp/Bluetooth<br>
+                                3. Di HP tujuan, login akun tujuan → Import file JSON
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Gemini API Key</label>
-                    <input type="text" class="form-input" id="settingAiKey" placeholder="Masukkan API Key Gemini">
-                </div>
-                <button class="btn btn-primary" onclick="saveAiKey()" style="background:linear-gradient(90deg,#6366f1,#8b5cf6)">💾 Simpan API Key</button>
-            </div>
-            <div class="card">
-                <div class="card-title"><span class="m-icon" style="font-size:18px">cloud_upload</span> Backup Telegram</div>
-                <div style="padding:8px 0;font-size:12px;color:var(--text-secondary);line-height:1.8">
-                    <div>📱 Lokal: ✅ Tersimpan di perangkat ini</div>
-                    <div id="syncStatus">📡 Telegram: Backup tersimpan lokal</div>
-                </div>
-                <div style="font-size:12px;color:var(--text-secondary);background:var(--surface-2);padding:12px;border-radius:8px;margin-bottom:12px;line-height:1.6">
-                    <strong>🔐 Cara Backup via Telegram:</strong><br>
-                    1. Buka Telegram cari <strong>@BotFather</strong><br>
-                    2. Ketik <strong>/newbot</strong> → ikuti petunjuk<br>
-                    3. Copy <strong>Bot Token</strong> (format: 123456:ABC-DEF)<br>
-                    4. Kirim pesan ke bot kamu lalu buka <strong>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</strong><br>
-                    5. Copy angka <strong>chat_id</strong> (dari "chat":{"id":...})<br>
-                    6. Masukkan Token & Chat ID di bawah
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Bot Token Telegram</label>
-                    <input type="text" class="form-input" id="settingTelegramToken" placeholder="123456:ABC-DEF...">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Chat ID Telegram</label>
-                    <input type="text" class="form-input" id="settingTelegramChatId" placeholder="123456789">
-                </div>
-                <button class="btn btn-primary" onclick="saveTelegramConfig()" style="margin-bottom:6px">💾 Simpan Konfigurasi Telegram</button>
-                <button class="btn btn-success" onclick="syncToTelegram()" style="margin-bottom:6px">⬆️ Backup Data ke Telegram</button>
-                <button class="btn btn-outline" onclick="restoreFromTelegram()">⬇️ Restore Data dari Telegram</button>
-            </div>
-            <div class="card">
-                <div class="card-title">💳 Metode Pembayaran</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Metode ini akan tampil di slip invoice dan pesan WhatsApp.</div>
-                <div id="paymentMethodsList"></div>
-                <button class="btn btn-outline" onclick="showAddPaymentMethod()" style="margin-top:8px">+ Tambah Metode Bayar</button>
-                <button class="btn btn-primary" onclick="savePaymentMethodsFromUI()" style="margin-top:8px;display:block">💾 Simpan Metode Bayar</button>
-            </div>
-            <div class="card">
-                <div class="card-title">📋 Layanan Usaha</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Layanan ini tampil di slip foto invoice.</div>
-                <div id="servicesList"></div>
-                <button class="btn btn-outline" onclick="addServiceItem()" style="margin-top:8px">+ Tambah Layanan</button>
-                <button class="btn btn-primary" onclick="saveServicesFromUI()" style="margin-top:8px;display:block">💾 Simpan Layanan</button>
-            </div>
-            <div class="card">
-                <div class="card-title">📑 Tipe Invoice</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Tipe invoice yang tampil di menu buat invoice. Tipe bawaan tidak bisa dihapus.</div>
-                <div id="invoiceTypesList"></div>
-                <button class="btn btn-outline" onclick="showAddInvoiceType()" style="margin-top:8px">+ Tambah Tipe Invoice</button>
-                <button class="btn btn-primary" onclick="saveInvoiceTypesFromUI()" style="margin-top:8px;display:block">💾 Simpan Tipe Invoice</button>
-            </div>
-            <div class="card">
-                <div class="card-title">💾 Data & Sharing</div>
-                <button class="btn btn-outline" onclick="exportData()" style="margin-bottom:8px">📥 Export Data (JSON)</button>
-                <button class="btn btn-outline" onclick="document.getElementById('importFile').click()" style="margin-bottom:8px">📤 Import Data dari File</button>
-                <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(this)">
-                <button class="btn btn-danger" onclick="resetData()" style="margin-bottom:8px">🗑️ Reset Semua Data</button>
-                <div style="padding:8px;background:var(--surface-2);border-radius:8px;font-size:11px;color:var(--text-secondary);line-height:1.6;margin-top:8px">
-                    <strong>📱 Cara Sharing Data ke HP/User Lain:</strong><br>
-                    1. Export data → file JSON tersimpan<br>
-                    2. Kirim file JSON via WhatsApp/Bluetooth<br>
-                    3. Di HP tujuan, login akun tujuan → Import file JSON
-                </div>
+
             </div>
         </div>
 
