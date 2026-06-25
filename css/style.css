@@ -1212,35 +1212,101 @@ button:active, .nav-item:active, .menu-item:active, .stat-card:active, .list-ite
     padding: 12px 0;
 }
 
-.toggle-switch {
-    width: 50px;
-    height: 28px;
-    background: var(--border);
-    border-radius: 14px;
+.theme-toggle {
+    width: 56px;
+    height: 32px;
+    background: var(--surface-2);
+    border-radius: 16px;
     position: relative;
     cursor: pointer;
-    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 2px;
 }
-
-.toggle-switch.active {
-    background: linear-gradient(135deg, var(--navy), var(--gold));
+.theme-toggle.active {
+    background: var(--surface-2);
+    border-color: var(--gold);
 }
-
-.toggle-switch::after {
-    content: '';
-    position: absolute;
-    width: 24px;
-    height: 24px;
-    background: white;
+.theme-toggle-knob {
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
-    top: 2px;
-    left: 2px;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(145deg, #FFD93D, #FFB347);
+    box-shadow: 0 2px 8px rgba(255, 179, 71, 0.4);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    transform: translateX(0);
 }
+.theme-toggle.active .theme-toggle-knob {
+    background: linear-gradient(145deg, #6C7A89, #4A5A6A);
+    box-shadow: 0 2px 8px rgba(74, 90, 106, 0.4);
+    transform: translateX(24px);
+}
+.theme-toggle-knob::after {
+    font-family: 'Material Icons Round';
+    font-size: 16px;
+    color: #fff;
+    transition: all 0.4s ease;
+}
+.theme-toggle .theme-toggle-knob::after { content: 'light_mode'; }
+.theme-toggle.active .theme-toggle-knob::after { content: 'dark_mode'; }
 
-.toggle-switch.active::after { transform: translateX(22px); }
+/* ==================== STAGGERED LIST ANIMATION ====================*/
+@keyframes listItemIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+.page .card > .list-item,
+.page .card > div > .list-item,
+#invoiceList .card,
+#pesanList .card,
+#financeList .card,
+#customerList .list-item,
+#productList .list-item,
+#debtList .list-item,
+#receivableList .list-item {
+    animation: listItemIn 0.35s ease both;
+}
+#invoiceList .card:nth-child(1),
+#pesanList .card:nth-child(1),
+#financeList .card:nth-child(1),
+.page .card > .list-item:nth-child(1) { animation-delay: 0s; }
+#invoiceList .card:nth-child(2),
+#pesanList .card:nth-child(2),
+#financeList .card:nth-child(2),
+.page .card > .list-item:nth-child(2) { animation-delay: 0.04s; }
+#invoiceList .card:nth-child(3),
+#pesanList .card:nth-child(3),
+#financeList .card:nth-child(3),
+.page .card > .list-item:nth-child(3) { animation-delay: 0.08s; }
+#invoiceList .card:nth-child(4),
+#pesanList .card:nth-child(4),
+#financeList .card:nth-child(4),
+.page .card > .list-item:nth-child(4) { animation-delay: 0.12s; }
+#invoiceList .card:nth-child(5),
+#pesanList .card:nth-child(5),
+#financeList .card:nth-child(5),
+.page .card > .list-item:nth-child(5) { animation-delay: 0.16s; }
+#invoiceList .card:nth-child(6),
+#pesanList .card:nth-child(6),
+#financeList .card:nth-child(6),
+.page .card > .list-item:nth-child(6) { animation-delay: 0.2s; }
+#invoiceList .card:nth-child(7),
+#pesanList .card:nth-child(7),
+#financeList .card:nth-child(7),
+.page .card > .list-item:nth-child(7) { animation-delay: 0.24s; }
+#invoiceList .card:nth-child(8),
+#pesanList .card:nth-child(8),
+#financeList .card:nth-child(8),
+.page .card > .list-item:nth-child(8) { animation-delay: 0.28s; }
+#invoiceList .card:nth-child(n+9),
+#pesanList .card:nth-child(n+9),
+#financeList .card:nth-child(n+9),
+.page .card > .list-item:nth-child(n+9) { animation-delay: 0.32s; }
 
 /* ==================== EMPTY STATE ====================*/
 .empty-state {

@@ -614,7 +614,8 @@ function init() {
     const settings = loadData(DB.settings);
     document.documentElement.setAttribute('data-theme', settings.theme || 'light');
     if (settings.theme === 'dark') {
-        document.getElementById('darkModeToggle').classList.add('active');
+        const toggleEl = document.getElementById('darkModeToggle');
+        if (toggleEl) toggleEl.classList.add('active');
     }
 
     document.getElementById('settingEmail').value = currentUser.email;
@@ -2603,7 +2604,10 @@ function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
-    document.getElementById('darkModeToggle').classList.toggle('active');
+    const el = document.getElementById('darkModeToggle');
+    if (el) el.classList.toggle('active');
+    // Also update any other theme toggles
+    document.querySelectorAll('.theme-toggle').forEach(t => t.classList.toggle('active'));
     const settings = loadData(DB.settings);
     settings.theme = next;
     saveData(DB.settings, settings);
