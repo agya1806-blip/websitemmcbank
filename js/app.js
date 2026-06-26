@@ -25,7 +25,8 @@ const DB = {
     purchases: 'mughis_purchases',
     settings: 'mughis_settings',
     activities: 'mughis_activities',
-    users: 'mughis_users'
+    users: 'mughis_users',
+    pesan: 'mughis_pesan'
 };
 
 const defaultWallets = [
@@ -2803,8 +2804,7 @@ function updateSettingsUI() {
 
 function exportData() {
     const data = {};
-    const allKeys = [...Object.values(DB), 'mughis_pesan'];
-    allKeys.forEach(key => { data[key] = loadData(key); });
+    Object.values(DB).forEach(key => { data[key] = loadData(key); });
     data._appVersion = '2.1.0';
     data._exportedBy = currentUser?.email || 'guest';
     data._exportedAt = new Date().toISOString();
@@ -2832,7 +2832,7 @@ function importData(input) {
         try {
             const data = JSON.parse(e.target.result);
             // Cek apakah ini file backup MUGHIS BANK
-            const validKeys = [...Object.values(DB), 'mughis_pesan'];
+            const validKeys = Object.values(DB);
             const hasValidKeys = validKeys.some(k => data[k] !== undefined);
             if (!hasValidKeys) {
                 alert('❌ File ini bukan backup MUGHIS BANK yang valid!');
