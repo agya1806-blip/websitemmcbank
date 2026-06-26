@@ -2802,9 +2802,27 @@ function updateSettingsUI() {
     renderShortcutSettings();
 }
 
+const EXTRA_KEYS = {
+    mughis_logo_dataurl: { key: 'mughis_logo_dataurl', perUser: false },
+    mughis_telegram_token: { key: 'mughis_telegram_token', perUser: false },
+    mughis_telegram_chatid: { key: 'mughis_telegram_chatid', perUser: false },
+    mughis_ai_key: { key: 'mughis_ai_key', perUser: true },
+    mughis_drive_token: { key: 'mughis_drive_token', perUser: true },
+    mughis_drive_fileid: { key: 'mughis_drive_fileid', perUser: true },
+    mughis_last_sync: { key: 'mughis_last_sync', perUser: true },
+    mughis_last_drive_sync: { key: 'mughis_last_drive_sync', perUser: true }
+};
+
 function exportData() {
     const data = {};
     Object.values(DB).forEach(key => { data[key] = loadData(key); });
+    Object.entries(EXTRA_KEYS).forEach(([cleanKey, cfg]) => {
+        const storageKey = cfg.perUser
+            ? `${cfg.key}_${currentUser?.userId || 'guest'}`
+            : cfg.key;
+        const val = localStorage.getItem(storageKey);
+        if (val !== null) data[cleanKey] = val;
+    });
     data._appVersion = '2.1.0';
     data._exportedBy = currentUser?.email || 'guest';
     data._exportedAt = new Date().toISOString();
@@ -2831,7 +2849,6 @@ function importData(input) {
     reader.onload = async (e) => {
         try {
             const data = JSON.parse(e.target.result);
-            // Cek apakah ini file backup MUGHIS BANK
             const validKeys = Object.values(DB);
             const hasValidKeys = validKeys.some(k => data[k] !== undefined);
             if (!hasValidKeys) {
@@ -2848,6 +2865,15 @@ function importData(input) {
                 if (validKeys.includes(key) && Array.isArray(value)) {
                     const storageKey = getStorageKey(key);
                     localStorage.setItem(storageKey, JSON.stringify(value));
+                    imported++;
+                }
+            });
+            Object.entries(EXTRA_KEYS).forEach(([cleanKey, cfg]) => {
+                if (data[cleanKey] !== undefined) {
+                    const storageKey = cfg.perUser
+                        ? `${cfg.key}_${currentUser?.userId || 'guest'}`
+                        : cfg.key;
+                    localStorage.setItem(storageKey, data[cleanKey]);
                     imported++;
                 }
             });
