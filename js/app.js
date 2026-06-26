@@ -2803,7 +2803,8 @@ function updateSettingsUI() {
 
 function exportData() {
     const data = {};
-    Object.values(DB).forEach(key => { data[key] = loadData(key); });
+    const allKeys = [...Object.values(DB), 'mughis_pesan'];
+    allKeys.forEach(key => { data[key] = loadData(key); });
     data._appVersion = '2.1.0';
     data._exportedBy = currentUser?.email || 'guest';
     data._exportedAt = new Date().toISOString();
@@ -2831,7 +2832,8 @@ function importData(input) {
         try {
             const data = JSON.parse(e.target.result);
             // Cek apakah ini file backup MUGHIS BANK
-            const hasValidKeys = Object.values(DB).some(k => data[k] !== undefined);
+            const validKeys = [...Object.values(DB), 'mughis_pesan'];
+            const hasValidKeys = validKeys.some(k => data[k] !== undefined);
             if (!hasValidKeys) {
                 alert('❌ File ini bukan backup MUGHIS BANK yang valid!');
                 input.value = '';
@@ -2843,7 +2845,7 @@ function importData(input) {
             }
             let imported = 0;
             Object.entries(data).forEach(([key, value]) => { 
-                if (Object.values(DB).includes(key) && Array.isArray(value)) {
+                if (validKeys.includes(key) && Array.isArray(value)) {
                     const storageKey = getStorageKey(key);
                     localStorage.setItem(storageKey, JSON.stringify(value));
                     imported++;
