@@ -21,7 +21,6 @@ const DB = {
     products: 'mughis_products',
     debts: 'mughis_debts',
     receivables: 'mughis_receivables',
-    invoices: 'mughis_invoices',
     purchases: 'mughis_purchases',
     settings: 'mughis_settings',
     activities: 'mughis_activities',
