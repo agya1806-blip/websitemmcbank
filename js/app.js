@@ -43,7 +43,7 @@ const defaultSettings = {
     address: 'Samalanga, Bireuen, Aceh',
     logo: '',
     signature: '',
-    theme: 'light',
+    theme: 'dark',
     cloudBinId: '',
     services: [
         'Jual Laptop Baru & Bekas',
@@ -613,7 +613,7 @@ function init() {
     document.getElementById('receivableDue').value = today;
 
     const settings = loadData(DB.settings);
-    document.documentElement.setAttribute('data-theme', settings.theme || 'light');
+    document.documentElement.setAttribute('data-theme', settings.theme || 'dark');
     if (settings.theme === 'dark') {
         const toggleEl = document.getElementById('darkModeToggle');
         if (toggleEl) toggleEl.classList.add('active');
