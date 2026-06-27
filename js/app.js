@@ -2700,8 +2700,9 @@ function importData(input) {
         try {
             const data = JSON.parse(e.target.result);
             const validKeys = Object.values(DB);
-            const hasValidKeys = validKeys.some(k => data[k] !== undefined);
-            if (!hasValidKeys) {
+            const hasCurrentKeys = validKeys.some(k => data[k] !== undefined);
+            const hasOldInvoice = 'mughis_invoices' in data;
+            if (!hasCurrentKeys && !hasOldInvoice) {
                 alert('❌ File ini bukan backup MUGHIS BANK yang valid!');
                 input.value = '';
                 return;
@@ -2711,6 +2712,35 @@ function importData(input) {
                 return;
             }
             let imported = 0;
+
+            // Migrate old mughis_invoices → mughis_pesan
+            if (Array.isArray(data['mughis_invoices']) && data['mughis_pesan'] === undefined) {
+                const converted = data['mughis_invoices'].map(inv => ({
+                    id: inv.id,
+                    date: inv.date || inv.createdAt || new Date().toISOString(),
+                    customerId: inv.customerId || '',
+                    customerName: inv.customerName || '',
+                    customerPhone: inv.customerPhone || '',
+                    customerAddress: inv.customerAddress || '',
+                    type: inv.type || 'umum',
+                    items: Array.isArray(inv.items) ? inv.items.map(it => ({
+                        id: it.id, name: it.name || '', qty: it.qty || 1,
+                        price: it.price || 0, productId: it.productId || ''
+                    })) : [],
+                    total: inv.total || 0,
+                    dp: inv.dp || 0,
+                    dpAmount: inv.dpAmount || 0,
+                    modalKeluar: inv.modalKeluar || 0,
+                    remaining: inv.remaining !== undefined ? inv.remaining : (inv.total || 0) - (inv.dp || 0),
+                    status: inv.status || 'Belum Dibayar',
+                    walletId: inv.walletId || '',
+                    note: inv.note || '',
+                    specs: inv.specs || {}
+                }));
+                data[DB.pesan] = converted;
+                imported++;
+            }
+
             Object.entries(data).forEach(([key, value]) => { 
                 if (validKeys.includes(key) && Array.isArray(value)) {
                     const storageKey = getStorageKey(key);
