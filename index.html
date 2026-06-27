@@ -26,68 +26,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-    <!-- LOGIN PAGE -->
-    <div id="loginPage" class="login-page active">
-        <div class="login-container">
-            <div class="login-header">
-                <div class="login-logo"><img src="icons/icon-192.png" alt="MB" style="width:100%;height:100%;object-fit:cover;border-radius:20px"></div>
-                <h1>MUGHIS BANK</h1>
-                <p>Keuangan, Pendataan, & Pesanan</p>
-            </div>
-            <div class="login-form">
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" id="loginEmail" placeholder="Masukkan email Anda">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" class="form-input" id="loginPassword" placeholder="Masukkan password">
-                </div>
-                <button class="btn btn-primary" onclick="loginWithPassword()" style="margin-bottom:12px">🔓 Login</button>
-                <div style="text-align:center;margin:16px 0">
-                    <span style="color:var(--text-secondary);font-size:13px">atau</span>
-                </div>
-                <div id="googleLoginBtn" style="margin-bottom:12px"></div>
-                <button class="btn btn-outline" onclick="showRegisterForm()" style="margin-bottom:12px">📝 Daftar Akun Baru</button>
-            </div>
-            <div class="login-footer">
-                <p style="font-size:12px;color:var(--text-secondary);text-align:center">
-                    💡 Tip: Gunakan akun Google untuk kemudahan login
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <!-- REGISTER PAGE -->
-    <div id="registerPage" class="login-page">
-        <div class="login-container">
-            <div class="login-header">
-                <button class="back-btn" onclick="backToLogin()">← Kembali</button>
-                <h1>Daftar Akun</h1>
-                <p>Buat akun baru untuk MUGHIS BANK</p>
-            </div>
-            <div class="login-form">
-                <div class="form-group">
-                    <label class="form-label">Nama Lengkap</label>
-                    <input type="text" class="form-input" id="registerName" placeholder="Nama Anda">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" id="registerEmail" placeholder="Email Anda">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" class="form-input" id="registerPassword" placeholder="Minimal 6 karakter">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Konfirmasi Password</label>
-                    <input type="password" class="form-input" id="registerPasswordConfirm" placeholder="Ulangi password">
-                </div>
-                <button class="btn btn-primary" onclick="registerAccount()">✅ Daftar</button>
-            </div>
-        </div>
-    </div>
-
     <!-- PIN LOCK SCREEN -->
     <div id="pinLockPage" class="login-page" style="display:none">
         <div class="login-container">
@@ -120,9 +58,6 @@
                     <button class="pin-key" onclick="pinInput('0')">0</button>
                     <button class="pin-key" onclick="pinInput('back')">⌫</button>
                 </div>
-                <div style="margin-top:16px">
-                    <button class="btn btn-link" onclick="logout()" style="font-size:13px">🔒 Ganti Akun</button>
-                </div>
             </div>
         </div>
     </div>
@@ -141,7 +76,7 @@
             <div class="header-actions">
                 <button class="icon-btn" onclick="showPage('about')"><span class="m-icon">info</span></button>
                 <button class="icon-btn" onclick="showPage('settings')"><span class="m-icon">settings</span></button>
-                <button class="icon-btn" onclick="logout()"><span class="m-icon">logout</span></button>
+                <button class="icon-btn" onclick="location.reload()"><span class="m-icon">refresh</span></button>
             </div>
             </div>
             <div class="balance-card">

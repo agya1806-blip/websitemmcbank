@@ -68,7 +68,7 @@ const incomeCategories = ['Penjualan', 'Jasa', 'Pendapatan Lain', 'Transfer Masu
 const expenseCategories = ['Pembelian', 'Operasional', 'Gaji', 'Pengeluaran Lain', 'Transfer Keluar', 'Modal Produksi', 'Modal Operasional', 'Modal Marketing', 'Modal Gaji', 'Modal Transportasi', 'Modal Lainnya'];
 const modalCategories = ['Modal Produksi', 'Modal Operasional', 'Modal Marketing', 'Modal Gaji', 'Modal Transportasi', 'Modal Lainnya'];
 
-let currentUser = null;
+let currentUser = { userId: 'guest', email: 'local@user', name: 'User' };
 let currentTransactionType = 'income';
 let currentInvoiceId = null;
 let invoiceItems = [];
@@ -345,9 +345,7 @@ function getDisplayBalance(value) {
 let pinTemp = '';
 
 function showPinLock() {
-    document.getElementById('loginPage').classList.remove('active');
-    const rp = document.getElementById('registerPage');
-    if (rp) rp.classList.remove('active');
+    document.getElementById('mainApp').style.display = 'none';
     document.getElementById('pinLockPage').style.display = 'flex';
     pinTemp = '';
     updatePinDots();
@@ -359,7 +357,7 @@ function hidePinLock() {
 }
 
 function pinInput(val) {
-    if (val === 'cancel') { hidePinLock(); logout(); return; }
+    if (val === 'cancel') { hidePinLock(); document.getElementById('mainApp').style.display = 'block'; init(); return; }
     if (val === 'back') { pinTemp = pinTemp.slice(0, -1); updatePinDots(); return; }
     if (pinTemp.length >= 6) return;
     pinTemp += val;
@@ -416,162 +414,16 @@ async function removePin() {
     alert('PIN dihapus.');
 }
 
-// ==================== AUTHENTICATION ====================
+// ==================== APP STARTUP ====================
 
-function initGoogleSignIn() {
-    const clientId = CONFIG.GOOGLE_CLIENT_ID || 'YOUR_CLIENT_ID.apps.googleusercontent.com';
-    if (clientId.startsWith('YOUR_')) return;
-    google.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleGoogleSignIn
-    });
-    google.accounts.id.renderButton(
-        document.getElementById('googleLoginBtn'),
-        { theme: 'outline', size: 'large', width: '100%' }
-    );
-}
-
-function handleGoogleSignIn(response) {
-    const token = response.credential;
-    try {
-        const base64Url = token.split('.');
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        const userData = JSON.parse(jsonPayload);
-        
-        loginUser(userData.email, userData.name, userData.email);
-    } catch (err) {
-        alert('❌ Login Google gagal. Silakan coba lagi.');
-    }
-}
-
-function loginWithPassword() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-
-    if (!email || !password) {
-        alert('⚠️ Email dan password wajib diisi!');
-        return;
-    }
-
-    const users = loadData(DB.users) || [];
-    const user = users.find(u => u.email === email);
-
-    if (!user) {
-        alert('❌ Email tidak terdaftar. Silakan daftar terlebih dahulu.');
-        return;
-    }
-
-    // Simple password check (dalam production, gunakan hashing)
-    if (user.password !== btoa(password)) {
-        alert('❌ Password salah!');
-        return;
-    }
-
-    loginUser(user.email, user.name, user.userId);
-}
-
-function showRegisterForm() {
-    document.getElementById('loginPage').classList.remove('active');
-    document.getElementById('registerPage').classList.add('active');
-}
-
-function backToLogin() {
-    document.getElementById('registerPage').classList.remove('active');
-    document.getElementById('loginPage').classList.add('active');
-}
-
-function registerAccount() {
-    const name = document.getElementById('registerName').value.trim();
-    const email = document.getElementById('registerEmail').value.trim();
-    const password = document.getElementById('registerPassword').value;
-    const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
-
-    if (!name || !email || !password || !passwordConfirm) {
-        alert('⚠️ Semua field wajib diisi!');
-        return;
-    }
-
-    if (password.length < 6) {
-        alert('⚠️ Password minimal 6 karakter!');
-        return;
-    }
-
-    if (password !== passwordConfirm) {
-        alert('⚠️ Password tidak cocok!');
-        return;
-    }
-
-    const users = loadData(DB.users) || [];
-    if (users.some(u => u.email === email)) {
-        alert('⚠️ Email sudah terdaftar!');
-        return;
-    }
-
-    const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    users.push({
-        userId,
-        name,
-        email,
-        password: btoa(password),
-        createdAt: Date.now()
-    });
-
-    saveData(DB.users, users);
-    alert('✅ Akun berhasil dibuat! Silakan login.');
-    backToLogin();
-    document.getElementById('loginEmail').value = email;
-}
-
-function loginUser(email, name, userId) {
-    currentUser = {
-        email,
-        name,
-        userId,
-        loginTime: Date.now()
-    };
-
-    localStorage.setItem('mughis_current_user', JSON.stringify(currentUser));
-    document.getElementById('loginPage').classList.remove('active');
-    
+function startApp() {
+    document.getElementById('mainApp').style.display = 'block';
     const settings = loadData(DB.settings) || {};
     if (settings.pinHash) {
         showPinLock();
     } else {
-        document.getElementById('mainApp').style.display = 'block';
         init();
     }
-}
-
-async function logout() {
-    if (!await showConfirm('Yakin ingin logout?')) return;
-    currentUser = null;
-    localStorage.removeItem('mughis_current_user');
-    document.getElementById('mainApp').style.display = 'none';
-    document.getElementById('loginPage').classList.add('active');
-    document.getElementById('registerPage').classList.remove('active');
-    document.getElementById('loginEmail').value = '';
-    document.getElementById('loginPassword').value = '';
-    location.reload();
-}
-
-function checkCurrentUser() {
-    const user = localStorage.getItem('mughis_current_user');
-    if (user) {
-        currentUser = JSON.parse(user);
-        document.getElementById('loginPage').classList.remove('active');
-        const settings = loadData(DB.settings) || {};
-        if (settings.pinHash) {
-            showPinLock();
-        } else {
-            document.getElementById('mainApp').style.display = 'block';
-            init();
-        }
-        return true;
-    }
-    return false;
 }
 
 // ==================== MULTI-USER DATA STORAGE ====================
@@ -2882,5 +2734,5 @@ function importContactsFromFile(input) {
     reader.readAsText(file);
 }
 
-// Auto-restore session on page load
-checkCurrentUser();
+// Start app on page load
+startApp();
