@@ -229,7 +229,7 @@ function showConfetti() {
     const container = document.createElement('div');
     container.className = 'confetti-container';
     document.body.appendChild(container);
-    const colors = ['#C9A87A', '#775B5B', '#5E8A6A', '#C9A87A', '#7A9B9B', '#B84A4A'];
+    const colors = ['#C9A87A', '#775B5B', '#D4B88E', '#C9A87A', '#7A9B9B', '#5E4646'];
     for (let i = 0; i < 60; i++) {
         const piece = document.createElement('div');
         piece.className = 'confetti-piece';
