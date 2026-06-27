@@ -1095,7 +1095,7 @@ button:active, .nav-item:active, .menu-item:active, .stat-card:active, .list-ite
     user-select: none;
     border-radius: var(--radius-sm);
     flex: 1;
-    max-width: 72px;
+    max-width: 62px;
 }
 
 .nav-item.active {
