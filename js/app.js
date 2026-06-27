@@ -567,6 +567,7 @@ function checkCurrentUser() {
             showPinLock();
         } else {
             document.getElementById('mainApp').style.display = 'block';
+            init();
         }
         return true;
     }
@@ -2880,3 +2881,6 @@ function importContactsFromFile(input) {
     };
     reader.readAsText(file);
 }
+
+// Auto-restore session on page load
+checkCurrentUser();
