@@ -284,14 +284,17 @@ function renderPesanItems() {
         container.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;padding:8px">Belum ada item. Tambah item di bawah.</div>';
         return;
     }
-    container.innerHTML = pesanItems.map(item => `
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-            <input type="text" class="form-input" style="flex:2;min-width:0;padding:8px;font-size:13px" value="${item.name}" placeholder="Nama item" onchange="updatePesanItem('${item.id}','name',this.value)">
-            <input type="number" class="form-input" style="flex:0.5;min-width:0;padding:8px;font-size:13px;width:50px" value="${item.qty}" placeholder="Qty" onchange="updatePesanItem('${item.id}','qty',this.value)">
-            <input type="number" class="form-input" style="flex:1;min-width:0;padding:8px;font-size:13px;width:80px" value="${item.price}" placeholder="Harga" onchange="updatePesanItem('${item.id}','price',this.value)">
-            <button class="btn btn-danger" style="padding:6px 8px;font-size:12px;width:auto" onclick="removePesanItem('${item.id}')">✕</button>
-        </div>
-    `).join('');
+    container.innerHTML = pesanItems.map(item => {
+        const subtotal = (parseFloat(item.qty) || 0) * (parseFloat(item.price) || 0);
+        return `
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+            <input type="text" class="form-input" style="flex:2;min-width:0;padding:6px;font-size:12px" value="${item.name}" placeholder="Nama" onchange="updatePesanItem('${item.id}','name',this.value)">
+            <input type="number" class="form-input" style="flex:0.4;min-width:0;padding:6px;font-size:12px;width:44px" value="${item.qty}" placeholder="Qty" onchange="updatePesanItem('${item.id}','qty',this.value)">
+            <input type="number" class="form-input" style="flex:0.8;min-width:0;padding:6px;font-size:12px;width:70px" value="${item.price}" placeholder="Harga" onchange="updatePesanItem('${item.id}','price',this.value)">
+            <span style="flex:0.6;font-size:12px;font-weight:600;text-align:right;color:var(--primary)">${formatRupiah(subtotal)}</span>
+            <button class="btn btn-danger" style="padding:4px 6px;font-size:11px;width:auto" onclick="removePesanItem('${item.id}')">✕</button>
+        </div>`;
+    }).join('');
 }
 
 function calculatePesanTotal() {
@@ -483,6 +486,42 @@ function savePesan() {
     closeModal('pesanModal');
     recalculateAll();
     renderAll();
+}
+
+// ===== AI AUTO-FILL ITEMS =====
+async function aiFillPesan() {
+    const customerName = document.getElementById('pesanCustomerName').value || 'pelanggan';
+    const type = document.getElementById('pesanType').value;
+    let specs = '';
+    if (type === 'print') specs = `${getChipValue('psnPrintBookSize') || 'A4'}, ${getChipValue('psnPrintBinding') || 'Lem Panas'}`;
+    else if (type === 'laptop') specs = `${document.getElementById('psnLaptopManualName').value || 'Laptop'}, ${getChipValue('psnLaptopProcessor') || ''}`;
+    else specs = getChipValue('psnUmumType') || 'Umum';
+
+    const prompt = `Buat daftar item untuk pesanan dengan data:
+- Pelanggan: ${customerName}
+- Tipe: ${type} (${specs})
+- Buat 3-5 item yang relevan dengan format: nama_item|jumlah|harga_per_item(pakai angka wajar Indonesia)
+Contoh format output (setiap baris):
+Buku Tahunan SD|50|45000
+Stiker Label|100|5000
+
+Hanya kirim item-itemnya saja, tanpa angka awal, tanpa teks lain.`;
+
+    const result = await aiGenerate(prompt);
+    if (!result) return;
+
+    const lines = result.trim().split('\n').filter(l => l.includes('|'));
+    if (lines.length === 0) { alert('AI tidak menghasilkan item. Coba lagi.'); return; }
+
+    pesanItems = [];
+    lines.forEach(line => {
+        const parts = line.split('|');
+        if (parts.length >= 3) {
+            pesanItems.push({ id: generateId(), name: parts[0].trim(), qty: parseInt(parts[1]) || 1, price: parseInt(parts[2].replace(/\D/g, '')) || 0 });
+        }
+    });
+    renderPesanItems();
+    alert(`✅ AI berhasil membuat ${pesanItems.length} item!`);
 }
 
 // ===== RENDER PESAN =====
@@ -746,11 +785,75 @@ function payPesan(id) {
     const p = pesanan.find(x => x.id === id);
     if (!p || p.status === 'Lunas') return;
 
+    const wallets = loadData(DB.wallets);
     const remaining = parseFloat(p.remaining) || 0;
-    const amount = prompt(`Total sisa: ${formatRupiah(remaining)}\nMasukkan nominal pembayaran:`, remaining);
-    if (!amount) return;
-    const payAmt = parseFloat(amount);
-    if (payAmt <= 0) { alert('Nominal harus lebih dari 0!'); return; }
+    const walletOpts = '<option value="">Pilih Dompet</option>' +
+        wallets.map(w => `<option value="${w.id}">${w.icon} ${w.name} (${formatRupiah(w.balance)})</option>`).join('');
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    modal.innerHTML = `
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">💰 Bayar Pesanan</span>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Pesanan</label>
+                    <input type="text" class="form-input" value="${p.number} - ${p.customerName}" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sisa Pembayaran</label>
+                    <input type="text" class="form-input" id="pesanPayRemaining" value="${formatRupiah(remaining)}" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nominal Pembayaran</label>
+                    <select class="form-select" id="pesanPayType">
+                        <option value="full">Bayar Lunas (Rp ${remaining.toLocaleString('id-ID')})</option>
+                        <option value="dp">Bayar Sebagian (DP)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="pesanPayDPGroup" style="display:none">
+                    <label class="form-label">Jumlah (Rp)</label>
+                    <input type="number" class="form-input" id="pesanPayDPAmount" value="${remaining}" max="${remaining}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Dompet Penerima</label>
+                    <select class="form-select" id="pesanPayWallet">${walletOpts}</select>
+                </div>
+                <button class="btn btn-primary" onclick="confirmPayPesan('${id}'); this.closest('.modal-overlay').remove();">✅ Konfirmasi Pembayaran</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+
+    setTimeout(() => {
+        const payType = document.getElementById('pesanPayType');
+        const dpGroup = document.getElementById('pesanPayDPGroup');
+        if (payType && dpGroup) {
+            payType.addEventListener('change', function() {
+                dpGroup.style.display = this.value === 'dp' ? 'block' : 'none';
+            });
+        }
+    }, 100);
+}
+
+function confirmPayPesan(pesanId) {
+    const walletId = document.getElementById('pesanPayWallet')?.value;
+    if (!walletId) { alert('⚠️ Pilih dompet penerima!'); return; }
+
+    const pesanan = getPesanData();
+    const p = pesanan.find(x => x.id === pesanId);
+    if (!p) return;
+
+    const remaining = parseFloat(p.remaining) || 0;
+    const payType = document.getElementById('pesanPayType')?.value;
+    let payAmt = remaining;
+    if (payType === 'dp') {
+        payAmt = parseFloat(document.getElementById('pesanPayDPAmount')?.value) || 0;
+        if (payAmt <= 0) { alert('⚠️ Nominal harus lebih dari 0!'); return; }
+        if (payAmt > remaining) { alert('⚠️ Nominal melebihi sisa pembayaran!'); return; }
+    }
 
     let transactions = loadData(DB.transactions);
     const trans = {
@@ -760,7 +863,7 @@ function payPesan(id) {
         category: 'Pelunasan Pesanan',
         description: `Pelunasan ${p.number} - ${p.customerName}`,
         amount: payAmt,
-        walletId: p.walletId || document.getElementById('pesanWallet')?.value || '',
+        walletId: walletId,
         pesanId: p.id,
         createdAt: Date.now()
     };
@@ -768,11 +871,11 @@ function payPesan(id) {
 
     if (payAmt >= remaining) {
         p.status = 'Lunas';
-        p.dp = parseFloat(p.dp) + payAmt;
+        p.dp = (parseFloat(p.dp) || 0) + payAmt;
         p.remaining = 0;
         showConfetti();
     } else {
-        p.dp = parseFloat(p.dp) + payAmt;
+        p.dp = (parseFloat(p.dp) || 0) + payAmt;
         p.remaining = Math.max(0, remaining - payAmt);
     }
 
@@ -781,7 +884,6 @@ function payPesan(id) {
     addActivity(`💰 Pembayaran ${p.number}: ${formatRupiah(payAmt)}`);
     recalculateAll();
     renderAll();
-    alert('✅ Pembayaran berhasil dicatat!');
 }
 
 function payPesanFromDetail() {

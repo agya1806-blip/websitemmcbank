@@ -660,15 +660,6 @@ function generateId() {
     return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-function generateInvoiceNumber() {
-    const date = new Date();
-    const dateStr = date.getFullYear() + String(date.getMonth() + 1).padStart(2, '0') + String(date.getDate()).padStart(2, '0');
-    const invoices = loadData(DB.invoices);
-    const todayInvoices = invoices.filter(i => i.number && i.number.includes(dateStr));
-    const seq = String(todayInvoices.length + 1).padStart(3, '0');
-    return `MG-${dateStr}-${seq}`;
-}
-
 function formatRupiah(num) {
     return 'Rp ' + (num || 0).toLocaleString('id-ID');
 }
@@ -1233,8 +1224,8 @@ function recalculateDashboard() {
     const transactions = loadData(DB.transactions);
     const debts = loadData(DB.debts);
     const receivables = loadData(DB.receivables);
-    const invoices = loadData(DB.invoices);
     const wallets = recalculateWalletBalance();
+    const pesanList = typeof getPesanData === 'function' ? getPesanData() : [];
     
     const now = new Date();
     const thisMonth = now.getMonth();
@@ -1244,20 +1235,17 @@ function recalculateDashboard() {
     let financeIncome = 0, financeExpense = 0;
     let monthFinanceIncome = 0, monthFinanceExpense = 0;
     
-    // ---- INVOICE ----
+    // ---- PESANAN ----
     let invoiceIncome = 0, totalModalOut = 0;
     let monthInvoiceIncome = 0, monthModalOut = 0;
+    let pesanPaidCount = 0, pesanUnpaidCount = 0, pesanDPCount = 0;
     
     // ---- HUTANG & PIUTANG ----
     let debtPaid = 0, receivablePaid = 0;
     
-    // ---- RINGKASAN INVOICE ----
-    let totalInvoiceNominal = 0, paidInvoiceNominal = 0, unpaidInvoiceNominal = 0;
-    let paidInvoiceCount = 0, unpaidInvoiceCount = 0;
-    
-    // Proses transaksi keuangan (skip income invoice & pesan, tapi tetap hitung modal keluar)
+    // Proses transaksi keuangan (skip income pesan, tapi tetap hitung modal keluar)
     transactions.forEach(t => {
-        if ((t.invoiceId || t.pesanId) && !t.isModalKeluar) return;
+        if ((t.pesanId || t.invoiceId) && !t.isModalKeluar) return;
         const amt = parseFloat(t.amount) || 0;
         const tDate = new Date(t.date);
         const isMonth = tDate.getMonth() === thisMonth && tDate.getFullYear() === thisYear;
@@ -1276,34 +1264,7 @@ function recalculateDashboard() {
         }
     });
     
-    // Proses invoice
-    invoices.forEach(inv => {
-        const invDate = new Date(inv.date);
-        const invTotal = parseFloat(inv.total || 0);
-        const isMonth = invDate.getMonth() === thisMonth && invDate.getFullYear() === thisYear;
-        totalInvoiceNominal += invTotal;
-        
-        if (inv.status === 'Lunas') {
-            paidInvoiceNominal += invTotal;
-            paidInvoiceCount++;
-            invoiceIncome += invTotal;
-            if (isMonth) monthInvoiceIncome += invTotal;
-        } else if (inv.status === 'DP') {
-            const dp = parseFloat(inv.dp || 0);
-            paidInvoiceNominal += dp;
-            paidInvoiceCount++;
-            invoiceIncome += dp;
-            if (isMonth) monthInvoiceIncome += dp;
-            unpaidInvoiceNominal += parseFloat(inv.remaining || 0);
-            unpaidInvoiceCount++;
-        } else {
-            unpaidInvoiceNominal += invTotal;
-            unpaidInvoiceCount++;
-        }
-    });
-    
-    // Proses pesanan (pendapatan digabung ke invoiceIncome)
-    const pesanList = typeof getPesanData === 'function' ? getPesanData() : [];
+    // Proses pesanan (pendapatan)
     pesanList.forEach(p => {
         const pDate = new Date(p.date);
         const pTotal = parseFloat(p.total || 0);
@@ -1311,10 +1272,15 @@ function recalculateDashboard() {
         if (p.status === 'Lunas') {
             invoiceIncome += pTotal;
             if (isMonth) monthInvoiceIncome += pTotal;
+            pesanPaidCount++;
         } else if (p.status === 'DP') {
             const dp = parseFloat(p.dp || 0);
             invoiceIncome += dp;
             if (isMonth) monthInvoiceIncome += dp;
+            pesanDPCount++;
+            pesanUnpaidCount++;
+        } else {
+            pesanUnpaidCount++;
         }
     });
 
@@ -1345,7 +1311,7 @@ function recalculateDashboard() {
         monthFinanceIncome,
         monthFinanceExpense,
         
-        // Invoice
+        // Pesanan
         invoiceIncome,
         totalModalOut,
         invoiceNet: invoiceIncome - totalModalOut,
@@ -1361,13 +1327,10 @@ function recalculateDashboard() {
         totalReceivable,
         totalDebtReceivable: totalDebt + totalReceivable,
         
-        // Ringkasan Invoice
-        paidInvoiceCount,
-        unpaidInvoiceCount,
-        invoiceDPCount: unpaidInvoiceCount,
-        totalInvoiceNominal,
-        paidInvoiceNominal,
-        unpaidInvoiceNominal
+        // Ringkasan Pesanan
+        paidInvoiceCount: pesanPaidCount,
+        unpaidInvoiceCount: pesanUnpaidCount,
+        invoiceDPCount: pesanDPCount
     };
 }
 
@@ -1435,8 +1398,6 @@ function renderAll() {
     renderProducts();
     renderDebts();
     renderReceivables();
-    renderInvoices();
-    renderRecentInvoices();
     if (typeof renderPesan === 'function') renderPesan();
     if (typeof renderRecentPesan === 'function') renderRecentPesan();
     renderReports();
@@ -1450,7 +1411,7 @@ function renderInsights(stats) {
     if (!container) return;
     
     const insights = [];
-    const invoices = loadData(DB.invoices);
+    const pesanData = typeof getPesanData === 'function' ? getPesanData() : [];
     const transactions = loadData(DB.transactions);
     const now = new Date();
     const thisMonth = now.getMonth();
@@ -1477,11 +1438,11 @@ function renderInsights(stats) {
         }
     }
     
-    // Top invoice type
+    // Top pesan type
     const typeCount = {};
-    invoices.forEach(inv => {
-        if (inv.status === 'Lunas') {
-            typeCount[inv.type] = (typeCount[inv.type] || 0) + parseFloat(inv.total || 0);
+    pesanData.forEach(p => {
+        if (p.status === 'Lunas') {
+            typeCount[p.type] = (typeCount[p.type] || 0) + parseFloat(p.total || 0);
         }
     });
     const topType = Object.entries(typeCount).sort((a, b) => b[1] - a[1])[0];
@@ -1501,14 +1462,8 @@ function renderInsights(stats) {
             const td = new Date(t.date);
             if (td.getMonth() === month && td.getFullYear() === year) {
                 const amt = parseFloat(t.amount) || 0;
-                if (t.type === 'income' && !t.invoiceId) inc += amt;
+                if (t.type === 'income') inc += amt;
                 else if (t.type === 'expense') exp += amt;
-            }
-        });
-        invoices.forEach(inv => {
-            const id = new Date(inv.date);
-            if (id.getMonth() === month && id.getFullYear() === year && inv.status === 'Lunas') {
-                inc += parseFloat(inv.total) || 0;
             }
         });
         monthlyProfits.push(inc - exp);
@@ -1531,7 +1486,7 @@ function renderInsights(stats) {
     }
     
     if (insights.length === 0) {
-        insights.push('Belum cukup data untuk analisis. Tambah transaksi dan invoice untuk insight.');
+        insights.push('Belum cukup data untuk analisis. Tambah transaksi dan pesanan untuk insight.');
     }
     
     const icons = ['lightbulb', 'trending_up', 'bar_chart', 'health_and_safety', 'analytics'];
@@ -1601,7 +1556,7 @@ function switchChart(type) {
     if (window._financeChart) { window._financeChart.destroy(); }
 
     const transactions = loadData(DB.transactions);
-    const invoices = loadData(DB.invoices);
+    const pesanData = typeof getPesanData === 'function' ? getPesanData() : [];
     const now = new Date();
 
     if (type === 'incomeExpense') {
@@ -1650,12 +1605,12 @@ function switchChart(type) {
                 else if (t.type === 'expense') monthlyData[key].expense += amt;
             }
         });
-        invoices.forEach(inv => {
-            const d = new Date(inv.date);
+        pesanData.forEach(p => {
+            const d = new Date(p.date);
             const key = d.toLocaleDateString('id-ID', { month: 'short' });
             if (monthlyData[key]) {
-                if (inv.status === 'Lunas') monthlyData[key].profit += parseFloat(inv.total || 0);
-                else if (inv.status === 'DP') monthlyData[key].profit += parseFloat(inv.dp || 0);
+                if (p.status === 'Lunas') monthlyData[key].profit += parseFloat(p.total || 0);
+                else if (p.status === 'DP') monthlyData[key].profit += parseFloat(p.dp || 0);
             }
         });
         const labels = Object.keys(monthlyData);
@@ -1670,7 +1625,7 @@ function switchChart(type) {
                 datasets: [
                     { label: 'Pemasukan', data: incomeArr, borderColor: '#C9A87A', backgroundColor: 'rgba(201,168,122,0.1)', tension: 0.3, pointRadius: 3, fill: true },
                     { label: 'Pengeluaran', data: expenseArr, borderColor: '#775B5B', backgroundColor: 'rgba(119,91,91,0.1)', tension: 0.3, pointRadius: 3, fill: true },
-                    { label: 'Laba Invoice', data: profitArr, borderColor: '#C9A87A', backgroundColor: 'rgba(201,168,122,0.05)', tension: 0.3, pointRadius: 3, fill: true, borderDash: [5,3] }
+                    { label: 'Laba Pesanan', data: profitArr, borderColor: '#C9A87A', backgroundColor: 'rgba(201,168,122,0.05)', tension: 0.3, pointRadius: 3, fill: true, borderDash: [5,3] }
                 ]
             },
             options: {
@@ -1792,38 +1747,39 @@ function renderCustomers() {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><p>Belum ada pelanggan</p></div>';
         return;
     }
-    const invoices = loadData(DB.invoices);
+    const pesanList = typeof getPesanData === 'function' ? getPesanData() : [];
     container.innerHTML = customers.map(c => {
-        const custInvoices = invoices.filter(i => i.customerId === c.id);
-        const totalInv = custInvoices.length;
-        const totalSpent = custInvoices.reduce((s, i) => s + parseFloat(i.total || 0), 0);
+        const custPesan = pesanList.filter(p => p.customerId === c.id);
+        const totalPesan = custPesan.length;
+        const totalSpent = custPesan.reduce((s, p) => s + parseFloat(p.total || 0), 0);
         return `
         <div class="card">
             <div class="list-item" style="padding-top:0">
-                <div class="list-icon" style="background:#dbeafe">👤</div>
+                <div class="list-icon" style="background:rgba(201,168,122,0.15)">👤</div>
                 <div class="list-content">
                     <div class="list-title">${c.name}</div>
                     <div class="list-subtitle">${c.phone||'-'} • ${c.address||'-'}</div>
                 </div>
                 <div style="text-align:right">
-                    <div style="font-size:13px;font-weight:700">${totalInv} inv</div>
+                    <div style="font-size:13px;font-weight:700">${totalPesan} psn</div>
                     <div style="font-size:11px;color:var(--text-secondary)">${formatRupiah(totalSpent)}</div>
                 </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:8px">
-                <button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="viewCustomerInvoices('${c.id}')">📄 Invoice</button>
+                <button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="viewCustomerPesan('${c.id}')">📄 Pesanan</button>
                 <button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="editCustomer('${c.id}')">Edit</button>
                 <button class="btn btn-danger" style="padding:6px;font-size:12px;flex:1" onclick="deleteCustomer('${c.id}')">Hapus</button>
             </div>
         </div>`; }).join('');
 }
 
-function viewCustomerInvoices(customerId) {
+function viewCustomerPesan(customerId) {
     const customer = loadData(DB.customers).find(c => c.id === customerId);
     if (!customer) return;
-    document.getElementById('invoiceSearch').value = customer.name;
-    showPage('invoice');
-    renderInvoices();
+    const searchEl = document.getElementById('pesanSearch');
+    if (searchEl) searchEl.value = customer.name;
+    showPage('pesan');
+    if (typeof renderPesan === 'function') renderPesan();
 }
 
 function renderProducts() {
@@ -1909,92 +1865,10 @@ function renderReceivables() {
         </div>`).join('');
 }
 
-function renderRecentInvoices() {
-    const container = document.getElementById('recentInvoices');
-    if (!container) return;
-    const invoices = loadData(DB.invoices).sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
-    const types = getInvoiceTypes();
-    const typeLabel = {};
-    types.forEach(t => { typeLabel[t.id] = t.label; });
-    if (invoices.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-secondary);font-size:13px">Belum ada invoice</div>';
-        return;
-    }
-    container.innerHTML = invoices.map(inv => `
-        <div class="list-item" style="cursor:pointer;padding:8px 0" onclick="showInvoiceDetail('${inv.id}')">
-            <div class="list-content">
-                <div class="list-title">${inv.number} — ${formatRupiah(inv.total)}</div>
-                <div class="list-subtitle">${inv.customerName} • ${typeLabel[inv.type]||inv.type} • ${formatDate(inv.date)}</div>
-            </div>
-            <span class="badge ${inv.status==='Lunas'?'badge-success':inv.status==='DP'?'badge-warning':'badge-danger'}" style="font-size:11px">${inv.status}</span>
-        </div>
-    `).join('');
-}
-
-function renderInvoices() {
-    const tab = window.invoiceTab || 'all';
-    const search = document.getElementById('invoiceSearch')?.value?.toLowerCase() || '';
-    let invoices = loadData(DB.invoices);
-    if (tab === 'paid') invoices = invoices.filter(i => i.status === 'Lunas');
-    else if (tab === 'dp') invoices = invoices.filter(i => i.status === 'DP');
-    if (search) invoices = invoices.filter(i => 
-        (i.number || '').toLowerCase().includes(search) ||
-        (i.customerName || '').toLowerCase().includes(search) ||
-        (i.type || '').toLowerCase().includes(search)
-    );
-    
-    const sortBy = document.getElementById('invoiceSort')?.value || 'date';
-    if (sortBy === 'date') invoices.sort((a, b) => new Date(b.date) - new Date(a.date));
-    else if (sortBy === 'amount') invoices.sort((a, b) => parseFloat(b.total) - parseFloat(a.total));
-    else if (sortBy === 'status') invoices.sort((a, b) => a.status.localeCompare(b.status));
-    
-    const container = document.getElementById('invoiceList');
-    if (invoices.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📄</div><p>Belum ada invoice</p></div>';
-        return;
-    }
-    
-    const invTypes = getInvoiceTypes();
-    const typeIcon = {}; const typeLabel = {};
-    invTypes.forEach(t => { typeIcon[t.id] = t.icon || 'description'; typeLabel[t.id] = t.label; });
-    
-    container.innerHTML = invoices.map(inv => {
-        const dpPercent = inv.total > 0 ? Math.min(100, Math.round((parseFloat(inv.dp||0) / inv.total) * 100)) : 0;
-        return `
-        <div class="card">
-            <div class="list-item" style="padding-top:0;cursor:pointer" onclick="showInvoiceDetail('${inv.id}')">
-                <div class="list-icon" style="background:rgba(201,168,122,0.15);font-size:20px"><span class="m-icon">${typeIcon[inv.type] || 'description'}</span></div>
-                <div class="list-content">
-                    <div class="list-title">${inv.number}</div>
-                    <div class="list-subtitle">${inv.customerName} • ${formatDate(inv.date)} • ${typeLabel[inv.type] || inv.type}${inv.cabang ? ' • <span class="cabang-tag">' + inv.cabang + '</span>' : ''}</div>
-                </div>
-                <div style="text-align:right">
-                    <div class="list-amount">${formatRupiah(inv.total)}</div>
-                    <span class="badge ${inv.status==='Lunas'?'badge-success':'badge-warning'}">${inv.status}</span>
-                </div>
-            </div>
-            ${inv.status === 'DP' ? `
-            <div style="margin:8px 0 4px">
-                <div class="progress-bar-track" style="height:6px">
-                    <div class="progress-bar-fill" style="width:${dpPercent}%"></div>
-                </div>
-                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:2px">
-                    <span>DP ${dpPercent}%</span>
-                    <span>Rp ${formatRupiah(inv.dp||0)} / ${formatRupiah(inv.total)}</span>
-                </div>
-            </div>
-            <div style="display:flex;gap:8px;margin-top:8px">
-                <button class="btn btn-success" style="padding:6px;font-size:12px;flex:1" onclick="payInvoice('${inv.id}')">💰 Bayar</button>
-                <button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="event.stopPropagation();showInvoiceDetail('${inv.id}')">📄 Detail</button>
-            </div>` : ''}
-        </div>`;
-    }).join('');
-}
-
 function renderReports() {
     const tab = window.reportTab || 'daily';
     const transactions = loadData(DB.transactions);
-    const invoices = loadData(DB.invoices);
+    const pesanList = typeof getPesanData === 'function' ? getPesanData() : [];
     const debts = loadData(DB.debts);
     const receivables = loadData(DB.receivables);
     const now = new Date();
@@ -2036,32 +1910,16 @@ function renderReports() {
         }
     });
     
-    // Hitung invoice dalam periode
-    let filteredInvoices = invoices;
-    if (tab === 'daily') {
-        const today = now.toISOString().split('T');
-        filteredInvoices = invoices.filter(i => i.date === today);
-    } else if (tab === 'weekly') {
-        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-        filteredInvoices = invoices.filter(i => new Date(i.date) >= weekAgo);
-    } else if (tab === 'monthly') {
-        filteredInvoices = invoices.filter(i => {
-            const d = new Date(i.date);
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-        });
-    } else {
-        filteredInvoices = invoices.filter(i => {
-            const d = new Date(i.date);
-            return d.getFullYear() === now.getFullYear();
-        });
-    }
-    
-    filteredInvoices.forEach(inv => {
-        if (inv.status === 'Lunas') {
-            invoiceIncome += parseFloat(inv.total || 0);
-        } else if (inv.status === 'DP') {
-            invoiceIncome += parseFloat(inv.dp || 0);
-        }
+    // Hitung pendapatan dari pesanan dalam periode
+    const pesanFilter = p => {
+        if (tab === 'daily') return p.date === now.toISOString().split('T');
+        if (tab === 'weekly') return new Date(p.date) >= new Date(now - 7 * 24 * 60 * 60 * 1000);
+        if (tab === 'monthly') { const d = new Date(p.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }
+        { const d = new Date(p.date); return d.getFullYear() === now.getFullYear(); }
+    };
+    pesanList.filter(pesanFilter).forEach(p => {
+        if (p.status === 'Lunas') invoiceIncome += parseFloat(p.total || 0);
+        else if (p.status === 'DP') invoiceIncome += parseFloat(p.dp || 0);
     });
     
     const totalDebt = debts.filter(d => d.status !== 'Lunas').reduce((s, d) => s + parseFloat(d.amount), 0);
@@ -2080,8 +1938,8 @@ function renderReports() {
             </div>
             
             <div style="margin-bottom:20px">
-                <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px">Invoice & Modal</div>
-                <div class="report-item"><span class="report-label">Pemasukan Invoice</span><span class="report-value positive">${formatRupiah(invoiceIncome)}</span></div>
+                <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px">Pesanan & Modal</div>
+                <div class="report-item"><span class="report-label">Pemasukan Pesanan</span><span class="report-value positive">${formatRupiah(invoiceIncome)}</span></div>
                 <div class="report-item"><span class="report-label">Modal Keluar</span><span class="report-value negative">${formatRupiah(modalOut)}</span></div>
                 <div class="report-item"><span class="report-label">Laba Bersih</span><span class="report-value ${netProfit>=0?'positive':'negative'}">${formatRupiah(netProfit)}</span></div>
             </div>
@@ -2153,7 +2011,7 @@ function exportReportPDF() {
     doc.text('Ringkasan Keuangan', 14, y); y += 6;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
     const kpiItems = [
-        ['Pemasukan Invoice', formatRupiah(stats.invoiceIncome)],
+        ['Pemasukan Pesanan', formatRupiah(stats.invoiceIncome)],
         ['Total Pengeluaran', formatRupiah(stats.financeExpense)],
         ['Modal Keluar', formatRupiah(stats.totalModalOut)],
         ['Laba Bersih', formatRupiah(stats.invoiceNet)],
@@ -2378,7 +2236,7 @@ function getShortcuts() {
     const defaults = [
         { id: 'finance', icon: 'account_balance', label: 'Keuangan' },
         { id: 'wallet', icon: 'credit_card', label: 'Dompet' },
-        { id: 'invoice', icon: 'receipt', label: 'Invoice' },
+        { id: 'pesan', icon: 'note', label: 'Pesanan' },
         { id: 'customer', icon: 'people', label: 'Pelanggan' },
         { id: 'products', icon: 'inventory_2', label: 'Produk' },
         { id: 'debt', icon: 'account_balance_wallet', label: 'Hutang' },
@@ -2444,7 +2302,7 @@ function renderQuickMenu() {
     const allPages = {
         finance: { icon: 'account_balance', label: 'Keuangan' },
         wallet: { icon: 'credit_card', label: 'Dompet' },
-        invoice: { icon: 'receipt', label: 'Invoice' },
+        pesan: { icon: 'note', label: 'Pesanan' },
         customer: { icon: 'people', label: 'Pelanggan' },
         products: { icon: 'inventory_2', label: 'Produk' },
         debt: { icon: 'account_balance_wallet', label: 'Hutang' },
@@ -2543,7 +2401,7 @@ function updateWalletSelects() {
 
 function showPage(pageName) {
     const current = document.querySelector('.page.active');
-    const navOrder = ['dashboard','finance','invoice','pesan','customer','products','debt','receivable','reports','purchase','settings'];
+    const navOrder = ['dashboard','finance','pesan','customer','products','debt','receivable','reports','purchase','settings'];
     const curIdx = current ? navOrder.indexOf(current.id.replace('page-','')) : -1;
     const nextIdx = navOrder.indexOf(pageName);
     const dir = nextIdx > curIdx ? 'slide-left' : 'slide-right';
@@ -2571,14 +2429,6 @@ function switchFinanceTab(type) {
     document.getElementById('finance-expense').style.display = type === 'expense' ? 'block' : 'none';
     document.getElementById('finance-modal').style.display = type === 'modal' ? 'block' : 'none';
     document.getElementById('finance-transfer').style.display = type === 'transfer' ? 'block' : 'none';
-}
-
-function switchInvoiceTab(tab) {
-    window.invoiceTab = tab;
-    document.querySelectorAll('#page-invoice .tab').forEach(t => t.classList.remove('active'));
-    const btn = event?.target || document.querySelector(`#page-invoice .tab[onclick*="'${tab}'"]`);
-    if (btn) btn.classList.add('active');
-    renderInvoices();
 }
 
 function switchProductTab(type) {
@@ -2953,409 +2803,6 @@ function sendWAReceivable(id) {
 }
 
 // ==================== INVOICE DETAIL & SLIP FOTO ====================
-
-function showInvoiceDetail(id) {
-    currentInvoiceId = id;
-    const inv = loadData(DB.invoices).find(i => i.id === id);
-    if (!inv) return;
-    const settings = loadData(DB.settings);
-    
-    const types = getInvoiceTypes();
-    const typeLabel = {};
-    types.forEach(t => { typeLabel[t.id] = t.label; });
-    
-    const services = getServices();
-    const payMethods = getPaymentMethods();
-    
-    let specsHtml = '';
-    if (inv.type === 'print') {
-        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Spesifikasi Buku</div>
-            <p><strong>Ukuran:</strong> ${inv.specs?.bookSize||'-'} | <strong>Jilid:</strong> ${inv.specs?.binding||'-'}</p>
-            <p><strong>Ukuran Jadi:</strong> ${inv.specs?.finalSize||'-'} | <strong>Kertas Isi:</strong> ${inv.specs?.paperType||'-'}</p>
-            <p><strong>Cover:</strong> ${inv.specs?.coverType||'-'} | <strong>Laminating:</strong> ${inv.specs?.laminating||'-'}</p>
-            <p><strong>Wrapping:</strong> ${inv.specs?.wrapping||'-'}</p>
-        </div>`;
-    } else if (inv.type === 'laptop') {
-        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Spesifikasi Laptop</div>
-            <p><strong>${inv.specs?.laptopName||'-'}</strong></p>
-            <p>${inv.specs?.processor||'-'} | RAM: ${inv.specs?.ram||'-'} | Storage: ${inv.specs?.storage||'-'}</p>
-            <p>Layar: ${inv.specs?.screen||'-'} | ${inv.specs?.condition||'-'} | Garansi: ${inv.specs?.warranty||'-'}</p>
-        </div>`;
-    } else if (inv.type === 'handphone') {
-        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Spesifikasi Handphone</div>
-            <p><strong>${inv.specs?.hpName||'-'}</strong> | Storage: ${inv.specs?.hpStorage||'-'} | ${inv.specs?.hpColor||'-'}</p>
-            <p>Kondisi: ${inv.specs?.hpCondition||'-'} | Garansi: ${inv.specs?.hpWarranty||'-'}</p>
-        </div>`;
-    } else if (inv.type === 'tiktok') {
-        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Affiliate TikTok</div>
-            <p><strong>Produk:</strong> ${inv.specs?.tiktokProduct||'-'} | <strong>Platform:</strong> ${inv.specs?.tiktokPlatform||'-'}</p>
-            <p><strong>Harga:</strong> ${formatRupiah(inv.specs?.tiktokPrice||0)}</p>
-        </div>`;
-    } else if (inv.type === 'umum') {
-        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Keterangan</div>
-            <p><strong>Jenis:</strong> ${inv.specs?.umumType||'-'}</p>
-            <p>${inv.specs?.umumDesc||'-'}</p>
-        </div>`;
-    } else if (inv.specs?.note) {
-        specsHtml = `<div class="invoice-section"><div class="invoice-section-title">Keterangan</div>
-            <p>${inv.specs.note}</p>
-        </div>`;
-    }
-    
-    const itemsHtml = inv.items?.map((item, i) => `
-        <tr>
-            <td style="text-align:center">${i+1}</td>
-            <td>${item.name}</td>
-            <td style="text-align:center">${item.qty}</td>
-            <td style="text-align:right">${formatRupiah(item.price)}</td>
-            <td style="text-align:right">${formatRupiah(item.qty*item.price)}</td>
-        </tr>
-    `).join('') || '';
-    
-    const invoiceHtml = `
-        <div class="invoice-preview" id="printArea" style="background:white;color:#0f172a;padding:24px">
-            <div class="invoice-header">
-                <div class="invoice-logo" style="background:linear-gradient(145deg,#775B5B,#9B7E7E,#C9A87A);font-size:0;overflow:hidden">
-                    <img src="${getLogoUrl()}" style="width:100%;height:100%;object-fit:cover" alt="MG">
-                </div>
-                <div class="invoice-title">${settings.businessName}</div>
-                <div class="invoice-meta" style="font-size:11px;line-height:1.6">
-                    ${settings.address}<br>WA: ${settings.whatsapp}<br>
-                    <span style="font-size:10px;color:#6b7280">
-                        ${services.map(s => `• ${s}`).join('<br>')}
-                    </span>
-                </div>
-            </div>
-            <div class="invoice-section">
-                <div class="invoice-section-title">INVOICE</div>
-                <p><strong>${inv.number}</strong> | ${formatDate(inv.date)} | ${typeLabel[inv.type]||inv.type}</p>
-            </div>
-            <div class="invoice-section">
-                <div class="invoice-section-title">Pelanggan</div>
-                <p><strong>${inv.customerName}</strong><br>${inv.customerPhone||'-'}<br>${inv.customerAddress||'-'}</p>
-            </div>
-            ${specsHtml}
-            <div class="invoice-section">
-                <div class="invoice-section-title">Daftar Item</div>
-                <table class="invoice-table">
-                    <thead><tr>
-                        <th style="width:5%">No</th>
-                        <th style="width:40%">Item</th>
-                        <th style="width:15%;text-align:center">Qty</th>
-                        <th style="width:20%;text-align:right">Harga</th>
-                        <th style="width:20%;text-align:right">Jumlah</th>
-                    </tr></thead>
-                    <tbody>${itemsHtml}</tbody>
-                </table>
-            </div>
-            <div class="invoice-total">
-                <div class="invoice-total-row"><span>Total</span><span>${formatRupiah(inv.total)}</span></div>
-                <div class="invoice-total-row"><span>DP Dibayar</span><span>${formatRupiah(inv.dp)}</span></div>
-                <div class="invoice-total-row final"><span>Sisa</span><span>${formatRupiah(inv.remaining)}</span></div>
-            </div>
-            ${inv.status === 'DP' ? `
-            <div style="margin-top:12px">
-                <div class="progress-bar-track" style="height:8px">
-                    <div class="progress-bar-fill" style="width:${inv.total > 0 ? Math.round((inv.dp||0)/inv.total*100) : 0}%"></div>
-                </div>
-                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-top:4px">
-                    <span>DP ${inv.total > 0 ? Math.round((inv.dp||0)/inv.total*100) : 0}%</span>
-                    <span>${formatRupiah(inv.dp||0)} / ${formatRupiah(inv.total)}</span>
-                </div>
-            </div>` : ''}
-            <div style="margin-top:12px;text-align:center">
-                <span class="badge ${inv.status==='Lunas'?'badge-success':'badge-warning'}" style="font-size:13px;padding:6px 16px">${inv.status}${inv.status==='DP' ? ` (${inv.total > 0 ? Math.round((inv.dp||0)/inv.total*100) : 0}%)` : ''}</span>
-            </div>
-            ${inv.note ? `<div style="margin-top:12px;padding:10px;background:#f8fafc;border-radius:8px;font-size:12px"><strong>Catatan:</strong> ${inv.note}</div>` : ''}
-            <div style="margin-top:16px;padding:12px;background:#f0f9ff;border-radius:8px;text-align:center;font-size:11px;color:#0f172a">
-                <p style="font-weight:700;margin-bottom:6px">💳 Metode Pembayaran:</p>
-                ${payMethods.map(m => {
-                    const accName = m.accountName ? ` • ${m.accountName}` : '';
-                    const accNum = m.accountNumber ? ` • ${m.accountNumber}` : '';
-                    const waNum = m.name === 'DANA' && !m.accountNumber ? ` • ${settings.whatsapp}` : '';
-                    return `<p>${m.name}${accName}${accNum}${waNum}</p>`;
-                }).join('')}
-                <p style="margin-top:8px;color:#64748b">Kirim bukti transfer via WhatsApp setelah pembayaran.</p>
-            </div>
-        </div>`;
-    
-    document.getElementById('invoiceDetailContent').innerHTML = invoiceHtml;
-    
-    const payBtn = document.getElementById('invoicePayBtn');
-    if (payBtn) {
-        payBtn.style.display = inv.status === 'Lunas' ? 'none' : 'block';
-    }
-    
-    openModal('invoiceDetailModal');
-}
-
-async function shareInvoiceAsImage(btnEl) {
-    const printArea = document.getElementById('printArea');
-    if (!printArea) { alert('Tidak ada invoice untuk di-share.'); return; }
-    
-    const btn = btnEl || event?.target || document.querySelector('#invoiceDetailModal .btn-primary');
-    if (!btn) return;
-    const orig = btn.textContent;
-    
-    try {
-        btn.textContent = '⏳ Membuat gambar...';
-        btn.disabled = true;
-        
-        const captureArea = document.getElementById('slipCaptureArea');
-        captureArea.innerHTML = '';
-        const clone = printArea.cloneNode(true);
-        clone.style.width = '750px';
-        clone.style.padding = '40px';
-        clone.style.margin = '0';
-        clone.style.border = 'none';
-        clone.style.fontSize = '14px';
-        clone.style.lineHeight = '1.6';
-        captureArea.appendChild(clone);
-        
-        await new Promise(r => setTimeout(r, 500));
-        
-        const canvas = await html2canvas(clone, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            logging: false,
-            width: 750,
-            windowWidth: 800
-        });
-        
-        captureArea.innerHTML = '';
-        btn.textContent = orig;
-        btn.disabled = false;
-        
-        canvas.toBlob(async (blob) => {
-            const inv = loadData(DB.invoices).find(i => i.id === currentInvoiceId);
-            const fileName = `${inv?.number || 'invoice'}-slip.png`;
-            const file = new File([blob], fileName, { type: 'image/png' });
-            
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: `Invoice ${inv?.number}`,
-                        text: `Slip Invoice ${loadData(DB.settings).businessName}`
-                    });
-                    return;
-                } catch (shareErr) {
-                    if (shareErr.name === 'AbortError') return;
-                }
-            }
-            
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 5000);
-            alert('📸 Slip berhasil diunduh sebagai foto!\nBuka galeri dan bagikan via WhatsApp atau media sosial.');
-        }, 'image/png');
-        
-    } catch (err) {
-        btn.textContent = orig;
-        btn.disabled = false;
-        alert('❌ Gagal membuat gambar: ' + err.message);
-    }
-}
-
-function sendWhatsAppInvoice() {
-    const inv = loadData(DB.invoices).find(i => i.id === currentInvoiceId);
-    if (!inv) return;
-    const settings = loadData(DB.settings);
-    
-    const types = getInvoiceTypes();
-    const typeLabel = {};
-    types.forEach(t => { typeLabel[t.id] = t.label; });
-    const services = getServices();
-    const payMethods = getPaymentMethods();
-    
-    let text = `*${settings.businessName}*\n`;
-    text += `${settings.address}\n`;
-    services.forEach(s => { text += `• ${s}\n`; });
-    text += `\n*Invoice: ${inv.number}*\n`;
-    text += `Tanggal: ${formatDate(inv.date)}\n`;
-    text += `Jenis: ${typeLabel[inv.type] || inv.type}\n\n`;
-    text += `*Pelanggan:*\n${inv.customerName}\n${inv.customerPhone||'-'}\n${inv.customerAddress||'-'}\n\n`;
-    
-    if (inv.type === 'print') {
-        text += `*Spesifikasi Buku:*\n`;
-        text += `Ukuran: ${inv.specs?.bookSize||'-'}\nJilid: ${inv.specs?.binding||'-'}\n`;
-        text += `Kertas Isi: ${inv.specs?.paperType||'-'}\nCover: ${inv.specs?.coverType||'-'}\n\n`;
-    } else if (inv.type === 'laptop') {
-        text += `*Spesifikasi Laptop:*\n`;
-        text += `${inv.specs?.laptopName||'-'}\n${inv.specs?.processor||'-'}\nRAM: ${inv.specs?.ram||'-'}\n`;
-        text += `Storage: ${inv.specs?.storage||'-'}\nKondisi: ${inv.specs?.condition||'-'}\n\n`;
-    } else if (inv.type === 'handphone') {
-        text += `*Spesifikasi Handphone:*\n`;
-        text += `${inv.specs?.hpName||'-'}\nStorage: ${inv.specs?.hpStorage||'-'}\nWarna: ${inv.specs?.hpColor||'-'}\n`;
-        text += `Kondisi: ${inv.specs?.hpCondition||'-'}\nGaransi: ${inv.specs?.hpWarranty||'-'}\n\n`;
-    } else if (inv.type === 'tiktok') {
-        text += `*Affiliate TikTok:*\n`;
-        text += `Produk: ${inv.specs?.tiktokProduct||'-'}\nPlatform: ${inv.specs?.tiktokPlatform||'-'}\n`;
-        text += `Harga: ${formatRupiah(inv.specs?.tiktokPrice||0)}\n\n`;
-    } else if (inv.type === 'umum') {
-        text += `*Keterangan:*\n`;
-        text += `Jenis: ${inv.specs?.umumType||'-'}\n${inv.specs?.umumDesc||'-'}\n\n`;
-    } else if (inv.specs?.note) {
-        text += `*Keterangan:*\n${inv.specs.note}\n\n`;
-    }
-    
-    text += `*Daftar Item:*\n`;
-    inv.items?.forEach((item, i) => {
-        text += `${i+1}. ${item.name} x${item.qty} = ${formatRupiah(item.qty*item.price)}\n`;
-    });
-    text += `\n*Total: ${formatRupiah(inv.total)}*\n`;
-    text += `DP: ${formatRupiah(inv.dp)}\n`;
-    text += `Sisa: ${formatRupiah(inv.remaining)}\n`;
-    text += `Status: *${inv.status}*\n\n`;
-    text += `*Pembayaran:*\n`;
-    payMethods.forEach(m => {
-        const num = m.name === 'DANA' && !m.accountNumber ? settings.whatsapp : m.accountNumber;
-        text += `${m.name}: ${num || '-'}\n`;
-    });
-    text += `\n`;
-    if (inv.note) text += `Catatan: ${inv.note}\n\n`;
-    text += `Terima kasih! 🙏`;
-    
-    const phone = (inv.customerPhone||settings.whatsapp).replace(/\D/g, '').replace(/^0/, '62');
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
-}
-
-function editCurrentInvoice() {
-    closeModal('invoiceDetailModal');
-    const inv = loadData(DB.invoices).find(i => i.id === currentInvoiceId);
-    if (!inv) return;
-    
-    document.getElementById('invoiceId').value = inv.id;
-    document.getElementById('invoiceType').value = inv.type;
-    document.getElementById('invoiceModalTitle').textContent = 'Edit Invoice';
-    document.getElementById('invoiceCustomerId').value = inv.customerId || '';
-    document.getElementById('invoiceCustomerSearch').value = inv.customerName || '';
-    document.getElementById('invoiceCustomerName').value = inv.customerName;
-    document.getElementById('invoiceCustomerPhone').value = inv.customerPhone || '';
-    document.getElementById('invoiceCustomerAddress').value = inv.customerAddress || '';
-    document.getElementById('invoiceNote').value = inv.note || '';
-    document.getElementById('invoiceTotal').value = inv.total;
-    document.getElementById('invoiceDP').value = inv.dp;
-    document.getElementById('invoiceRemaining').value = inv.remaining;
-    document.getElementById('invoiceStatus').value = inv.status;
-    document.getElementById('invoiceWallet').value = inv.walletId || '';
-    
-    document.getElementById('printSpecs').style.display = 'none';
-    document.getElementById('laptopSpecs').style.display = 'none';
-    document.getElementById('umumSpecs').style.display = 'none';
-    document.getElementById('handphoneSpecs').style.display = 'none';
-    document.getElementById('tiktokSpecs').style.display = 'none';
-    document.getElementById('customSpecs').style.display = 'none';
-    
-    if (inv.type === 'print') document.getElementById('printSpecs').style.display = 'block';
-    else if (inv.type === 'laptop') document.getElementById('laptopSpecs').style.display = 'block';
-    else if (inv.type === 'handphone') document.getElementById('handphoneSpecs').style.display = 'block';
-    else if (inv.type === 'tiktok') document.getElementById('tiktokSpecs').style.display = 'block';
-    else if (inv.type === 'umum') document.getElementById('umumSpecs').style.display = 'block';
-    else document.getElementById('customSpecs').style.display = 'block';
-    
-    if (inv.type === 'print') {
-        document.getElementById('printBookSize').value = inv.specs?.bookSize || '';
-        document.getElementById('printBinding').value = inv.specs?.binding || 'Lem Panas';
-        document.getElementById('printFinalSize').value = inv.specs?.finalSize || '';
-        document.getElementById('printPaperType').value = inv.specs?.paperType || '';
-        document.getElementById('printCoverType').value = inv.specs?.coverType || '';
-        document.getElementById('printLaminating').value = inv.specs?.laminating || 'Tidak';
-        document.getElementById('printWrapping').value = inv.specs?.wrapping || 'Tidak';
-    } else if (inv.type === 'laptop') {
-        document.getElementById('laptopName').value = inv.specs?.laptopName || '';
-        document.getElementById('laptopProcessor').value = inv.specs?.processor || '';
-        document.getElementById('laptopRam').value = inv.specs?.ram || '';
-        document.getElementById('laptopStorage').value = inv.specs?.storage || '';
-        document.getElementById('laptopScreen').value = inv.specs?.screen || '';
-        document.getElementById('laptopCondition').value = inv.specs?.condition || 'Like New';
-        document.getElementById('laptopWarranty').value = inv.specs?.warranty || '';
-    } else if (inv.type === 'handphone') {
-        document.getElementById('hpName').value = inv.specs?.hpName || '';
-        document.getElementById('hpStorage').value = inv.specs?.hpStorage || '';
-        document.getElementById('hpColor').value = inv.specs?.hpColor || '';
-        document.getElementById('hpCondition').value = inv.specs?.hpCondition || 'Baru';
-        document.getElementById('hpWarranty').value = inv.specs?.hpWarranty || '';
-    } else if (inv.type === 'tiktok') {
-        document.getElementById('tiktokProduct').value = inv.specs?.tiktokProduct || '';
-        document.getElementById('tiktokPlatform').value = inv.specs?.tiktokPlatform || 'TikTok Shop';
-        document.getElementById('tiktokPrice').value = inv.specs?.tiktokPrice || 0;
-    } else if (inv.type === 'umum') {
-        document.getElementById('umumType').value = inv.specs?.umumType || '';
-        document.getElementById('umumDesc').value = inv.specs?.umumDesc || '';
-    } else {
-        document.getElementById('customSpecsNote').value = inv.specs?.note || '';
-    }
-    
-    invoiceItems = inv.items ? JSON.parse(JSON.stringify(inv.items)) : [];
-    renderInvoiceItems();
-    openModal('invoiceModal');
-}
-
-async function deleteInvoice() {
-    if (!currentInvoiceId) return;
-    if (!await showConfirm('⚠️ Yakin hapus invoice ini? Data tidak bisa dikembalikan!')) return;
-    if (!await showConfirm('⚠️⚠️ Invoice dan semua transaksinya akan dihapus permanen. Lanjutkan?')) return;
-    
-    let invoices = loadData(DB.invoices);
-    let transactions = loadData(DB.transactions);
-    const inv = invoices.find(i => i.id === currentInvoiceId);
-    if (!inv) return;
-    
-    // Hapus transaksi terkait invoice
-    transactions = transactions.filter(t => t.invoiceId !== inv.id);
-    
-    // Hapus invoice
-    invoices = invoices.filter(i => i.id !== inv.id);
-    
-    saveData(DB.invoices, invoices);
-    saveData(DB.transactions, transactions);
-    addActivity(`🗑️ Menghapus invoice ${inv.number}`);
-    closeModal('invoiceDetailModal');
-    recalculateAll();
-    renderAll();
-    alert('✅ Invoice berhasil dihapus!');
-}
-
-// ==================== INIT & EVENT LISTENERS ====================
-
-document.addEventListener('DOMContentLoaded', () => {
-    if (checkCurrentUser()) {
-        init();
-    } else {
-        initGoogleSignIn();
-    }
-});
-
-window.addEventListener('beforeunload', () => {
-    syncToCloud(true);
-});
-
-// ==================== CONTACT PICKER API ====================
-
-async function pickContact() {
-    if (!navigator.contacts || !navigator.contacts.select) {
-        alert('❌ Fitur kontak hanya tersedia di Android via Chrome.\n\nDi iPhone, silakan isi manual.');
-        return;
-    }
-    try {
-        const contacts = await navigator.contacts.select(['name', 'tel'], { multiple: false });
-        if (contacts && contacts.length > 0) {
-            const c = contacts[0];
-            if (c.name && document.getElementById('customerName')) document.getElementById('customerName').value = c.name;
-            if (c.tel && c.tel.length > 0 && document.getElementById('customerPhone')) document.getElementById('customerPhone').value = c.tel[0];
-        }
-    } catch (err) {
-        if (err.name !== 'NotAllowedError') console.error(err);
-    }
-}
-
-// ==================== IMPORT KONTAK DARI FILE (vCard/CSV) ====================
 
 function importContactsFromFile(input) {
     const file = input.files?.[0];

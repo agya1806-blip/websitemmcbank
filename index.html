@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no">
     <meta name="HandheldFriendly" content="true">
-    <title>MUGHIS BANK - Keuangan, Pendataan, & Invoice</title>
+    <title>MUGHIS BANK - Keuangan, Pendataan, & Pesanan</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
@@ -32,7 +32,7 @@
             <div class="login-header">
                 <div class="login-logo"><img src="icons/icon-192.png" alt="MB" style="width:100%;height:100%;object-fit:cover;border-radius:20px"></div>
                 <h1>MUGHIS BANK</h1>
-                <p>Keuangan, Pendataan, & Invoice</p>
+                <p>Keuangan, Pendataan, & Pesanan</p>
             </div>
             <div class="login-form">
                 <div class="form-group">
@@ -135,7 +135,7 @@
                 <img id="headerLogo" src="icons/icon-192.png" alt="MB" style="height:28px;width:28px;border-radius:6px;object-fit:cover;vertical-align:middle">
                 <div class="logo-title-group">
                     <span class="logo-title">MUGHIS BANK</span>
-                    <span class="logo-subtitle">Keuangan, Pendataan, & Invoice</span>
+                    <span class="logo-subtitle">Keuangan, Pendataan, & Pesanan</span>
                 </div>
             </div>
             <div class="header-actions">
@@ -171,10 +171,10 @@
                     <div class="kpi-value" id="dashFinanceNet">Rp 0</div>
                 </div>
 
-                <div class="kpi-section">Invoice & Pesanan</div>
-                <div class="kpi-card kpi-income" onclick="showPage('invoice')">
+                <div class="kpi-section">Pemasukan & Pesanan</div>
+                <div class="kpi-card kpi-income" onclick="showPage('pesan')">
                     <div class="kpi-icon"><span class="m-icon">trending_up</span></div>
-                    <div class="kpi-label">Pemasukan Invoice</div>
+                    <div class="kpi-label">Pemasukan Pesanan</div>
                     <div class="kpi-value" id="dashInvoiceIncome">Rp 0</div>
                 </div>
                 <div class="kpi-card kpi-modal" onclick="showPage('finance')">
@@ -184,7 +184,7 @@
                 </div>
                 <div class="kpi-card kpi-profit" onclick="showPage('reports')">
                     <div class="kpi-icon"><span class="m-icon">account_balance</span></div>
-                    <div class="kpi-label">Laba Bersih Invoice</div>
+                    <div class="kpi-label">Laba Bersih Pesanan</div>
                     <div class="kpi-value" id="dashNetProfit">Rp 0</div>
                 </div>
 
@@ -194,19 +194,19 @@
                     <div class="kpi-label">Saldo Kas</div>
                     <div class="kpi-value" id="dashTotalBalance">Rp 0</div>
                 </div>
-                <div class="kpi-card kpi-active" onclick="showPage('invoice')">
+                <div class="kpi-card kpi-active" onclick="showPage('pesan')">
                     <div class="kpi-icon"><span class="m-icon">receipt_long</span></div>
-                    <div class="kpi-label">Invoice Aktif</div>
+                    <div class="kpi-label">Pesanan Aktif</div>
                     <div class="kpi-value" id="dashInvoiceActive">0</div>
                 </div>
-                <div class="kpi-card kpi-dp" onclick="showPage('invoice')">
+                <div class="kpi-card kpi-dp" onclick="showPage('pesan')">
                     <div class="kpi-icon"><span class="m-icon">pending_actions</span></div>
-                    <div class="kpi-label">Invoice DP</div>
+                    <div class="kpi-label">Pesanan DP</div>
                     <div class="kpi-value" id="dashInvoiceDP">0</div>
                 </div>
-                <div class="kpi-card kpi-lunas" onclick="showPage('invoice')">
+                <div class="kpi-card kpi-lunas" onclick="showPage('pesan')">
                     <div class="kpi-icon"><span class="m-icon">check_circle</span></div>
-                    <div class="kpi-label">Invoice Lunas</div>
+                    <div class="kpi-label">Pesanan Lunas</div>
                     <div class="kpi-value" id="dashInvoiceLunas">0</div>
                 </div>
             </div>
@@ -223,7 +223,7 @@
                 <div class="menu-grid">
                     <div class="menu-item" onclick="showPage('finance')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">account_balance</span></div><div class="menu-label">Keuangan</div></div>
                     <div class="menu-item" onclick="showPage('wallet')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">credit_card</span></div><div class="menu-label">Dompet</div></div>
-                    <div class="menu-item" onclick="showPage('invoice')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">receipt</span></div><div class="menu-label">Invoice</div></div>
+                    <div class="menu-item" onclick="showPage('pesan')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">note</span></div><div class="menu-label">Pesanan</div></div>
                     <div class="menu-item" onclick="showPage('customer')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">people</span></div><div class="menu-label">Pelanggan</div></div>
                     <div class="menu-item" onclick="showPage('products')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">inventory_2</span></div><div class="menu-label">Produk</div></div>
                     <div class="menu-item" onclick="showPage('debt')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">account_balance_wallet</span></div><div class="menu-label">Hutang</div></div>
@@ -235,9 +235,9 @@
             <!-- Ringkasan Bulan Ini -->
             <div class="card">
                 <div class="card-title">📅 Ringkasan Bulan Ini</div>
-                <div class="report-item"><span class="report-label">Pendapatan Invoice</span><span class="report-value positive" id="monthInvoiceIncome">Rp 0</span></div>
+                <div class="report-item"><span class="report-label">Pendapatan Pesanan</span><span class="report-value positive" id="monthInvoiceIncome">Rp 0</span></div>
                 <div class="report-item"><span class="report-label">Modal Keluar</span><span class="report-value negative" id="monthModalOut">Rp 0</span></div>
-                <div class="report-item"><span class="report-label">Laba Bersih Invoice</span><span class="report-value" id="monthProfit">Rp 0</span></div>
+                <div class="report-item"><span class="report-label">Laba Bersih Pesanan</span><span class="report-value" id="monthProfit">Rp 0</span></div>
                 <div class="report-item"><span class="report-label">Pemasukan Keuangan</span><span class="report-value positive" id="monthFinanceIncome">Rp 0</span></div>
                 <div class="report-item"><span class="report-label">Pengeluaran Keuangan</span><span class="report-value negative" id="monthFinanceExpense">Rp 0</span></div>
             </div>
@@ -255,10 +255,10 @@
                 </div>
             </div>
 
-            <!-- Invoice Terbaru -->
+            <!-- Pesanan Terbaru -->
             <div class="card">
-                <div class="card-title">📄 Invoice Terbaru <span style="font-size:12px;color:var(--text-secondary);font-weight:400">(5 terakhir)</span></div>
-                <div id="recentInvoices"></div>
+                <div class="card-title">📄 Pesanan Terbaru <span style="font-size:12px;color:var(--text-secondary);font-weight:400">(5 terakhir)</span></div>
+                <div id="recentPesan"></div>
             </div>
 
             <!-- Pesanan Terbaru -->
@@ -296,26 +296,6 @@
             <div style="height:20px"></div>
         </div>
 
-        <div class="page" id="page-invoice">
-            <div class="tabs">
-                <button class="tab active" onclick="switchInvoiceTab('all')">Semua</button>
-                <button class="tab" onclick="switchInvoiceTab('dp')">DP</button>
-                <button class="tab" onclick="switchInvoiceTab('paid')">Lunas</button>
-            </div>
-            <div class="search-bar">
-                <span class="search-icon">🔍</span>
-                <input type="text" class="search-input" id="invoiceSearch" placeholder="Cari invoice..." oninput="renderInvoices()">
-            </div>
-            <div style="display:flex;gap:8px;margin:0 16px 12px">
-                <select class="form-select" id="invoiceSort" onchange="renderInvoices()" style="flex:1;min-height:40px;font-size:13px;padding:8px 12px">
-                    <option value="date">📅 Urut: Tanggal</option>
-                    <option value="amount">💰 Urut: Nominal</option>
-                    <option value="status">📊 Urut: Status</option>
-                </select>
-            </div>
-            <div id="invoiceList"></div>
-            <button class="fab" onclick="openInvoiceTypeModal()">+</button>
-        </div>
 
         <div class="page" id="page-pesan">
             <div class="pesan-summary" style="display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto">
@@ -525,11 +505,11 @@
                             <button class="btn btn-primary" onclick="saveServicesFromUI()" style="margin-top:8px;display:block">💾 Simpan Layanan</button>
                         </div>
                         <div class="card">
-                            <div class="card-title">📑 Tipe Invoice</div>
-                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Tipe invoice yang tampil di menu buat invoice. Tipe bawaan tidak bisa dihapus.</div>
+                            <div class="card-title">📑 Tipe Pesanan</div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Tipe pesanan yang tersedia. Tipe bawaan tidak bisa dihapus.</div>
                             <div id="invoiceTypesList"></div>
-                            <button class="btn btn-outline" onclick="showAddInvoiceType()" style="margin-top:8px">+ Tambah Tipe Invoice</button>
-                            <button class="btn btn-primary" onclick="saveInvoiceTypesFromUI()" style="margin-top:8px;display:block">💾 Simpan Tipe Invoice</button>
+                            <button class="btn btn-outline" onclick="showAddInvoiceType()" style="margin-top:8px">+ Tambah Tipe Pesanan</button>
+                            <button class="btn btn-primary" onclick="saveInvoiceTypesFromUI()" style="margin-top:8px;display:block">💾 Simpan Tipe Pesanan</button>
                         </div>
                     </div>
                 </div>
@@ -550,7 +530,7 @@
                         <div class="card">
                             <div class="card-title">🤖 AI Assistant</div>
                             <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">
-                                AI bisa bantu isi item invoice dan kategorisasi transaksi.<br>
+                                AI bisa bantu isi item pesanan dan kategorisasi transaksi.<br>
                                 Dapatkan API Key gratis di <strong>https://aistudio.google.com/apikey</strong>
                             </div>
                             <div class="form-group">
@@ -624,7 +604,7 @@
             <div class="card">
                 <div class="card-title"><span class="m-icon" style="font-size:18px">info</span> Tentang Mughis Bank</div>
                 <div class="about-text">
-                    Mughis Bank adalah sistem manajemen keuangan, pendataan, pengeluaran, dan invoice yang dirancang untuk membantu pelaku usaha mengelola bisnis secara lebih rapi, cepat, dan profesional.
+                    Mughis Bank adalah sistem manajemen keuangan, pendataan, pengeluaran, dan pesanan yang dirancang untuk membantu pelaku usaha mengelola bisnis secara lebih rapi, cepat, dan profesional.
                 </div>
             </div>
             <div class="card">
@@ -643,7 +623,7 @@
                 <div class="card-title"><span class="m-icon" style="font-size:18px">stars</span> Fokus Utama</div>
                 <div class="about-features">
                     <div class="about-feature"><span class="m-icon" style="color:var(--gold)">account_balance</span> Manajemen Keuangan</div>
-                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">receipt</span> Pengelolaan Invoice</div>
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">receipt</span> Pengelolaan Pesanan</div>
                     <div class="about-feature"><span class="m-icon" style="color:var(--gold)">money_off</span> Pengelolaan Pengeluaran</div>
                     <div class="about-feature"><span class="m-icon" style="color:var(--gold)">trending_up</span> Monitoring Laba Bersih</div>
                     <div class="about-feature"><span class="m-icon" style="color:var(--gold)">timeline</span> Pelacakan Cashflow</div>
@@ -666,13 +646,9 @@
                 <span class="nav-icon"><span class="m-icon">home</span></span>
                 <span class="nav-label">Beranda</span>
             </button>
-            <button class="nav-item" onclick="showPage('wallet')" data-page="wallet">
-                <span class="nav-icon"><span class="m-icon">credit_card</span></span>
-                <span class="nav-label">Dompet</span>
-            </button>
             <button class="nav-item" onclick="showPage('pesan')" data-page="pesan">
                 <span class="nav-icon"><span class="m-icon">note</span></span>
-                <span class="nav-label">Pesan</span>
+                <span class="nav-label">Pesanan</span>
             </button>
             <button class="nav-item" onclick="showPage('finance')" data-page="finance">
                 <span class="nav-icon"><span class="m-icon">account_balance</span></span>
@@ -817,123 +793,6 @@
             </div>
         </div>
 
-        <div class="modal-overlay" id="invoiceTypeModal">
-            <div class="modal">
-                <div class="modal-header"><span class="modal-title">Pilih Jenis Invoice</span><button class="modal-close" onclick="closeModal('invoiceTypeModal')">✕</button></div>
-                <div class="modal-body" id="invoiceTypeButtons"></div>
-            </div>
-        </div>
-
-        <div class="modal-overlay" id="invoiceModal">
-            <div class="modal" style="max-height:95vh">
-                <div class="modal-header"><span class="modal-title" id="invoiceModalTitle">Invoice Baru</span><button class="modal-close" onclick="closeModal('invoiceModal')">✕</button></div>
-                <div class="modal-body">
-                    <input type="hidden" id="invoiceId"><input type="hidden" id="invoiceType" value="print">
-                    <div class="form-group">
-                        <label class="form-label">Cari Pelanggan</label>
-                        <div style="display:flex;gap:8px">
-                            <input type="text" class="form-input" id="invoiceCustomerSearch" placeholder="Ketik nama..." style="flex:1" autocomplete="off" oninput="filterCustomerDropdown()" onblur="setTimeout(()=>document.getElementById('customerSearchResults').style.display='none',200)">
-                            <button class="btn btn-outline" onclick="clearCustomerSearch()" style="width:auto;padding:12px;font-size:12px">✕</button>
-                        </div>
-                        <div id="customerSearchResults" style="max-height:200px;overflow-y:auto;display:none;margin-top:4px;border:1px solid var(--border);border-radius:8px;background:var(--surface)"></div>
-                    </div>
-                    <input type="hidden" id="invoiceCustomerId">
-                    <div class="form-group"><label class="form-label">Nama</label><input type="text" class="form-input" id="invoiceCustomerName"></div>
-                    <div class="form-group"><label class="form-label">Nomor HP</label><input type="text" class="form-input" id="invoiceCustomerPhone"></div>
-                    <div class="form-group"><label class="form-label">Alamat</label><textarea class="form-textarea" id="invoiceCustomerAddress"></textarea></div>
-
-                    <div id="printSpecs">
-                        <div class="card-title" style="margin-top:20px">Spesifikasi Buku</div>
-                        <div class="form-group"><label class="form-label">Ukuran Buku</label><input type="text" class="form-input" id="printBookSize" placeholder="A4, A5, dll"></div>
-                        <div class="form-group"><label class="form-label">Jenis Jilid</label><select class="form-select" id="printBinding"><option value="Lem Panas">Lem Panas</option><option value="Spiral">Spiral</option></select></div>
-                        <div class="form-group"><label class="form-label">Ukuran Buku Jadi</label><input type="text" class="form-input" id="printFinalSize" placeholder="21 x 29.7 cm"></div>
-                        <div class="form-group"><label class="form-label">Jenis Kertas Isi</label><input type="text" class="form-input" id="printPaperType" placeholder="HVS 70gr"></div>
-                        <div class="form-group"><label class="form-label">Jenis Kertas Cover</label><input type="text" class="form-input" id="printCoverType" placeholder="Art Carton 260gr"></div>
-                        <div class="form-group"><label class="form-label">Laminating</label><select class="form-select" id="printLaminating"><option value="Tidak">Tidak</option><option value="Glossy">Glossy</option><option value="Doff">Doff</option></select></div>
-                        <div class="form-group"><label class="form-label">Wrapping</label><select class="form-select" id="printWrapping"><option value="Tidak">Tidak</option><option value="Ya">Ya</option></select></div>
-                    </div>
-
-                    <div id="laptopSpecs" style="display:none">
-                        <div class="card-title" style="margin-top:20px">Spesifikasi Laptop</div>
-                        <div class="form-group"><label class="form-label">Nama Laptop</label><input type="text" class="form-input" id="laptopName" placeholder="ASUS VivoBook"></div>
-                        <div class="form-group"><label class="form-label">Processor</label><input type="text" class="form-input" id="laptopProcessor" placeholder="Intel Core i5"></div>
-                        <div class="form-group"><label class="form-label">RAM</label><input type="text" class="form-input" id="laptopRam" placeholder="8GB DDR4"></div>
-                        <div class="form-group"><label class="form-label">Penyimpanan</label><input type="text" class="form-input" id="laptopStorage" placeholder="256GB SSD"></div>
-                        <div class="form-group"><label class="form-label">Ukuran Layar</label><input type="text" class="form-input" id="laptopScreen" placeholder="14 inch"></div>
-                        <div class="form-group"><label class="form-label">Kondisi</label><select class="form-select" id="laptopCondition"><option value="Like New">Like New</option><option value="Baik">Baik</option><option value="Cukup">Cukup</option></select></div>
-                        <div class="form-group"><label class="form-label">Garansi</label><input type="text" class="form-input" id="laptopWarranty" placeholder="1 Bulan"></div>
-                    </div>
-
-                    <div id="umumSpecs" style="display:none">
-                        <div class="card-title" style="margin-top:20px">Keterangan Umum</div>
-                        <div class="form-group"><label class="form-label">Pilih Produk (stok akan berkurang)</label><select class="form-select" id="umumProductSelect" onchange="fillUmumProduct()"><option value="">Pilih produk...</option></select></div>
-                        <div class="form-group"><label class="form-label">Jenis Transaksi</label><input type="text" class="form-input" id="umumType" placeholder="Penjualan, Jasa, dll"></div>
-                        <div class="form-group"><label class="form-label">Keterangan</label><textarea class="form-textarea" id="umumDesc" placeholder="Keterangan detail transaksi"></textarea></div>
-                    </div>
-
-                    <div id="handphoneSpecs" style="display:none">
-                        <div class="card-title" style="margin-top:20px">Spesifikasi Handphone</div>
-                        <div class="form-group"><label class="form-label">Merk / Tipe HP</label><input type="text" class="form-input" id="hpName" placeholder="iPhone 14 Pro Max"></div>
-                        <div class="form-group"><label class="form-label">Storage</label><input type="text" class="form-input" id="hpStorage" placeholder="256GB"></div>
-                        <div class="form-group"><label class="form-label">Warna</label><input type="text" class="form-input" id="hpColor" placeholder="Deep Purple"></div>
-                        <div class="form-group"><label class="form-label">Kondisi</label><select class="form-select" id="hpCondition"><option value="Baru">Baru (Segel)</option><option value="Like New">Like New</option><option value="Baik">Baik</option><option value="Bekas">Bekas</option></select></div>
-                        <div class="form-group"><label class="form-label">Garansi</label><input type="text" class="form-input" id="hpWarranty" placeholder="1 Bulan / Resmi"></div>
-                    </div>
-
-                    <div id="tiktokSpecs" style="display:none">
-                        <div class="card-title" style="margin-top:20px">Keterangan Affiliate TikTok</div>
-                        <div class="form-group"><label class="form-label">Nama Produk</label><input type="text" class="form-input" id="tiktokProduct" placeholder="Nama produk affiliate"></div>
-                        <div class="form-group"><label class="form-label">Platform</label><select class="form-select" id="tiktokPlatform"><option value="TikTok Shop">TikTok Shop</option><option value="TikTok Live">TikTok Live</option><option value="Shopee">Shopee</option></select></div>
-                        <div class="form-group"><label class="form-label">Komisi / Harga (Rp)</label><input type="number" class="form-input" id="tiktokPrice" placeholder="0"></div>
-                    </div>
-
-                    <div id="customSpecs" style="display:none">
-                        <div class="card-title" style="margin-top:20px">Keterangan</div>
-                        <div class="form-group"><label class="form-label">Deskripsi</label><textarea class="form-textarea" id="customSpecsNote" placeholder="Deskripsi untuk tipe invoice ini"></textarea></div>
-                    </div>
-
-                    <div class="form-group"><label class="form-label">Catatan</label><textarea class="form-textarea" id="invoiceNote"></textarea></div>
-
-                    <div class="card-title" style="margin-top:20px">Daftar Item</div>
-                    <div id="invoiceItems"></div>
-                    <button class="btn btn-outline" onclick="addInvoiceItem()" style="margin:6px 0">+ Tambah Item</button>
-                    <button class="btn btn-primary" onclick="aiFillInvoice()" style="margin-bottom:10px;background:linear-gradient(90deg,#6366f1,#8b5cf6);font-size:13px;padding:10px">🤖 Isi Item Pakai AI</button>
-
-                    <div class="card-title" style="margin-top:20px">Pembayaran</div>
-                    <div class="form-group"><label class="form-label">Total</label><input type="number" class="form-input" id="invoiceTotal" readonly></div>
-                    <div class="form-group"><label class="form-label">Uang Muka / DP (Rp)</label><input type="number" class="form-input" id="invoiceDP" value="0" onchange="calculateInvoiceTotal()"></div>
-                    <div class="form-group"><label class="form-label">Sisa</label><input type="number" class="form-input" id="invoiceRemaining" readonly></div>
-                    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="invoiceStatus"><option value="DP">DP — Bayar Sebagian</option><option value="Lunas">Lunas — Bayar Penuh</option></select></div>
-                    <div id="dpProgressContainer" style="display:none;margin-bottom:16px">
-                        <label class="form-label">Progress Pembayaran</label>
-                        <div class="progress-bar-track">
-                            <div class="progress-bar-fill" id="dpProgressFill" style="width:0%"></div>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-top:4px">
-                            <span>DP 0%</span>
-                            <span id="dpProgressLabel">0%</span>
-                            <span>Lunas 100%</span>
-                        </div>
-                    </div>
-                    <div class="form-group"><label class="form-label">Dompet Penerima</label><select class="form-select" id="invoiceWallet"></select></div>
-                    <button class="btn btn-primary" onclick="saveInvoice()">Simpan Invoice</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal-overlay" id="invoiceDetailModal">
-            <div class="modal" style="max-height:95vh;overflow-y:auto">
-                <div class="modal-header no-print"><span class="modal-title">Detail Invoice</span><button class="modal-close" onclick="closeModal('invoiceDetailModal')">✕</button></div>
-                <div class="modal-body" id="invoiceDetailContent"></div>
-                <div class="modal-body no-print" style="padding-top:0">
-                    <button class="btn btn-success" onclick="payInvoiceFromDetail()" id="invoicePayBtn" style="margin-bottom:10px;display:none">💰 Bayar / Lunas</button>
-                    <button class="btn btn-primary" onclick="shareInvoiceAsImage(this)" style="margin-bottom:10px">📸 Bagikan Slip (Foto)</button>
-                    <button class="btn btn-success" onclick="sendWhatsAppInvoice()" style="margin-bottom:10px">📱 Kirim WhatsApp</button>
-                    <button class="btn btn-outline" onclick="editCurrentInvoice()" style="margin-bottom:10px">✏️ Edit</button>
-                    <button class="btn btn-danger" onclick="deleteInvoice()">🗑️ Hapus Invoice</button>
-                </div>
-            </div>
-        </div>
 
         <!-- PESAN KATEGORI MODAL -->
         <div class="modal-overlay" id="pesanKategoriModal">
@@ -1209,6 +1068,7 @@
                     <div class="card-title" style="margin-top:20px">Daftar Item</div>
                     <div id="pesanItems"></div>
                     <button class="btn btn-outline" onclick="addPesanItem()" style="margin:6px 0">+ Tambah Item</button>
+                    <button class="btn btn-primary" onclick="aiFillPesan()" style="margin-bottom:10px;font-size:13px;padding:10px">🤖 Isi Item Pakai AI</button>
 
                     <div class="card-title" style="margin-top:20px">Pembayaran</div>
                     <div class="form-group"><label class="form-label">Total</label><input type="number" class="form-input" id="pesanTotal" readonly></div>
@@ -1306,7 +1166,6 @@
             </div>
         </div>
 
-        <div id="slipCaptureArea" style="position:fixed;left:-9999px;top:0;z-index:-1;width:794px;background:#fff;padding:40px;font-family:'Inter',sans-serif;color:#3D2C2C"></div>
         <div id="pesanSlipCaptureArea" style="position:fixed;left:-9999px;top:0;z-index:-1;width:794px;background:#fff;padding:40px;font-family:'Inter',sans-serif;color:#3D2C2C"></div>
         <div id="catalogCaptureArea" style="position:fixed;left:-9999px;top:0;z-index:-1;width:794px;background:#fff;padding:40px;font-family:'Inter',sans-serif;color:#3D2C2C"></div>
     </div>
