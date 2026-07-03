@@ -1897,12 +1897,14 @@ function exportReportPDF() {
     y += 14;
 
     // === Filter transactions ===
+    const nowStr = now.toISOString().split('T')[0];
     let filtered = allTransactions.filter(t => {
         if (!t.date) return false;
         const d = new Date(t.date);
         if (isNaN(d.getTime())) return false;
-        if (tab === 'daily') return t.date === now.toISOString().split('T')[0];
-        if (tab === 'weekly') return new Date(t.date) >= new Date(now - 7 * 24 * 60 * 60 * 1000);
+        const dateStr = t.date;
+        if (tab === 'daily') return dateStr === nowStr;
+        if (tab === 'weekly') return d >= new Date(now - 7 * 24 * 60 * 60 * 1000);
         if (tab === 'monthly') return d.getMonth() === month && d.getFullYear() === year;
         return d.getFullYear() === year;
     });
@@ -1916,7 +1918,7 @@ function exportReportPDF() {
     }
 
     // Sort by date ascending
-    filtered.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    filtered.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
 
     checkPage(20);
     doc.setDrawColor(201, 168, 122);
