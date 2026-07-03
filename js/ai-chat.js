@@ -354,6 +354,11 @@ function startVoiceInput() {
         return;
     }
 
+    if (location.protocol !== 'https:' && location.protocol !== 'http:') {
+        alert('⚠️ Voice input membutuhkan koneksi HTTPS atau localhost.\n\nBuka aplikasi lewat HTTPS (bukan file://) untuk menggunakan fitur ini.');
+        return;
+    }
+
     voiceRecognition = new SpeechRecognition();
     voiceRecognition.lang = 'id-ID';
     voiceRecognition.continuous = false;
@@ -378,6 +383,10 @@ function startVoiceInput() {
     voiceRecognition.onerror = (event) => {
         stopVoiceInput();
         if (event.error === 'no-speech') return;
+        if (event.error === 'not-allowed') {
+            alert('⚠️ Mikrofon tidak diizinkan.\n\nPastikan:\n1. Aplikasi dibuka lewat HTTPS atau localhost (tidak bisa pakai file://)\n2. Izin mikrofon sudah diberikan di pengaturan browser\n3. Tidak ada aplikasi lain yang pakai mikrofon');
+            return;
+        }
         alert('Error voice: ' + event.error);
     };
 
