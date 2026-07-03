@@ -1,7 +1,7 @@
 const CONFIG = {
     // Gemini AI (GRATIS - dapat API Key di https://aistudio.google.com/apikey)
     GEMINI_API_KEY: '',
-    GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent',
     
     // Aplikasi
     APP_NAME: 'MUGHIS BANK',
