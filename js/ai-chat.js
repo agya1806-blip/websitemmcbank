@@ -160,9 +160,11 @@ User: "${userText}"`;
             })
         });
         if (!res.ok) {
-            if (res.status === 429) return { message: 'Kuota AI habis. Tunggu beberapa saat atau periksa API Key di Settings.' };
-            if (res.status === 403) return { message: 'API Key tidak valid. Periksa lagi di Settings.' };
-            return { message: 'Error AI: ' + res.status + '. Coba lagi.' };
+            let errMsg = '';
+            try { const err = await res.json(); errMsg = err?.error?.message || ''; } catch {}
+            if (res.status === 429) return { message: '⚠️ Kuota AI habis atau key tidak valid. Coba:' };
+            if (res.status === 403) return { message: '❌ API Key tidak valid. Pastikan key diawali AIzaSy... dan sudah benar di Settings.' };
+            return { message: 'Error AI (' + res.status + '): ' + errMsg + '\nCek API Key di Settings.' };
         }
         const data = await res.json();
         const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
