@@ -1898,7 +1898,9 @@ function exportReportPDF() {
 
     // === Filter transactions ===
     let filtered = allTransactions.filter(t => {
+        if (!t.date) return false;
         const d = new Date(t.date);
+        if (isNaN(d.getTime())) return false;
         if (tab === 'daily') return t.date === now.toISOString().split('T')[0];
         if (tab === 'weekly') return new Date(t.date) >= new Date(now - 7 * 24 * 60 * 60 * 1000);
         if (tab === 'monthly') return d.getMonth() === month && d.getFullYear() === year;
@@ -1914,7 +1916,7 @@ function exportReportPDF() {
     }
 
     // Sort by date ascending
-    filtered.sort((a, b) => a.date.localeCompare(b.date));
+    filtered.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
     checkPage(20);
     doc.setDrawColor(201, 168, 122);
@@ -1931,7 +1933,9 @@ function exportReportPDF() {
     // === Group by month ===
     const monthlyGroups = {};
     filtered.forEach(t => {
+        if (!t.date) return;
         const d = new Date(t.date);
+        if (isNaN(d.getTime())) return;
         const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
         if (!monthlyGroups[key]) {
             monthlyGroups[key] = { year: d.getFullYear(), month: d.getMonth(), label: monthNames[d.getMonth()] + ' ' + d.getFullYear(), items: [], income: 0, expense: 0 };
