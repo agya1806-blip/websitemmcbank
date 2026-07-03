@@ -24,6 +24,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
     <!-- PIN LOCK SCREEN -->
@@ -223,6 +224,9 @@
             <div id="finance-expense" style="display:none;"><div id="expenseList"></div></div>
             <div id="finance-modal" style="display:none;"><div id="modalList"></div></div>
             <div id="finance-transfer" style="display:none;"><div id="transferList"></div></div>
+            <div style="display:flex;gap:8px;margin:0 16px 12px">
+                <button class="btn btn-outline" onclick="showPage('pdf-import')" style="flex:1;font-size:12px">📄 Import Mutasi PDF</button>
+            </div>
             <button class="fab" onclick="openTransactionModal()">+</button>
         </div>
 
@@ -327,6 +331,39 @@
             <div id="reportContent"></div>
             <div style="display:flex;gap:8px;margin:12px 16px">
                 <button class="btn btn-primary" onclick="exportReportPDF()" style="flex:1;font-size:13px">📄 Export PDF</button>
+            </div>
+        </div>
+
+        <div class="page" id="page-pdf-import">
+            <div style="padding:0 16px 12px">
+                <div class="card">
+                    <div class="card-title"><span class="m-icon" style="font-size:18px">upload_file</span> Import Mutasi Bank (PDF Tahunan)</div>
+                    <div class="about-text" style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">
+                        Upload file PDF mutasi rekening tahunan. Sistem akan membaca dan mengelompokkan transaksi per bulan.
+                    </div>
+                    <div id="pdfDropZone" style="border:2px dashed var(--gold);border-radius:16px;padding:32px 16px;text-align:center;cursor:pointer;transition:all 0.3s" onclick="document.getElementById('pdfFileInput').click()">
+                        <span class="m-icon" style="font-size:48px;color:var(--gold)">picture_as_pdf</span>
+                        <p style="color:var(--text-secondary);margin:8px 0 0;font-size:13px">Klik untuk pilih file PDF</p>
+                        <p style="color:var(--text-tertiary);margin:4px 0 0;font-size:11px">Format: BCA, Mandiri, BNI, BRI, BSI, atau bank lainnya</p>
+                    </div>
+                    <input type="file" id="pdfFileInput" accept=".pdf" style="display:none" onchange="handlePDFImport(this)">
+                    <div id="pdfImportStatus" style="display:none;margin-top:12px;text-align:center;padding:16px;border-radius:12px;background:var(--surface-2)">
+                        <div class="spinner" style="margin:0 auto 8px"></div>
+                        <span style="font-size:13px;color:var(--text-secondary)">Memproses PDF...</span>
+                    </div>
+                </div>
+            </div>
+            <div id="pdfImportResults" style="display:none;padding:0 16px 80px">
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+                    <span class="m-icon" style="color:var(--gold)">check_circle</span>
+                    <span style="font-weight:600;font-size:14px">Hasil Import</span>
+                    <span id="pdfTotalTransaksi" style="font-size:12px;color:var(--text-secondary);margin-left:auto"></span>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:16px">
+                    <select id="pdfTargetWallet" class="form-select" style="flex:1;min-height:40px;font-size:13px;padding:8px 12px"></select>
+                    <button class="btn btn-primary" onclick="saveAllPDFTransactions()" style="font-size:12px;white-space:nowrap">💾 Simpan Semua</button>
+                </div>
+                <div id="pdfMonthContainer"></div>
             </div>
         </div>
 
@@ -540,19 +577,19 @@
             <div class="card">
                 <div class="card-title"><span class="m-icon" style="font-size:18px">info</span> Tentang Mughis Bank</div>
                 <div class="about-text">
-                    Mughis Bank adalah sistem manajemen keuangan, pendataan, pengeluaran, dan pesanan yang dirancang untuk membantu pelaku usaha mengelola bisnis secara lebih rapi, cepat, dan profesional.
+                    Mughis Bank adalah sistem manajemen bisnis all-in-one yang dirancang untuk membantu pelaku usaha mengelola keuangan, pendataan, pengeluaran, pesanan, pelanggan, produk, serta piutang & hutang secara rapi, cepat, dan profesional.
                 </div>
             </div>
             <div class="card">
                 <div class="card-title"><span class="m-icon" style="font-size:18px">track_changes</span> Visi</div>
                 <div class="about-text">
-                    Menjadi sistem administrasi bisnis yang sederhana, modern, dan dapat digunakan oleh semua pelaku usaha.
+                    Menjadi sistem administrasi bisnis yang sederhana, modern, dan dapat digunakan oleh semua pelaku usaha tanpa biaya.
                 </div>
             </div>
             <div class="card">
                 <div class="card-title"><span class="m-icon" style="font-size:18px">flag</span> Misi</div>
                 <div class="about-text">
-                    Membantu bisnis mengambil keputusan berdasarkan data yang akurat dan terstruktur.
+                    Membantu bisnis mengambil keputusan berdasarkan data yang akurat, terstruktur, dan real-time.
                 </div>
             </div>
             <div class="card">
@@ -563,7 +600,23 @@
                     <div class="about-feature"><span class="m-icon" style="color:var(--gold)">money_off</span> Pengelolaan Pengeluaran</div>
                     <div class="about-feature"><span class="m-icon" style="color:var(--gold)">trending_up</span> Monitoring Laba Bersih</div>
                     <div class="about-feature"><span class="m-icon" style="color:var(--gold)">timeline</span> Pelacakan Cashflow</div>
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">smart_toy</span> AI Chat & Voice Input</div>
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">people</span> Data Pelanggan</div>
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">inventory_2</span> Manajemen Produk</div>
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">swap_horiz</span> Piutang & Hutang</div>
+                    <div class="about-feature"><span class="m-icon" style="color:var(--gold)">wallet</span> Dompet Digital</div>
                     <div class="about-feature"><span class="m-icon" style="color:var(--gold)">description</span> Administrasi Bisnis</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title"><span class="m-icon" style="font-size:18px">update</span> Yang Baru</div>
+                <div class="about-text" style="font-size:12px;color:var(--text-secondary)">
+                    <strong style="color:var(--gold)">AI Asisten Cerdas</strong> — Perintah suara & teks via Gemini AI untuk mengelola seluruh data.<br>
+                    <strong style="color:var(--gold)">Voice Input</strong> — Bicara langsung, AI yang mencatat (HTTPS/localhost).<br>
+                    <strong style="color:var(--gold)">Tanpa Login</strong> — Buka langsung, aman dengan PIN pribadi.<br>
+                    <strong style="color:var(--gold)">Dompet Digital</strong> — Lacak saldo multi-rekening.<br>
+                    <strong style="color:var(--gold)">Export/Import Lengkap</strong> — Semua data termasuk pesan & konfigurasi.<br>
+                    <strong style="color:var(--gold)">Tampilan Baru</strong> — Glassmorphism, gold theme, dark mode default.
                 </div>
             </div>
             <div class="card">
@@ -571,7 +624,8 @@
                 <div class="about-text" style="font-size:12px;color:var(--text-secondary)">
                     Semua data tersimpan di <strong>localStorage</strong> perangkat ini.<br>
                     Tidak ada data yang dikirim ke server pihak ketiga.<br>
-                    Backup ke Telegram bersifat opsional dan dienkripsi.
+                    Backup ke Telegram bersifat opsional dan dienkripsi.<br>
+                    AI Chat menggunakan <strong>Gemini API</strong> — hanya teks perintah yang dikirim ke Google.
                 </div>
             </div>
             <div style="height:20px"></div>
@@ -1135,5 +1189,6 @@
     <script src="js/modules.js"></script>
     <script src="js/pesan.js"></script>
     <script src="js/ai-chat.js"></script>
+    <script src="js/pdf-import.js"></script>
 </body>
 </html>

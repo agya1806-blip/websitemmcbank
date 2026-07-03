@@ -2520,3 +2520,84 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 
 [data-theme="dark"] .chat-bubble.ai { background: var(--surface); }
 [data-theme="dark"] .chat-input { background: var(--surface); }
+
+/* ==================== PDF IMPORT ==================== */
+.pdf-month-card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-light);
+    transition: all 0.3s;
+}
+.pdf-month-card:hover {
+    box-shadow: var(--shadow);
+}
+.pdf-month-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--gold);
+}
+.pdf-month-name {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.pdf-month-summary {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+}
+.pdf-month-income {
+    color: var(--gold);
+    font-weight: 600;
+}
+.pdf-month-expense {
+    color: var(--danger);
+    font-weight: 600;
+}
+.pdf-trx-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 12px;
+    gap: 8px;
+}
+.pdf-trx-item:last-child { border-bottom: none; }
+.pdf-trx-date {
+    color: var(--text-secondary);
+    min-width: 70px;
+    font-size: 11px;
+}
+.pdf-trx-desc {
+    flex: 1;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pdf-trx-amount { font-weight: 600; white-space: nowrap; }
+.pdf-trx-amount.income { color: var(--gold); }
+.pdf-trx-amount.expense { color: var(--danger); }
+.pdf-month-empty {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-tertiary);
+    font-size: 13px;
+}
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
