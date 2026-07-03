@@ -591,7 +591,8 @@
             </div>
             <div class="chat-messages" id="chatMessages"></div>
             <div class="chat-input-bar">
-                <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ketik perintah bisnis..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
+                <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ketik atau sentuh mic untuk bicara..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
+                <button class="chat-mic-btn" id="chatMicBtn" onclick="toggleVoiceInput()"><span class="m-icon" id="chatMicIcon">mic</span></button>
                 <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()"><span class="m-icon">send</span></button>
             </div>
         </div>

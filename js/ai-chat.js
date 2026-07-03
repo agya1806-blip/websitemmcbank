@@ -333,3 +333,68 @@ document.addEventListener('visibilitychange', () => {
         renderChatMessages();
     }
 });
+
+// ==================== VOICE INPUT ====================
+
+let voiceRecognition = null;
+let isListening = false;
+
+function toggleVoiceInput() {
+    if (isListening) {
+        stopVoiceInput();
+        return;
+    }
+    startVoiceInput();
+}
+
+function startVoiceInput() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert('Browser tidak mendukung voice input. Gunakan Chrome/Edge di Android atau desktop.');
+        return;
+    }
+
+    voiceRecognition = new SpeechRecognition();
+    voiceRecognition.lang = 'id-ID';
+    voiceRecognition.continuous = false;
+    voiceRecognition.interimResults = false;
+
+    const micBtn = document.getElementById('chatMicBtn');
+    const micIcon = document.getElementById('chatMicIcon');
+
+    voiceRecognition.onstart = () => {
+        isListening = true;
+        micBtn.classList.add('listening');
+        micIcon.textContent = 'graphic_eq';
+    };
+
+    voiceRecognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('chatInput').value = transcript;
+        stopVoiceInput();
+        sendChatMessage();
+    };
+
+    voiceRecognition.onerror = (event) => {
+        stopVoiceInput();
+        if (event.error === 'no-speech') return;
+        alert('Error voice: ' + event.error);
+    };
+
+    voiceRecognition.onend = () => {
+        stopVoiceInput();
+    };
+
+    voiceRecognition.start();
+}
+
+function stopVoiceInput() {
+    isListening = false;
+    if (voiceRecognition) {
+        try { voiceRecognition.stop(); } catch {}
+    }
+    const micBtn = document.getElementById('chatMicBtn');
+    const micIcon = document.getElementById('chatMicIcon');
+    if (micBtn) micBtn.classList.remove('listening');
+    if (micIcon) micIcon.textContent = 'mic';
+}

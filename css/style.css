@@ -2491,6 +2491,28 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 }
 .chat-send-btn:active { transform: scale(0.9); }
 .chat-send-btn .m-icon { font-size: 20px; }
+
+.chat-mic-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    background: var(--surface-2); color: var(--text-secondary);
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: all 0.2s; flex-shrink: 0;
+}
+.chat-mic-btn:active { transform: scale(0.9); }
+.chat-mic-btn.listening {
+    background: var(--danger); color: white;
+    box-shadow: 0 0 0 4px rgba(185, 74, 74, 0.2);
+    animation: micPulse 1s ease-in-out infinite;
+}
+.chat-mic-btn.listening .m-icon { animation: spin 1s linear infinite; }
+@keyframes micPulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(185, 74, 74, 0.2); }
+    50% { box-shadow: 0 0 0 8px rgba(185, 74, 74, 0.05); }
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 @keyframes chatIn {
     from { opacity: 0; transform: translateY(8px) scale(0.97); }
     to { opacity: 1; transform: translateY(0) scale(1); }
