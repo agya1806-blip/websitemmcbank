@@ -27,6 +27,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
     <!-- PIN LOCK SCREEN -->
@@ -186,6 +187,20 @@
             <div class="card" id="insightCard">
                 <div class="card-title"><span class="m-icon" style="font-size:16px">insights</span> Insight Bisnis</div>
                 <div id="businessInsights" class="insight-container"></div>
+            </div>
+
+            <!-- Chart Ringkasan -->
+            <div class="card">
+                <div class="card-title" style="display:flex;align-items:center;gap:8px">
+                    <span class="m-icon" style="font-size:16px">pie_chart</span> Grafik Bulan Ini
+                    <div style="margin-left:auto;display:flex;gap:4px">
+                        <button class="btn btn-outline" onclick="switchDashChart('pie')" style="padding:2px 8px;font-size:10px;min-height:auto" id="dashChartPieBtn">Pie</button>
+                        <button class="btn btn-outline active" onclick="switchDashChart('bar')" style="padding:2px 8px;font-size:10px;min-height:auto" id="dashChartBarBtn">Bar</button>
+                    </div>
+                </div>
+                <div class="chart-container" style="position:relative;height:180px">
+                    <canvas id="dashChartCanvas"></canvas>
+                </div>
             </div>
 
             <!-- Menu Cepat -->
@@ -396,6 +411,7 @@
             <div id="reportContent"></div>
             <div style="display:flex;gap:8px;margin:12px 16px">
                 <button class="btn btn-primary" onclick="openExportDatePicker()" style="flex:1;font-size:13px">📄 Export PDF</button>
+                <button class="btn btn-success" onclick="exportExcel()" style="flex:1;font-size:13px">📊 Export Excel</button>
             </div>
         </div>
 
@@ -549,6 +565,21 @@
                             <button class="btn btn-outline" onclick="showAddInvoiceType()" style="margin-top:8px">+ Tambah Tipe Pesanan</button>
                             <button class="btn btn-primary" onclick="saveInvoiceTypesFromUI()" style="margin-top:8px;display:block">💾 Simpan Tipe Pesanan</button>
                         </div>
+                        <div class="card">
+                            <div class="card-title">🏷️ Kategori Transaksi Kustom</div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Tambah kategori kustom untuk pemasukan dan pengeluaran. Kategori bawaan tidak bisa dihapus.</div>
+                            <div style="margin-bottom:8px">
+                                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Kategori Pemasukan Tambahan</label>
+                                <div id="customIncomeCatsList"></div>
+                                <button class="btn btn-outline" onclick="addCustomCategory('income')" style="margin-top:4px;font-size:12px">+ Tambah Kategori Pemasukan</button>
+                            </div>
+                            <div style="margin-bottom:8px">
+                                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Kategori Pengeluaran Tambahan</label>
+                                <div id="customExpenseCatsList"></div>
+                                <button class="btn btn-outline" onclick="addCustomCategory('expense')" style="margin-top:4px;font-size:12px">+ Tambah Kategori Pengeluaran</button>
+                            </div>
+                            <button class="btn btn-primary" onclick="saveCustomCategories()" style="margin-top:8px;display:block">💾 Simpan Kategori Kustom</button>
+                        </div>
                     </div>
                 </div>
 
@@ -576,6 +607,13 @@
                                 <input type="text" class="form-input" id="settingAiKey" placeholder="Masukkan API Key Gemini">
                             </div>
                             <button class="btn btn-primary" onclick="saveAiKey()" style="background:linear-gradient(90deg,#775B5B,#9B7E7E)">💾 Simpan API Key</button>
+                        </div>
+                        <div class="card">
+                            <div class="card-title"><span class="m-icon" style="font-size:18px">language</span> Bahasa / Language</div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
+                                <span style="font-size:14px">Indonesia</span>
+                                <button class="btn btn-outline" onclick="toggleLanguage()" style="font-size:12px;padding:6px 16px">Ganti ke English</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -620,6 +658,7 @@
                             <button class="btn btn-outline" onclick="document.getElementById('importFile').click()" style="margin-bottom:8px">📤 Import Data dari File</button>
                             <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(this)">
                             <button class="btn btn-danger" onclick="resetData()" style="margin-bottom:8px">🗑️ Reset Semua Data</button>
+                            <button class="btn btn-primary" id="pwaInstallBtn" onclick="installApp()" style="margin-bottom:8px;display:none">📲 Install Aplikasi ke Layar Utama</button>
                             <div style="padding:8px;background:var(--surface-2);border-radius:8px;font-size:11px;color:var(--text-secondary);line-height:1.6;margin-top:8px">
                                 <strong>📱 Cara Sharing Data ke HP/User Lain:</strong><br>
                                 1. Export data → file JSON tersimpan<br>
@@ -1214,6 +1253,14 @@
                             <button class="chip" data-value="Servis" onclick="selectChip(this,'psnUmumType')">Servis</button>
                             <button class="chip" data-value="Lainnya" onclick="selectChip(this,'psnUmumType')">Lainnya</button>
                         </div>
+                    </div>
+
+                    <div style="margin-top:12px">
+                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                            <span style="font-size:12px;font-weight:600">📋 Template Cepat</span>
+                            <button class="btn btn-outline" onclick="savePesanTemplate()" style="padding:4px 10px;font-size:11px">+ Simpan sebagai Template</button>
+                        </div>
+                        <div id="pesanTemplateList" style="display:flex;gap:6px;flex-wrap:wrap;min-height:30px"></div>
                     </div>
 
                     <div class="form-group"><label class="form-label">Catatan</label><textarea class="form-textarea" id="pesanNote"></textarea></div>

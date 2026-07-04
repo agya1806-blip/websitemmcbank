@@ -64,9 +64,23 @@ const defaultSettings = {
     ]
 };
 
-const incomeCategories = ['Penjualan', 'Jasa', 'Pendapatan Lain', 'Transfer Masuk'];
-const expenseCategories = ['Pembelian', 'Operasional', 'Gaji', 'Pengeluaran Lain', 'Transfer Keluar', 'Modal Produksi', 'Modal Operasional', 'Modal Marketing', 'Modal Gaji', 'Modal Transportasi', 'Modal Lainnya'];
-const modalCategories = ['Modal Produksi', 'Modal Operasional', 'Modal Marketing', 'Modal Gaji', 'Modal Transportasi', 'Modal Lainnya'];
+function getIncomeCategories() {
+    const s = loadData(DB.settings) || {};
+    const defaults = ['Penjualan', 'Jasa', 'Pendapatan Lain', 'Transfer Masuk'];
+    const custom = (s && !Array.isArray(s) && s.customIncomeCategories) || [];
+    return [...defaults, ...custom.filter(c => !defaults.includes(c))];
+}
+
+function getExpenseCategories() {
+    const s = loadData(DB.settings) || {};
+    const defaults = ['Pembelian', 'Operasional', 'Gaji', 'Pengeluaran Lain', 'Transfer Keluar', 'Modal Produksi', 'Modal Operasional', 'Modal Marketing', 'Modal Gaji', 'Modal Transportasi', 'Modal Lainnya'];
+    const custom = (s && !Array.isArray(s) && s.customExpenseCategories) || [];
+    return [...defaults, ...custom.filter(c => !defaults.includes(c))];
+}
+
+function getModalCategories() {
+    return getExpenseCategories().filter(c => c.startsWith('Modal'));
+}
 
 let currentUser = { userId: 'guest', email: 'local@user', name: 'User' };
 let currentTransactionType = 'income';
@@ -503,9 +517,25 @@ function init() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
     }
+    
+    // PWA Install Prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const btn = document.getElementById('pwaInstallBtn');
+        if (btn) btn.style.display = 'flex';
+    });
+    window.addEventListener('appinstalled', () => {
+        deferredPrompt = null;
+        const btn = document.getElementById('pwaInstallBtn');
+        if (btn) btn.style.display = 'none';
+    });
 
     updateSyncStatus();
     checkCloudDataAvailable();
+    setTimeout(checkDueDates, 1000);
+    setInterval(checkDueDates, 3600000);
 }
 
 function generateId() {
@@ -1262,6 +1292,7 @@ function renderAll() {
     updateWalletSelects();
     renderCabangFilter();
     renderQuickMenu();
+    renderDashChart();
 }
 
 function renderInsights(stats) {
@@ -1530,6 +1561,88 @@ function showActivityDetail(activityId) {
     
     document.getElementById('activityDetailContent').innerHTML = detail;
     openModal('activityDetailModal');
+}
+
+// ==================== DASHBOARD CHART ====================
+
+let dashChart = null;
+let dashChartType = 'bar';
+
+function renderDashChart() {
+    const ctx = document.getElementById('dashChartCanvas');
+    if (!ctx) return;
+    if (dashChart) dashChart.destroy();
+
+    const transactions = loadData(DB.transactions);
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+
+    let income = 0, expense = 0;
+    const catIncome = {}, catExpense = {};
+
+    transactions.forEach(t => {
+        const d = new Date(t.date);
+        if (d.getMonth() !== month || d.getFullYear() !== year) return;
+        const amt = parseFloat(t.amount) || 0;
+        if (t.type === 'income') {
+            income += amt;
+            catIncome[t.category || 'Lainnya'] = (catIncome[t.category || 'Lainnya'] || 0) + amt;
+        } else if (t.type === 'expense' && !t.isModalKeluar) {
+            expense += amt;
+            catExpense[t.category || 'Lainnya'] = (catExpense[t.category || 'Lainnya'] || 0) + amt;
+        }
+    });
+
+    if (dashChartType === 'pie') {
+        // Pie: income vs expense
+        const palette = ['#C9A87A', '#775B5B'];
+        dashChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pemasukan', 'Pengeluaran'],
+                datasets: [{ data: [income, expense], backgroundColor: palette, borderWidth: 0 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 10 } } }
+                }
+            }
+        });
+        document.getElementById('dashChartPieBtn')?.classList.add('active');
+        document.getElementById('dashChartBarBtn')?.classList.remove('active');
+    } else {
+        // Bar: income vs expense by category
+        const allCats = [...new Set([...Object.keys(catIncome), ...Object.keys(catExpense)])];
+        const incData = allCats.map(c => catIncome[c] || 0);
+        const expData = allCats.map(c => catExpense[c] || 0);
+        dashChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: allCats,
+                datasets: [
+                    { label: 'Pemasukan', data: incData, backgroundColor: 'rgba(201,168,122,0.7)', borderRadius: 3 },
+                    { label: 'Pengeluaran', data: expData, backgroundColor: 'rgba(119,91,91,0.7)', borderRadius: 3 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 9 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 8 }, maxRotation: 45 } }
+                }
+            }
+        });
+        document.getElementById('dashChartBarBtn')?.classList.add('active');
+        document.getElementById('dashChartPieBtn')?.classList.remove('active');
+    }
+}
+
+function switchDashChart(type) {
+    dashChartType = type;
+    renderDashChart();
 }
 
 function renderWallets() {
@@ -2412,6 +2525,50 @@ function doExportPDF() {
     exportReportPDF(dates[0], dates[1]);
 }
 
+function getWalletName(walletId, cabang) {
+    const wallets = loadData(DB.wallets);
+    const w = wallets.find(w => w.id === walletId);
+    return w ? (w.icon || '') + ' ' + w.name + (cabang ? ' (' + cabang + ')' : '') : '-';
+}
+
+function exportExcel() {
+    const transactions = loadData(DB.transactions);
+    if (!transactions || transactions.length === 0) {
+        alert('Tidak ada transaksi untuk diexport.');
+        return;
+    }
+
+    const incomeData = transactions.filter(t => t.type === 'income');
+    const expenseData = transactions.filter(t => t.type === 'expense');
+
+    const wb = XLSX.utils.book_new();
+
+    function txToArray(txList, title) {
+        const header = ['Tanggal', 'Kategori', 'Keterangan', 'Tipe', 'Nominal', 'Dompet'];
+        const rows = txList.map(t => {
+            const walletName = getWalletName(t.walletId, t.cabang);
+            return [t.date, t.category, t.description, title, t.amount, walletName];
+        });
+        return [header, ...rows];
+    }
+
+    const incomeRows = txToArray(incomeData, 'Pemasukan');
+    const expenseRows = txToArray(expenseData, 'Pengeluaran');
+
+    const wsIncome = XLSX.utils.aoa_to_sheet(incomeRows);
+    const wsExpense = XLSX.utils.aoa_to_sheet(expenseRows);
+
+    XLSX.utils.book_append_sheet(wb, wsIncome, 'Pemasukan');
+    XLSX.utils.book_append_sheet(wb, wsExpense, 'Pengeluaran');
+
+    const settings = loadData(DB.settings) || {};
+    const businessName = settings.businessName || 'MUGHIS BANK';
+    const filename = `${businessName}_Laporan_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    XLSX.writeFile(wb, filename);
+    addActivity(`📊 Export Excel: ${filename}`);
+}
+
 // ==================== ACTIVITY PAGE ====================
 
 function renderFullActivity() {
@@ -2908,10 +3065,80 @@ function saveInvoiceTypesFromUI() {
     alert('✅ Tipe invoice disimpan!');
 }
 
+function getCustomCategories(type) {
+    const s = loadData(DB.settings) || {};
+    if (Array.isArray(s)) return [];
+    return type === 'income' ? (s.customIncomeCategories || []) : (s.customExpenseCategories || []);
+}
+
+function renderCustomCategoriesSettings() {
+    const incomeCats = getCustomCategories('income');
+    const expenseCats = getCustomCategories('expense');
+    const incomeContainer = document.getElementById('customIncomeCatsList');
+    const expenseContainer = document.getElementById('customExpenseCatsList');
+    if (incomeContainer) {
+        incomeContainer.innerHTML = incomeCats.map((c, i) =>
+            `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;padding:8px;background:var(--surface-2);border-radius:8px">
+                <input type="text" class="form-input" id="cc_income_${i}" value="${c}" placeholder="Nama kategori" style="font-size:13px;padding:8px;flex:1">
+                <button class="btn btn-danger" style="padding:6px 10px;font-size:13px" onclick="removeCustomCategory('income',${i})">✕</button>
+            </div>`
+        ).join('');
+    }
+    if (expenseContainer) {
+        expenseContainer.innerHTML = expenseCats.map((c, i) =>
+            `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;padding:8px;background:var(--surface-2);border-radius:8px">
+                <input type="text" class="form-input" id="cc_expense_${i}" value="${c}" placeholder="Nama kategori" style="font-size:13px;padding:8px;flex:1">
+                <button class="btn btn-danger" style="padding:6px 10px;font-size:13px" onclick="removeCustomCategory('expense',${i})">✕</button>
+            </div>`
+        ).join('');
+    }
+}
+
+function addCustomCategory(type) {
+    const cats = getCustomCategories(type);
+    cats.push('');
+    const s = loadData(DB.settings) || {};
+    if (Array.isArray(s)) s = {};
+    if (type === 'income') {
+        s.customIncomeCategories = cats;
+    } else {
+        s.customExpenseCategories = cats;
+    }
+    saveData(DB.settings, s);
+    renderCustomCategoriesSettings();
+}
+
+function removeCustomCategory(type, index) {
+    const cats = getCustomCategories(type);
+    cats.splice(index, 1);
+    const s = loadData(DB.settings) || {};
+    if (Array.isArray(s)) s = {};
+    if (type === 'income') {
+        s.customIncomeCategories = cats;
+    } else {
+        s.customExpenseCategories = cats;
+    }
+    saveData(DB.settings, s);
+    renderCustomCategoriesSettings();
+}
+
+function saveCustomCategories() {
+    const s = loadData(DB.settings) || {};
+    if (Array.isArray(s)) s = {};
+    const incomeCats = (s.customIncomeCategories || []).map((_, i) => document.getElementById(`cc_income_${i}`)?.value || '').filter(Boolean);
+    const expenseCats = (s.customExpenseCategories || []).map((_, i) => document.getElementById(`cc_expense_${i}`)?.value || '').filter(Boolean);
+    s.customIncomeCategories = incomeCats;
+    s.customExpenseCategories = expenseCats;
+    saveData(DB.settings, s);
+    renderCustomCategoriesSettings();
+    alert('✅ Kategori kustom disimpan!');
+}
+
 function updateSettingsUI() {
     renderPaymentMethodsSettings();
     renderServicesSettings();
     renderInvoiceTypesSettings();
+    renderCustomCategoriesSettings();
     renderCabangSettings();
     renderShortcutSettings();
 }
@@ -3144,6 +3371,131 @@ function importContactsFromFile(input) {
         alert(`✅ ${imported} kontak berhasil diimport!\n${customers.length} total pelanggan.`);
     };
     reader.readAsText(file);
+}
+
+// ==================== PWA INSTALL ====================
+
+function installApp() {
+    if (!window.deferredPrompt) return;
+    window.deferredPrompt.prompt();
+    window.deferredPrompt.userChoice.then(() => { window.deferredPrompt = null; });
+}
+
+// ==================== MULTI-BAHASA ====================
+
+const LANG = {
+    id: {
+        welcome: 'Selamat datang',
+        dashboard: 'Beranda',
+        activity: 'Aktivitas',
+        reports: 'Laporan',
+        profile: 'Profil',
+        finance: 'Keuangan',
+        orders: 'Pesanan',
+        products: 'Produk',
+        debt: 'Hutang',
+        wallet: 'Dompet',
+        calendar: 'Kalender',
+        settings: 'Pengaturan',
+        about: 'Tentang',
+        chat: 'AI Chat',
+        income: 'Pemasukan',
+        expense: 'Pengeluaran',
+        totalBalance: 'Total Saldo',
+        exportPDF: 'Export PDF',
+        exportExcel: 'Export Excel',
+        save: 'Simpan',
+        cancel: 'Batal',
+        delete: 'Hapus',
+        edit: 'Edit',
+        search: 'Cari',
+    },
+    en: {
+        welcome: 'Welcome',
+        dashboard: 'Dashboard',
+        activity: 'Activity',
+        reports: 'Reports',
+        profile: 'Profile',
+        finance: 'Finance',
+        orders: 'Orders',
+        products: 'Products',
+        debt: 'Debt',
+        wallet: 'Wallet',
+        calendar: 'Calendar',
+        settings: 'Settings',
+        about: 'About',
+        chat: 'AI Chat',
+        income: 'Income',
+        expense: 'Expense',
+        totalBalance: 'Total Balance',
+        exportPDF: 'Export PDF',
+        exportExcel: 'Export Excel',
+        save: 'Save',
+        cancel: 'Cancel',
+        delete: 'Delete',
+        edit: 'Edit',
+        search: 'Search',
+    }
+};
+
+function getLang() {
+    const s = loadData(DB.settings) || {};
+    return s.language || 'id';
+}
+
+function t(key) {
+    const lang = getLang();
+    return LANG[lang]?.[key] || LANG.id[key] || key;
+}
+
+function toggleLanguage() {
+    const s = loadData(DB.settings) || {};
+    s.language = s.language === 'en' ? 'id' : 'en';
+    saveData(DB.settings, s);
+    location.reload();
+}
+
+// ==================== NOTIFIKASI JATUH TEMPO ====================
+function checkDueDates() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+        Notification.requestPermission();
+        return;
+    }
+    if (Notification.permission !== 'granted') return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const debts = loadData(DB.debts);
+    const receivables = loadData(DB.receivables);
+    const dueItems = [];
+
+    debts.forEach(d => {
+        if (d.status === 'Lunas' || !d.dueDate) return;
+        const due = new Date(d.dueDate);
+        due.setHours(0, 0, 0, 0);
+        if (due <= today) {
+            dueItems.push({ type: 'Hutang', name: d.name, amount: d.amount, dueDate: d.dueDate, overdue: due < today });
+        }
+    });
+
+    receivables.forEach(r => {
+        if (r.status === 'Lunas' || !r.dueDate) return;
+        const due = new Date(r.dueDate);
+        due.setHours(0, 0, 0, 0);
+        if (due <= today) {
+            dueItems.push({ type: 'Piutang', name: r.name, amount: r.amount, dueDate: r.dueDate, overdue: due < today });
+        }
+    });
+
+    dueItems.forEach(item => {
+        const prefix = item.overdue ? '🔴' : '⚠️';
+        const msg = prefix + ' ' + item.type + ' ke ' + item.name + ' sebesar Rp ' + (item.amount || 0).toLocaleString('id-ID') + (item.overdue ? ' sudah lewat jatuh tempo!' : ' jatuh tempo hari ini!');
+        try {
+            new Notification('MUGHIS BANK - Pengingat', { body: msg, icon: '/icons/icon-192.png' });
+        } catch (e) {}
+    });
 }
 
 // Start app on page load

@@ -173,6 +173,7 @@ function openPesanForm(type, editData) {
     // Items
     pesanItems = editData && editData.items ? JSON.parse(JSON.stringify(editData.items)) : [];
     renderPesanItems();
+    renderPesanTemplateButtons();
 
     // Payment fields
     if (editData) {
@@ -1054,4 +1055,142 @@ function sendWhatsAppPesan() {
 
     const phone = (p.customerPhone || settings.whatsapp).replace(/\D/g, '').replace(/^0/, '62');
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+// ===== TEMPLATE PESANAN CEPAT =====
+function getPesanTemplateKey() {
+    return 'mughis_pesan_templates_' + (currentUser?.userId || 'guest');
+}
+
+function savePesanTemplate() {
+    const name = prompt('Nama template:');
+    if (!name || !name.trim()) return;
+    const type = document.getElementById('pesanType').value;
+    if (pesanItems.length === 0) {
+        alert('⚠️ Tambahkan minimal 1 item sebelum menyimpan template!');
+        return;
+    }
+    let specs = {};
+    if (type === 'print') {
+        specs = {
+            bookSize: getChipValue('psnPrintBookSize'),
+            binding: getChipValue('psnPrintBinding'),
+            finalSize: getChipValue('psnPrintFinalSize'),
+            paperType: getChipValue('psnPrintPaperType'),
+            coverType: getChipValue('psnPrintCoverType'),
+            laminating: getChipValue('psnPrintLaminating'),
+            wrapping: getChipValue('psnPrintWrapping')
+        };
+    } else if (type === 'laptop') {
+        specs = {
+            laptopName: document.getElementById('psnLaptopManualName').value || getChipValue('psnLaptopMerk'),
+            merk: getChipValue('psnLaptopMerk'),
+            processor: getChipValue('psnLaptopProcessor'),
+            ram: getChipValue('psnLaptopRam'),
+            storage: getChipValue('psnLaptopStorage'),
+            screen: getChipValue('psnLaptopScreen'),
+            condition: getChipValue('psnLaptopCondition'),
+            warranty: getChipValue('psnLaptopWarranty')
+        };
+    } else if (type === 'tiktok') {
+        specs = {
+            tiktokProduct: document.getElementById('psnTiktokManualProduct').value || getChipValue('psnTiktokCategory'),
+            platform: getChipValue('psnTiktokPlatform'),
+            category: getChipValue('psnTiktokCategory'),
+            komisi: getChipValue('psnTiktokKomisi')
+        };
+    } else if (type === 'umum') {
+        specs = {
+            umumItem: document.getElementById('psnUmumManualItem').value,
+            umumType: getChipValue('psnUmumType')
+        };
+    } else if (type === 'handphone') {
+        specs = {
+            hpName: document.getElementById('psnHpManualName').value,
+            merk: getChipValue('psnHpMerk'),
+            storage: getChipValue('psnHpStorage'),
+            color: getChipValue('psnHpColor'),
+            condition: getChipValue('psnHpCondition'),
+            warranty: getChipValue('psnHpWarranty')
+        };
+    }
+    const templates = JSON.parse(localStorage.getItem(getPesanTemplateKey()) || '[]');
+    templates.unshift({
+        id: generateId(),
+        name: name.trim(),
+        type: type,
+        specs: specs,
+        items: JSON.parse(JSON.stringify(pesanItems)),
+        createdAt: Date.now()
+    });
+    localStorage.setItem(getPesanTemplateKey(), JSON.stringify(templates));
+    alert('✅ Template "' + name.trim() + '" disimpan!');
+    renderPesanTemplateButtons();
+}
+
+function deletePesanTemplate(id) {
+    let templates = JSON.parse(localStorage.getItem(getPesanTemplateKey()) || '[]');
+    templates = templates.filter(t => t.id !== id);
+    localStorage.setItem(getPesanTemplateKey(), JSON.stringify(templates));
+    renderPesanTemplateButtons();
+}
+
+function applyPesanTemplate(id) {
+    const templates = JSON.parse(localStorage.getItem(getPesanTemplateKey()) || '[]');
+    const tmpl = templates.find(t => t.id === id);
+    if (!tmpl) return;
+    pesanItems = JSON.parse(JSON.stringify(tmpl.items));
+    renderPesanItems();
+    const s = tmpl.specs || {};
+    const type = tmpl.type;
+    if (type === 'print') {
+        setChipByValue('psnPrintBookSize', s.bookSize);
+        setChipByValue('psnPrintBinding', s.binding);
+        setChipByValue('psnPrintFinalSize', s.finalSize);
+        setChipByValue('psnPrintPaperType', s.paperType);
+        setChipByValue('psnPrintCoverType', s.coverType);
+        setChipByValue('psnPrintLaminating', s.laminating);
+        setChipByValue('psnPrintWrapping', s.wrapping);
+    } else if (type === 'laptop') {
+        setChipByValue('psnLaptopMerk', s.merk);
+        setChipByValue('psnLaptopProcessor', s.processor);
+        setChipByValue('psnLaptopRam', s.ram);
+        setChipByValue('psnLaptopStorage', s.storage);
+        setChipByValue('psnLaptopScreen', s.screen);
+        setChipByValue('psnLaptopCondition', s.condition);
+        setChipByValue('psnLaptopWarranty', s.warranty);
+        if (s.laptopName) document.getElementById('psnLaptopManualName').value = s.laptopName;
+    } else if (type === 'tiktok') {
+        setChipByValue('psnTiktokPlatform', s.platform);
+        setChipByValue('psnTiktokCategory', s.category);
+        setChipByValue('psnTiktokKomisi', String(s.komisi));
+        if (s.tiktokProduct) document.getElementById('psnTiktokManualProduct').value = s.tiktokProduct;
+    } else if (type === 'umum') {
+        setChipByValue('psnUmumType', s.umumType);
+        if (s.umumItem) document.getElementById('psnUmumManualItem').value = s.umumItem;
+    } else if (type === 'handphone') {
+        setChipByValue('psnHpMerk', s.merk);
+        setChipByValue('psnHpStorage', s.storage);
+        setChipByValue('psnHpColor', s.color);
+        setChipByValue('psnHpCondition', s.condition);
+        setChipByValue('psnHpWarranty', s.warranty);
+        if (s.hpName) document.getElementById('psnHpManualName').value = s.hpName;
+    }
+    calculatePesanTotal();
+}
+
+function renderPesanTemplateButtons() {
+    const container = document.getElementById('pesanTemplateList');
+    if (!container) return;
+    const templates = JSON.parse(localStorage.getItem(getPesanTemplateKey()) || '[]');
+    if (templates.length === 0) {
+        container.innerHTML = '<span style="font-size:11px;color:var(--text-secondary)">Belum ada template</span>';
+        return;
+    }
+    container.innerHTML = templates.map(t => `
+        <span class="chip" onclick="applyPesanTemplate('${t.id}')" style="cursor:pointer;font-size:11px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px">
+            📋 ${t.name}
+            <span onclick="event.stopPropagation();deletePesanTemplate('${t.id}')" style="margin-left:4px;cursor:pointer;opacity:0.6">✕</span>
+        </span>
+    `).join('');
 }

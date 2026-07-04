@@ -26,7 +26,7 @@ function setTransactionType(type) {
 
 function updateCategoryOptions() {
     const type = document.getElementById('transactionType').value;
-    const cats = type === 'income' ? incomeCategories : expenseCategories;
+    const cats = type === 'income' ? getIncomeCategories() : getExpenseCategories();
     document.getElementById('transactionCategory').innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
 }
 
@@ -46,10 +46,10 @@ function saveTransaction() {
     }
 
     const transactions = loadData(DB.transactions);
-    const isModal = modalCategories.includes(category);
+    const isModal = getModalCategories().includes(category);
     if (id) {
         const idx = transactions.findIndex(t => t.id === id);
-        if (idx >= 0) transactions[idx] = { ...transactions[idx], date, category, description: desc, amount, walletId, cabang, isModalKeluar: modalCategories.includes(category) };
+        if (idx >= 0) transactions[idx] = { ...transactions[idx], date, category, description: desc, amount, walletId, cabang, isModalKeluar: getModalCategories().includes(category) };
     } else {
         transactions.push({ id: generateId(), type, date, category, description: desc, amount, walletId, cabang, isModalKeluar: isModal, createdAt: Date.now() });
     }
@@ -621,10 +621,12 @@ async function aiSuggestCategory() {
         alert('Tulis keterangan transaksi dulu, lalu klik AI.');
         return;
     }
+    const incomeCats = getIncomeCategories();
+    const expenseCats = getExpenseCategories();
     const prompt = `Kategorikan transaksi ini: "${desc}"
 Pilih salah satu kategori yang PALING SESUAI:
-- Pemasukan: Penjualan, Jasa, Pendapatan Lain
-- Pengeluaran: Pembelian, Operasional, Gaji, Pengeluaran Lain
+- Pemasukan: ${incomeCats.join(', ')}
+- Pengeluaran: ${expenseCats.join(', ')}
 
 Jawab hanya nama kategorinya saja, tanpa teks lain.`;
     
