@@ -1202,18 +1202,11 @@ function renderAll() {
         if (balanceHidden) totalEl.textContent = 'Rp •••••••';
         else totalEl.textContent = formatRupiah(stats.totalBalance);
     }
-
-    // Mini balance row
-    const miniInc = document.getElementById('balanceMiniIncome');
-    const miniExp = document.getElementById('balanceMiniExpense');
-    if (miniInc) miniInc.textContent = formatRupiah(stats.financeIncome || stats.invoiceIncome);
-    if (miniExp) miniExp.textContent = formatRupiah(stats.financeExpense);
-
     // Greeting name
     const greetEl = document.getElementById('headerGreetingName');
     if (greetEl) {
         const s = loadData(DB.settings) || {};
-        greetEl.textContent = s.businessName ? s.businessName.split(' ')[0] : 'Aghis';
+        greetEl.textContent = s.userName || s.businessName?.split(' ')[0] || 'Aghis';
     }
     
     // Executive KPI Dashboard
@@ -1849,7 +1842,7 @@ function renderReports() {
 
 // ==================== EXPORT PDF ====================
 
-function exportReportPDF() {
+function exportReportPDF(startDate, endDate) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
     const pw = doc.internal.pageSize.getWidth();
@@ -1857,7 +1850,7 @@ function exportReportPDF() {
     const cw = pw - lm * 2;
 
     const stats = recalculateDashboard();
-    const tab = window.reportTab || 'monthly';
+    const tab = (startDate && endDate) ? 'custom' : (window.reportTab || 'monthly');
     const now = new Date();
     const settings = loadData(DB.settings) || {};
     const businessName = settings.businessName || 'MUGHIS BANK';
@@ -1865,7 +1858,10 @@ function exportReportPDF() {
     const allTx = loadData(DB.transactions);
 
     let periodLabel, year, month, startM, endM;
-    if (tab === 'daily') {
+    if (tab === 'custom') {
+        periodLabel = formatDate(startDate.toISOString().split('T')[0]) + ' – ' + formatDate(endDate.toISOString().split('T')[0]);
+        year = null; month = null;
+    } else if (tab === 'daily') {
         const ds = now.toISOString().split('T')[0];
         periodLabel = 'Harian - ' + formatDate(ds);
         year = now.getFullYear(); month = now.getMonth();
@@ -1928,6 +1924,7 @@ function exportReportPDF() {
         if (tab === 'daily') return ds === nowStr;
         if (tab === 'weekly') return d >= new Date(now - 7 * 24 * 60 * 60 * 1000);
         if (tab === 'monthly') return d.getMonth() === month && d.getFullYear() === year;
+        if (tab === 'custom') return d >= startDate && d <= endDate;
         return d.getFullYear() === year && d.getMonth() >= startM && d.getMonth() <= endM;
     });
 
@@ -2385,11 +2382,94 @@ function updateWalletSelects() {
     });
 }
 
-// ==================== NAVIGATION ====================
+// ==================== DATE RANGE EXPORT ====================
+
+let exportDatePicker = null;
+
+function openExportDatePicker() {
+    const modal = document.getElementById('exportDateModal');
+    openModal('exportDateModal');
+
+    if (!exportDatePicker) {
+        exportDatePicker = flatpickr('#exportDateRangePicker', {
+            mode: 'range',
+            dateFormat: 'Y-m-d',
+            locale: { rangeSeparator: ' hingga ' },
+            defaultDate: [new Date(new Date().getFullYear(), 0, 1), new Date()],
+            maxDate: new Date()
+        });
+    }
+}
+
+function doExportPDF() {
+    if (!exportDatePicker) return;
+    const dates = exportDatePicker.selectedDates;
+    if (dates.length !== 2) {
+        alert('Pilih tanggal mulai dan selesai.');
+        return;
+    }
+    closeModal('exportDateModal');
+    exportReportPDF(dates[0], dates[1]);
+}
+
+// ==================== ACTIVITY PAGE ====================
+
+function renderFullActivity() {
+    const container = document.getElementById('activityFullList');
+    if (!container) return;
+    const activities = loadData(DB.activities) || [];
+    if (activities.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="padding:40px 0;text-align:center"><div class="empty-icon" style="font-size:40px;opacity:0.3">📋</div><p style="color:var(--text-secondary);margin-top:8px">Belum ada aktivitas</p></div>';
+        return;
+    }
+    const sorted = [...activities].reverse().slice(0, 100);
+    container.innerHTML = sorted.map(a => {
+        const d = new Date(a.time || Date.now());
+        const day = d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        return `<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light);align-items:flex-start">
+            <span style="font-size:18px;flex-shrink:0">${a.icon || '📌'}</span>
+            <div style="flex:1;min-width:0">
+                <div style="font-size:13px;color:var(--text)">${a.desc || a.text || '-'}</div>
+                <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px">${day} ${time}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ==================== PROFILE PAGE ====================
+
+function loadProfile() {
+    const settings = loadData(DB.settings) || {};
+    const nameEl = document.getElementById('profileBusinessName');
+    const userEl = document.getElementById('profileUserName');
+    if (nameEl) nameEl.value = settings.businessName || '';
+    if (userEl) userEl.value = settings.userName || '';
+}
+
+function saveProfileBusiness() {
+    const el = document.getElementById('profileBusinessName');
+    if (!el) return;
+    const settings = loadData(DB.settings) || {};
+    settings.businessName = el.value.trim() || 'Mughis Group';
+    saveData(DB.settings, settings);
+    renderAll();
+    showToast('Nama usaha disimpan');
+}
+
+function saveProfileUser() {
+    const el = document.getElementById('profileUserName');
+    if (!el) return;
+    const settings = loadData(DB.settings) || {};
+    settings.userName = el.value.trim() || '';
+    saveData(DB.settings, settings);
+    renderAll();
+    showToast('Nama pengguna disimpan');
+}
 
 function showPage(pageName) {
     const current = document.querySelector('.page.active');
-    const navOrder = ['dashboard','finance','pesan','customer','products','debt','receivable','reports','purchase','settings'];
+    const navOrder = ['dashboard','finance','pesan','customer','products','debt','receivable','activity','reports','chat','profile','about','purchase','settings'];
     const curIdx = current ? navOrder.indexOf(current.id.replace('page-','')) : -1;
     const nextIdx = navOrder.indexOf(pageName);
     const dir = nextIdx > curIdx ? 'slide-left' : 'slide-right';
@@ -2402,11 +2482,13 @@ function showPage(pageName) {
     }
     const navItem = document.querySelector(`.nav-item[data-page="${pageName}"]`);
     if (navItem) navItem.classList.add('active');
-    document.getElementById('mainHeader').style.display = pageName === 'settings' ? 'none' : 'block';
+    document.getElementById('mainHeader').style.display = (pageName === 'settings' || pageName === 'chat') ? 'none' : 'block';
     renderAll();
     window.scrollTo(0, 0);
     if (pageName === 'settings') { updateSyncStatus(); loadTelegramConfig(); updateSettingsUI(); }
     if (pageName === 'purchase') renderPurchases();
+    if (pageName === 'activity') renderFullActivity();
+    if (pageName === 'profile') loadProfile();
 }
 
 function switchFinanceTab(type) {

@@ -462,9 +462,37 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
     font-size: 34px;
     font-weight: 800;
     letter-spacing: -0.5px;
-    margin: 2px 0 6px;
+    margin: 2px 0 0;
     line-height: 1;
 }
+
+/* ===== HEADER QUICK GRID ===== */
+.header-quick-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-top: 12px;
+    position: relative;
+    z-index: 1;
+}
+.hq-item {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 8px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: white;
+    transition: all 0.25s;
+    backdrop-filter: blur(8px);
+}
+.hq-item:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
+.hq-item:active { transform: scale(0.95); }
+.hq-icon .m-icon { font-size: 22px; opacity: 0.9; }
+.hq-label { font-size: 10px; font-weight: 600; opacity: 0.85; letter-spacing: 0.3px; }
 
 .balance-mini-row {
     display: flex;
@@ -1174,7 +1202,7 @@ button:active, .nav-item:active, .menu-item:active, .stat-card:active, .list-ite
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    padding: 6px 12px 4px;
+    padding: 6px 8px 4px;
     cursor: pointer;
     color: var(--text-tertiary);
     transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1186,7 +1214,36 @@ button:active, .nav-item:active, .menu-item:active, .stat-card:active, .list-ite
     user-select: none;
     border-radius: var(--radius-sm);
     flex: 1;
-    max-width: 62px;
+    max-width: 72px;
+}
+
+.nav-chat-btn {
+    max-width: 80px;
+    position: relative;
+}
+.nav-chat-btn .nav-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--gold), var(--secondary-light));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: -24px;
+    box-shadow: 0 0 30px rgba(201, 168, 122, 0.5), 0 6px 20px rgba(201, 168, 122, 0.3);
+    border: 2px solid rgba(255,255,255,0.25);
+    transition: all 0.3s;
+}
+.nav-chat-btn .nav-icon .m-icon {
+    color: white;
+    font-size: 30px;
+}
+.nav-chat-btn.active .nav-icon {
+    transform: scale(1.08);
+    box-shadow: 0 0 40px rgba(201, 168, 122, 0.7), 0 6px 24px rgba(201, 168, 122, 0.4);
+}
+.nav-chat-btn .nav-label {
+    margin-top: 4px;
 }
 
 .nav-item.active {
@@ -1229,6 +1286,7 @@ button:active, .nav-item:active, .menu-item:active, .stat-card:active, .list-ite
     border-radius: 2px;
     box-shadow: 0 0 10px rgba(201, 168, 122, 0.5);
 }
+.nav-chat-btn.active::after { display: none; }
 
 .nav-label {
     font-size: 9px;
@@ -1250,7 +1308,7 @@ button:active, .nav-item:active, .menu-item:active, .stat-card:active, .list-ite
 }
 
 .page.active { display: block; }
-#page-chat.active { display: flex; flex-direction: column; }
+#page-chat.active { display: flex; flex-direction: column; height: 100dvh; padding: 0 0 72px; box-sizing: border-box; }
 
 .page-section { padding: 0 16px; margin-bottom: 20px; }
 
@@ -2367,6 +2425,9 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 .bottom-nav .nav-item.active .nav-label {
     color: var(--primary);
 }
+.bottom-nav .nav-chat-btn .nav-icon {
+    box-shadow: 0 4px 16px rgba(201, 168, 122, 0.3);
+}
 .btn-primary {
     background: linear-gradient(145deg, var(--primary), var(--primary-dark));
     box-shadow: 0 4px 16px rgba(119,91,91,0.3);
@@ -2423,6 +2484,9 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 }
 [data-theme="dark"] .bottom-nav .nav-item.active .nav-label {
     color: var(--gold);
+}
+[data-theme="dark"] .bottom-nav .nav-chat-btn .nav-icon {
+    border: 2px solid rgba(255,255,255,0.15);
 }
 [data-theme="dark"] .btn-primary {
     background: linear-gradient(145deg, var(--gold), var(--primary-dark));
@@ -2511,7 +2575,6 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 .chat-messages {
     flex: 1; overflow-y: auto; padding: 16px 16px 8px;
     display: flex; flex-direction: column; gap: 12px;
-    min-height: calc(100vh - 200px);
 }
 .chat-bubble {
     max-width: 85%; padding: 12px 16px; border-radius: 18px;

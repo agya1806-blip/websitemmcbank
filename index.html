@@ -24,6 +24,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
@@ -78,8 +80,10 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <button class="icon-btn" onclick="showPage('chat')"><span class="m-icon">smart_toy</span></button>
-                    <button class="icon-btn" onclick="showPage('settings')"><span class="m-icon">tune</span></button>
+                    <button class="icon-btn" onclick="showPage('chat')" title="AI Chat"><span class="m-icon">smart_toy</span></button>
+                    <button class="icon-btn" onclick="showPage('about')" title="Info"><span class="m-icon">info</span></button>
+                    <button class="icon-btn" onclick="showPage('settings')" title="Pengaturan"><span class="m-icon">tune</span></button>
+                    <button class="icon-btn" onclick="location.reload()" title="Refresh"><span class="m-icon">refresh</span></button>
                 </div>
             </div>
             <div class="balance-card">
@@ -88,11 +92,28 @@
                     <button class="balance-eye" id="balanceEye" onclick="toggleBalance()"><span class="m-icon" style="font-size:18px">visibility_off</span></button>
                 </div>
                 <div class="balance-amount" id="totalBalance">Rp •••••••</div>
-                <div class="balance-mini-row">
-                    <span>Pemasukan: <strong id="balanceMiniIncome">Rp 0</strong></span>
-                    <span class="balance-dot">·</span>
-                    <span>Pengeluaran: <strong id="balanceMiniExpense">Rp 0</strong></span>
-                </div>
+            </div>
+            <div class="header-quick-grid">
+                <button class="hq-item" onclick="showPage('pesan')">
+                    <span class="hq-icon"><span class="m-icon">note</span></span>
+                    <span class="hq-label">Pesanan</span>
+                </button>
+                <button class="hq-item" onclick="showPage('finance')">
+                    <span class="hq-icon"><span class="m-icon">account_balance</span></span>
+                    <span class="hq-label">Keuangan</span>
+                </button>
+                <button class="hq-item" onclick="showPage('products')">
+                    <span class="hq-icon"><span class="m-icon">inventory_2</span></span>
+                    <span class="hq-label">Produk</span>
+                </button>
+                <button class="hq-item" onclick="showPage('debt')">
+                    <span class="hq-icon"><span class="m-icon">swap_horiz</span></span>
+                    <span class="hq-label">Hutang</span>
+                </button>
+                <button class="hq-item" onclick="showPage('wallet')">
+                    <span class="hq-icon"><span class="m-icon">credit_card</span></span>
+                    <span class="hq-label">Dompet</span>
+                </button>
             </div>
         </div>
 
@@ -347,7 +368,7 @@
             </div>
             <div id="reportContent"></div>
             <div style="display:flex;gap:8px;margin:12px 16px">
-                <button class="btn btn-primary" onclick="exportReportPDF()" style="flex:1;font-size:13px">📄 Export PDF</button>
+                <button class="btn btn-primary" onclick="openExportDatePicker()" style="flex:1;font-size:13px">📄 Export PDF</button>
             </div>
         </div>
 
@@ -668,34 +689,85 @@
             </div>
         </div>
 
+        <!-- ACTIVITY PAGE -->
+        <div class="page" id="page-activity">
+            <div style="padding:0 16px">
+                <div class="card">
+                    <div class="card-title"><span class="m-icon" style="font-size:18px">history</span> Riwayat Aktivitas</div>
+                    <div id="activityFullList"></div>
+                </div>
+            </div>
+            <div style="height:20px"></div>
+        </div>
+
+        <!-- PROFILE PAGE -->
+        <div class="page" id="page-profile">
+            <div style="padding:0 16px">
+                <div class="card">
+                    <div class="card-title"><span class="m-icon" style="font-size:18px">store</span> Profil Usaha</div>
+                    <div style="margin-top:4px">
+                        <label class="field-label">Nama Usaha</label>
+                        <input type="text" class="form-input" id="profileBusinessName" placeholder="Nama bisnis Anda" style="font-size:14px">
+                        <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+                            <button class="btn btn-primary" onclick="saveProfileBusiness()" style="font-size:12px;padding:8px 20px">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="m-icon" style="font-size:18px">person</span> Profil Pengguna</div>
+                    <div style="margin-top:4px">
+                        <label class="field-label">Nama Pengguna</label>
+                        <input type="text" class="form-input" id="profileUserName" placeholder="Nama Anda" style="font-size:14px">
+                        <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+                            <button class="btn btn-primary" onclick="saveProfileUser()" style="font-size:12px;padding:8px 20px">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="height:20px"></div>
+        </div>
+
         <nav class="bottom-nav">
             <button class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
                 <span class="nav-icon"><span class="m-icon">home</span></span>
                 <span class="nav-label">Beranda</span>
             </button>
-            <button class="nav-item" onclick="showPage('pesan')" data-page="pesan">
-                <span class="nav-icon"><span class="m-icon">note</span></span>
-                <span class="nav-label">Pesanan</span>
+            <button class="nav-item" onclick="showPage('activity')" data-page="activity">
+                <span class="nav-icon"><span class="m-icon">history</span></span>
+                <span class="nav-label">Aktivitas</span>
             </button>
-            <button class="nav-item" onclick="showPage('finance')" data-page="finance">
-                <span class="nav-icon"><span class="m-icon">account_balance</span></span>
-                <span class="nav-label">Keuangan</span>
-            </button>
-            <button class="nav-item" onclick="showPage('products')" data-page="products">
-                <span class="nav-icon"><span class="m-icon">inventory_2</span></span>
-                <span class="nav-label">Produk</span>
+            <button class="nav-item nav-chat-btn" onclick="showPage('chat')" data-page="chat">
+                <span class="nav-icon"><span class="m-icon">smart_toy</span></span>
+                <span class="nav-label">AI Chat</span>
             </button>
             <button class="nav-item" onclick="showPage('reports')" data-page="reports">
                 <span class="nav-icon"><span class="m-icon">bar_chart</span></span>
                 <span class="nav-label">Laporan</span>
             </button>
-            <button class="nav-item" onclick="showPage('wallet')" data-page="wallet">
-                <span class="nav-icon"><span class="m-icon">credit_card</span></span>
-                <span class="nav-label">Dompet</span>
+            <button class="nav-item" onclick="showPage('profile')" data-page="profile">
+                <span class="nav-icon"><span class="m-icon">person</span></span>
+                <span class="nav-label">Profil</span>
             </button>
         </nav>
 
         <!-- MODALS -->
+        <!-- Export Date Range Modal -->
+        <div class="modal-overlay" id="exportDateModal">
+            <div class="modal" style="max-width:340px">
+                <div class="modal-header">
+                    <span class="modal-title">📅 Pilih Rentang Tanggal</span>
+                    <button class="modal-close" onclick="closeModal('exportDateModal')">✕</button>
+                </div>
+                <div class="modal-body" style="padding:16px">
+                    <div id="exportDateRangePicker" style="margin:0 auto;max-width:300px"></div>
+                    <div style="display:flex;gap:8px;margin-top:16px">
+                        <button class="btn btn-outline" onclick="closeModal('exportDateModal')" style="flex:1">Batal</button>
+                        <button class="btn btn-primary" onclick="doExportPDF()" style="flex:1">📄 Export</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal-overlay" id="transactionModal">
             <div class="modal">
                 <div class="modal-header">
