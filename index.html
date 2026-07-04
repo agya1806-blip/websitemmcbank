@@ -111,6 +111,10 @@
                     <span class="hq-icon"><span class="m-icon">swap_horiz</span></span>
                     <span class="hq-label">Hutang</span>
                 </button>
+                <button class="hq-item" onclick="showPage('customer')">
+                    <span class="hq-icon"><span class="m-icon">people</span></span>
+                    <span class="hq-label">Pelanggan</span>
+                </button>
                 <button class="hq-item" onclick="showPage('calendar')">
                     <span class="hq-icon"><span class="m-icon">calendar_month</span></span>
                     <span class="hq-label">Kalender</span>
@@ -118,6 +122,10 @@
                 <button class="hq-item" onclick="showPage('wallet')">
                     <span class="hq-icon"><span class="m-icon">credit_card</span></span>
                     <span class="hq-label">Dompet</span>
+                </button>
+                <button class="hq-item" onclick="showPage('receivable')">
+                    <span class="hq-icon"><span class="m-icon">payments</span></span>
+                    <span class="hq-label">Piutang</span>
                 </button>
             </div>
         </div>
@@ -341,6 +349,28 @@
             </div>
             <div id="customerList"></div>
             <button class="fab" onclick="openCustomerModal()">+</button>
+            <div style="padding:0 16px;margin-top:12px">
+                <details style="background:var(--surface-2);border-radius:12px;padding:10px 14px;font-size:12px;color:var(--text-secondary);line-height:1.7">
+                    <summary style="font-weight:600;cursor:pointer;color:var(--text)">📱 Panduan Import Kontak dari HP</summary>
+                    <div style="margin-top:8px">
+                        <strong>📱 Android:</strong><br>
+                        1. Buka aplikasi <strong>Kontak</strong> (Contacts)<br>
+                        2. Tap ⋮ (titik tiga) → <strong>Kelola Kontak</strong> → <strong>Ekspor</strong><br>
+                        3. Pilih format <strong>.VCF</strong> atau <strong>.CSV</strong> → simpan ke penyimpanan<br>
+                        4. Klik tombol 📂 di atas → pilih file yang diekspor<br>
+                        <br>
+                        <strong>📱 iPhone / iOS:</strong><br>
+                        1. Buka <strong>Pengaturan</strong> → tap nama Apple ID di atas<br>
+                        2. Pilih <strong>iCloud</strong> → pastikan <strong>Kontak</strong> aktif<br>
+                        3. Buka <strong>icloud.com</strong> di PC/Mac → login<br>
+                        4. Pilih <strong>Kontak</strong> → pilih semua (Ctrl+A) → ⚙️ → <strong>Export vCard</strong><br>
+                        5. Upload file .vcf via tombol 📂 di atas<br>
+                        <br>
+                        ✅ File .VCF dan .CSV didukung. Kontak akan otomatis terdeteksi dan tersimpan.
+                    </div>
+                </details>
+            </div>
+            <div style="height:20px"></div>
         </div>
 
         <div class="page" id="page-products">
@@ -400,12 +430,13 @@
                 <button class="tab" onclick="switchReportTab('monthly')">Bulanan</button>
                 <button class="tab" onclick="switchReportTab('yearly')">Tahunan</button>
             </div>
-            <div id="reportMonthRange" style="display:none;padding:0 16px 8px">
-                <div style="display:flex;gap:8px;align-items:center">
-                    <select id="reportMonthStart" class="form-select" style="flex:1;min-height:36px;font-size:12px;padding:6px 8px"></select>
-                    <span style="color:var(--text-secondary);font-size:12px">→</span>
-                    <select id="reportMonthEnd" class="form-select" style="flex:1;min-height:36px;font-size:12px;padding:6px 8px"></select>
-                    <button class="btn btn-outline" onclick="renderReports()" style="font-size:12px;padding:6px 10px;min-height:36px">Terapkan</button>
+            <div id="reportMonthRange" style="padding:0 16px 8px">
+                <div style="display:flex;gap:6px;align-items:center;background:var(--surface-2);border-radius:12px;padding:8px 10px">
+                    <span style="color:var(--text-secondary);font-size:11px;font-weight:600;white-space:nowrap">Dari</span>
+                    <select id="reportMonthStart" class="form-select" style="flex:1;min-height:36px;font-size:12px;padding:6px 8px;border-radius:8px"></select>
+                    <span style="color:var(--text-secondary);font-size:11px;font-weight:600;white-space:nowrap">sd</span>
+                    <select id="reportMonthEnd" class="form-select" style="flex:1;min-height:36px;font-size:12px;padding:6px 8px;border-radius:8px"></select>
+                    <button class="btn btn-primary" onclick="renderReports()" style="width:auto;font-size:11px;padding:8px 14px;min-height:36px;border-radius:8px;margin:0">Terapkan</button>
                 </div>
             </div>
             <div id="reportFilters" style="display:flex;gap:8px;padding:0 16px 8px">

@@ -1852,53 +1852,53 @@ function renderReports() {
     const wallets = loadData(DB.wallets);
     const now = new Date();
     const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    const monthNamesShort = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
     // Wallet name lookup
     const walletMap = {};
     wallets.forEach(w => { walletMap[w.id] = w.name; });
 
-    // Determine period
+    // Always use month range from selects
+    const startM = parseInt(document.getElementById('reportMonthStart')?.value ?? now.getMonth());
+    const endM = parseInt(document.getElementById('reportMonthEnd')?.value ?? now.getMonth());
+    const targetYear = now.getFullYear();
+    let periodStart = new Date(targetYear, startM, 1);
+    let periodEnd = new Date(targetYear, endM + 1, 0);
+
     let filtered = [];
     let periodLabel = '';
-    let periodStart, periodEnd;
-
-    function inRange(d, startM, endM, year) {
-        const m = d.getMonth();
-        const y = d.getFullYear();
-        return y === year && m >= startM && m <= endM;
-    }
 
     if (tab === 'daily') {
-        const today = now.toISOString().split('T')[0];
-        filtered = transactions.filter(t => t.date === today);
-        periodLabel = 'Laporan Harian - ' + formatDate(today);
-        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        periodEnd = new Date(periodStart);
-    } else if (tab === 'weekly') {
-        periodEnd = new Date(now);
-        periodStart = new Date(now - 7 * 24 * 60 * 60 * 1000);
-        filtered = transactions.filter(t => new Date(t.date) >= periodStart);
-        periodLabel = 'Laporan Mingguan - ' + formatDate(periodStart.toISOString().split('T')[0]) + ' hingga ' + formatDate(periodEnd.toISOString().split('T')[0]);
-    } else if (tab === 'monthly') {
-        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        filtered = transactions.filter(t => {
-            const d = new Date(t.date);
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-        });
-        periodLabel = 'Laporan Bulanan - ' + monthNames[now.getMonth()] + ' ' + now.getFullYear();
-    } else {
-        const startM = parseInt(document.getElementById('reportMonthStart')?.value || '0');
-        const endM = parseInt(document.getElementById('reportMonthEnd')?.value || '11');
-        const targetYear = now.getFullYear();
         periodStart = new Date(targetYear, startM, 1);
         periodEnd = new Date(targetYear, endM + 1, 0);
         filtered = transactions.filter(t => {
             const d = new Date(t.date);
             return d.getFullYear() === targetYear && d.getMonth() >= startM && d.getMonth() <= endM;
         });
-        periodLabel = 'Laporan Tahunan ' + targetYear + ' (' + monthNames[startM] + ' – ' + monthNames[endM] + ')';
+        periodLabel = 'Laporan - ' + monthNames[startM] + (startM !== endM ? ' – ' + monthNames[endM] : '') + ' ' + targetYear;
+    } else if (tab === 'weekly') {
+        periodStart = new Date(targetYear, startM, 1);
+        periodEnd = new Date(targetYear, endM + 1, 0);
+        filtered = transactions.filter(t => {
+            const d = new Date(t.date);
+            return d.getFullYear() === targetYear && d.getMonth() >= startM && d.getMonth() <= endM;
+        });
+        periodLabel = 'Laporan - ' + monthNames[startM] + (startM !== endM ? ' – ' + monthNames[endM] : '') + ' ' + targetYear;
+    } else if (tab === 'monthly') {
+        periodStart = new Date(targetYear, startM, 1);
+        periodEnd = new Date(targetYear, endM + 1, 0);
+        filtered = transactions.filter(t => {
+            const d = new Date(t.date);
+            return d.getFullYear() === targetYear && d.getMonth() >= startM && d.getMonth() <= endM;
+        });
+        periodLabel = 'Laporan - ' + monthNames[startM] + (startM !== endM ? ' – ' + monthNames[endM] : '') + ' ' + targetYear;
+    } else {
+        periodStart = new Date(targetYear, startM, 1);
+        periodEnd = new Date(targetYear, endM + 1, 0);
+        filtered = transactions.filter(t => {
+            const d = new Date(t.date);
+            return d.getFullYear() === targetYear && d.getMonth() >= startM && d.getMonth() <= endM;
+        });
+        periodLabel = 'Laporan - ' + monthNames[startM] + (startM !== endM ? ' – ' + monthNames[endM] : '') + ' ' + targetYear;
     }
 
     // Read filters
@@ -1947,12 +1947,7 @@ function renderReports() {
     // Invoice income from pesan in period
     const pesanFilter = p => {
         const pd = new Date(p.date);
-        if (tab === 'daily') return p.date === now.toISOString().split('T')[0];
-        if (tab === 'weekly') return pd >= new Date(now - 7 * 24 * 60 * 60 * 1000);
-        if (tab === 'monthly') return pd.getMonth() === now.getMonth() && pd.getFullYear() === now.getFullYear();
-        const startM = parseInt(document.getElementById('reportMonthStart')?.value || '0');
-        const endM = parseInt(document.getElementById('reportMonthEnd')?.value || '11');
-        return pd.getFullYear() === now.getFullYear() && pd.getMonth() >= startM && pd.getMonth() <= endM;
+        return pd.getFullYear() === targetYear && pd.getMonth() >= startM && pd.getMonth() <= endM;
     };
     let invoiceIncome = 0;
     pesanList.filter(pesanFilter).forEach(p => {
@@ -1962,26 +1957,9 @@ function renderReports() {
 
     const netProfit = invoiceIncome - modalOut;
 
-    // Previous period calculation
-    const prevStart = new Date(periodStart);
-    const prevEnd = new Date(periodStart);
-    if (tab === 'daily') {
-        prevStart.setDate(prevStart.getDate() - 1);
-        prevEnd.setDate(prevEnd.getDate() - 1);
-    } else if (tab === 'weekly') {
-        prevStart.setDate(prevStart.getDate() - 7);
-        prevEnd.setDate(prevEnd.getDate() - 7);
-    } else if (tab === 'monthly') {
-        prevStart.setMonth(prevStart.getMonth() - 1);
-        prevEnd.setMonth(prevEnd.getMonth() - 1);
-        prevEnd.setDate(0);
-        prevStart.setDate(1);
-    } else {
-        prevStart.setFullYear(prevStart.getFullYear() - 1);
-        prevEnd.setFullYear(prevEnd.getFullYear() - 1);
-        prevEnd.setMonth(11);
-        prevEnd.setDate(31);
-    }
+    // Previous period (same month range, previous year)
+    const prevStart = new Date(targetYear - 1, startM, 1);
+    const prevEnd = new Date(targetYear - 1, endM + 1, 0);
 
     let prevIncome = 0, prevExpense = 0;
     transactions.forEach(t => {
@@ -3132,20 +3110,22 @@ function switchReportTab(tab) {
     if (btn) btn.classList.add('active');
 
     const rangeEl = document.getElementById('reportMonthRange');
-    if (tab === 'yearly') {
-        const mn = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-        const startEl = document.getElementById('reportMonthStart');
-        const endEl = document.getElementById('reportMonthEnd');
-        const year = new Date().getFullYear();
-        const opts = mn.map((m, i) => `<option value="${i}">${m}</option>`).join('');
-        startEl.innerHTML = opts;
-        endEl.innerHTML = opts;
-        startEl.value = '0';
-        endEl.value = '11';
-        rangeEl.style.display = 'block';
-    } else {
-        rangeEl.style.display = 'none';
-    }
+    rangeEl.style.display = 'block';
+    const now = new Date();
+    const year = now.getFullYear();
+    const mn = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    const startEl = document.getElementById('reportMonthStart');
+    const endEl = document.getElementById('reportMonthEnd');
+    const opts = mn.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+    startEl.innerHTML = opts;
+    endEl.innerHTML = opts;
+
+    if (tab === 'daily') { startEl.value = now.getMonth(); endEl.value = now.getMonth(); }
+    else if (tab === 'weekly') {
+        const weekAgo = new Date(now - 7*86400000);
+        startEl.value = weekAgo.getMonth(); endEl.value = now.getMonth();
+    } else if (tab === 'monthly') { startEl.value = now.getMonth(); endEl.value = now.getMonth(); }
+    else { startEl.value = '0'; endEl.value = '11'; }
     renderReports();
 }
 
