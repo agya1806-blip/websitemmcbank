@@ -1202,6 +1202,19 @@ function renderAll() {
         if (balanceHidden) totalEl.textContent = 'Rp •••••••';
         else totalEl.textContent = formatRupiah(stats.totalBalance);
     }
+
+    // Mini balance row
+    const miniInc = document.getElementById('balanceMiniIncome');
+    const miniExp = document.getElementById('balanceMiniExpense');
+    if (miniInc) miniInc.textContent = formatRupiah(stats.financeIncome || stats.invoiceIncome);
+    if (miniExp) miniExp.textContent = formatRupiah(stats.financeExpense);
+
+    // Greeting name
+    const greetEl = document.getElementById('headerGreetingName');
+    if (greetEl) {
+        const s = loadData(DB.settings) || {};
+        greetEl.textContent = s.businessName ? s.businessName.split(' ')[0] : 'Aghis';
+    }
     
     // Executive KPI Dashboard
     const fillKPI = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = getDisplayBalance(val); };
@@ -1724,30 +1737,40 @@ function renderReports() {
     const debts = loadData(DB.debts);
     const receivables = loadData(DB.receivables);
     const now = new Date();
-    
+    const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
     let filtered = [];
     let periodLabel = '';
-    
+
+    function inRange(d, startM, endM, year) {
+        const m = d.getMonth();
+        const y = d.getFullYear();
+        return y === year && m >= startM && m <= endM;
+    }
+
     if (tab === 'daily') {
-        const today = now.toISOString().split('T');
+        const today = now.toISOString().split('T')[0];
         filtered = transactions.filter(t => t.date === today);
-        periodLabel = `Laporan Harian - ${formatDate(today)}`;
+        periodLabel = 'Laporan Harian - ' + formatDate(today);
     } else if (tab === 'weekly') {
         const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
         filtered = transactions.filter(t => new Date(t.date) >= weekAgo);
-        periodLabel = `Laporan Mingguan - ${formatDate(weekAgo.toISOString().split('T'))} hingga ${formatDate(now.toISOString().split('T'))}`;
+        periodLabel = 'Laporan Mingguan - ' + formatDate(weekAgo.toISOString().split('T')[0]) + ' hingga ' + formatDate(now.toISOString().split('T')[0]);
     } else if (tab === 'monthly') {
         filtered = transactions.filter(t => {
             const d = new Date(t.date);
             return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         });
-        periodLabel = `Laporan Bulanan - ${now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`;
+        periodLabel = 'Laporan Bulanan - ' + monthNames[now.getMonth()] + ' ' + now.getFullYear();
     } else {
+        const startM = parseInt(document.getElementById('reportMonthStart')?.value || '0');
+        const endM = parseInt(document.getElementById('reportMonthEnd')?.value || '11');
+        const targetYear = now.getFullYear();
         filtered = transactions.filter(t => {
             const d = new Date(t.date);
-            return d.getFullYear() === now.getFullYear();
+            return d.getFullYear() === targetYear && d.getMonth() >= startM && d.getMonth() <= endM;
         });
-        periodLabel = `Laporan Tahunan - ${now.getFullYear()}`;
+        periodLabel = 'Laporan Tahunan ' + targetYear + ' (' + monthNames[startM] + ' – ' + monthNames[endM] + ')';
     }
     
     let income = 0, expense = 0, invoiceIncome = 0, modalOut = 0;
@@ -1841,7 +1864,7 @@ function exportReportPDF() {
     const mn = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     const allTx = loadData(DB.transactions);
 
-    let periodLabel, year, month;
+    let periodLabel, year, month, startM, endM;
     if (tab === 'daily') {
         const ds = now.toISOString().split('T')[0];
         periodLabel = 'Harian - ' + formatDate(ds);
@@ -1853,7 +1876,9 @@ function exportReportPDF() {
         periodLabel = mn[now.getMonth()] + ' ' + now.getFullYear();
         year = now.getFullYear(); month = now.getMonth();
     } else {
-        periodLabel = 'Tahunan ' + now.getFullYear();
+        startM = parseInt(document.getElementById('reportMonthStart')?.value || '0');
+        endM = parseInt(document.getElementById('reportMonthEnd')?.value || '11');
+        periodLabel = 'Tahunan ' + now.getFullYear() + ' (' + mn[startM] + ' – ' + mn[endM] + ')';
         year = now.getFullYear(); month = null;
     }
 
@@ -1903,7 +1928,7 @@ function exportReportPDF() {
         if (tab === 'daily') return ds === nowStr;
         if (tab === 'weekly') return d >= new Date(now - 7 * 24 * 60 * 60 * 1000);
         if (tab === 'monthly') return d.getMonth() === month && d.getFullYear() === year;
-        return d.getFullYear() === year;
+        return d.getFullYear() === year && d.getMonth() >= startM && d.getMonth() <= endM;
     });
 
     if (filtered.length === 0) {
@@ -2407,6 +2432,22 @@ function switchReportTab(tab) {
     document.querySelectorAll('#page-reports .tab').forEach(t => t.classList.remove('active'));
     const btn = event?.target || document.querySelector(`#page-reports .tab[onclick*="'${tab}'"]`);
     if (btn) btn.classList.add('active');
+
+    const rangeEl = document.getElementById('reportMonthRange');
+    if (tab === 'yearly') {
+        const mn = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        const startEl = document.getElementById('reportMonthStart');
+        const endEl = document.getElementById('reportMonthEnd');
+        const year = new Date().getFullYear();
+        const opts = mn.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+        startEl.innerHTML = opts;
+        endEl.innerHTML = opts;
+        startEl.value = '0';
+        endEl.value = '11';
+        rangeEl.style.display = 'block';
+    } else {
+        rangeEl.style.display = 'none';
+    }
     renderReports();
 }
 

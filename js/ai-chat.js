@@ -87,11 +87,13 @@ async function sendChatMessage() {
     addChatMessage('user', text);
     showTyping();
 
-    const result = await processWithAI(text);
+    const results = await processWithAI(text);
     hideTyping();
 
-    if (result) {
-        addChatMessage('ai', result.message, result.action || null);
+    if (results && results.length > 0) {
+        results.forEach(r => {
+            if (r) addChatMessage('ai', r.message, r.action || null);
+        });
     } else {
         addChatMessage('ai', 'Maaf, terjadi kesalahan. Coba periksa API Key atau tulis ulang perintah.');
     }
@@ -105,14 +107,19 @@ async function processWithAI(userText) {
     const customerNames = loadData(DB.customers).map(c => c.name).join(', ') || '-';
     const categories = 'Pemasukan: Penjualan, Jasa, Pendapatan Lain | Pengeluaran: Pembelian, Operasional, Gaji, Pengeluaran Lain';
 
-    const systemPrompt = `Kamu adalah asisten AI untuk aplikasi manajemen bisnis "MUGHIS BANK". 
-Tugasmu: membaca perintah user dalam bahasa Indonesia, lalu mengembalikan JSON valid (tanpa markdown) dengan format:
+    const systemPrompt = `Kamu adalah asisten AI untuk aplikasi manajemen bisnis "MUGHIS BANK".
+Tugasmu: membaca perintah user dalam bahasa Indonesia, lalu mengembalikan ARRAY OF JSON (bisa 1 atau lebih) valid (tanpa markdown) dengan format:
 
-{
-  "action": "transaction" | "pesan" | "customer" | "product" | "debt" | "receivable" | "query" | "unknown",
-  "data": { ... field sesuai action ... },
-  "message": "Pesan konfirmasi dalam bahasa Indonesia yang ramah"
-}
+[
+  {
+    "action": "transaction" | "pesan" | "customer" | "product" | "debt" | "receivable" | "query" | "unknown",
+    "data": { ... field sesuai action ... },
+    "message": "Pesan konfirmasi dalam bahasa Indonesia yang ramah"
+  }
+]
+
+PENTING: Jika user memberikan perintah majemuk (misal "catat pemasukan dan buat pesanan"), kembalikan ARRAY dengan 2 objek atau lebih.
+Jika hanya 1 perintah, kembalikan array dengan 1 objek.
 
 Aturan untuk setiap action:
 
@@ -146,7 +153,7 @@ PENTING:
 - Jika user menyebut "DP", set status "DP" dan dp sesuai jumlah.
 - Jika tidak disebut DP, status "Belum Dibayar", dp: 0.
 - wallet: pilih dari opsi yang ada. Jika tidak disebut, pakai "Kas Tunai".
-- Kembalikan hanya JSON, tanpa markdown atau teks lain.
+- Kembalikan hanya JSON array, tanpa markdown atau teks lain.
 
 User: "${userText}"`;
 
@@ -162,27 +169,33 @@ User: "${userText}"`;
         if (!res.ok) {
             let errMsg = '';
             try { const err = await res.json(); errMsg = err?.error?.message || ''; } catch {}
-            if (res.status === 429) return { message: '⚠️ Kuota AI habis atau key tidak valid. Coba:' };
-            if (res.status === 403) return { message: '❌ API Key tidak valid. Pastikan key diawali AIzaSy... dan sudah benar di Settings.' };
-            return { message: 'Error AI (' + res.status + '): ' + errMsg + '\nCek API Key di Settings.' };
+            if (res.status === 429) return [{ message: '⚠️ Kuota AI habis atau key tidak valid. Coba periksa key di Settings.' }];
+            if (res.status === 403) return [{ message: '❌ API Key tidak valid. Pastikan key sudah benar di Settings.' }];
+            return [{ message: 'Error AI (' + res.status + '): ' + errMsg + '\nCek API Key di Settings.' }];
         }
         const data = await res.json();
         const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        if (!raw) return { message: 'AI tidak merespon. Coba lagi.' };
+        if (!raw) return [{ message: 'AI tidak merespon. Coba lagi.' }];
 
         let parsed;
         try {
             parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) parsed = [parsed];
         } catch {
-            const match = raw.match(/\{[\s\S]*\}/);
-            if (match) { try { parsed = JSON.parse(match[0]); } catch { parsed = null; } }
-            else parsed = null;
+            const match = raw.match(/\[[\s\S]*\]/);
+            if (match) {
+                try { parsed = JSON.parse(match[0]); if (!Array.isArray(parsed)) parsed = [parsed]; } catch { parsed = null; }
+            } else {
+                const single = raw.match(/\{[\s\S]*\}/);
+                if (single) { try { const p = JSON.parse(single[0]); parsed = [p]; } catch { parsed = null; } }
+                else parsed = null;
+            }
         }
-        if (!parsed || !parsed.action) return { message: 'Maaf, saya tidak paham maksudnya. Coba tulis ulang dengan lebih jelas.' };
+        if (!parsed || !Array.isArray(parsed) || parsed.length === 0 || !parsed[0].action) return [{ message: 'Maaf, saya tidak paham maksudnya. Coba tulis ulang dengan lebih jelas.' }];
 
-        return executeAction(parsed.action, parsed.data, parsed.message);
+        return parsed.map(item => executeAction(item.action, item.data, item.message));
     } catch (err) {
-        return { message: 'Koneksi error: ' + err.message };
+        return [{ message: 'Koneksi error: ' + err.message }];
     }
 }
 
@@ -338,6 +351,7 @@ document.addEventListener('visibilitychange', () => {
 
 let voiceRecognition = null;
 let isListening = false;
+let voiceInterimTimeout = null;
 
 function toggleVoiceInput() {
     if (isListening) {
@@ -361,23 +375,47 @@ function startVoiceInput() {
 
     voiceRecognition = new SpeechRecognition();
     voiceRecognition.lang = 'id-ID';
-    voiceRecognition.continuous = false;
-    voiceRecognition.interimResults = false;
+    voiceRecognition.continuous = true;
+    voiceRecognition.interimResults = true;
 
     const micBtn = document.getElementById('chatMicBtn');
     const micIcon = document.getElementById('chatMicIcon');
+    const input = document.getElementById('chatInput');
 
     voiceRecognition.onstart = () => {
         isListening = true;
         micBtn.classList.add('listening');
         micIcon.textContent = 'graphic_eq';
+        if (navigator.vibrate) navigator.vibrate(30);
     };
 
     voiceRecognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        document.getElementById('chatInput').value = transcript;
-        stopVoiceInput();
-        sendChatMessage();
+        let interim = '';
+        let final = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                final += transcript;
+            } else {
+                interim += transcript;
+            }
+        }
+        if (final) {
+            input.value = final;
+            // Auto-send after silence (debounce)
+            if (voiceInterimTimeout) clearTimeout(voiceInterimTimeout);
+            voiceInterimTimeout = setTimeout(() => {
+                if (isListening) {
+                    stopVoiceInput();
+                    sendChatMessage();
+                }
+            }, 1200);
+        }
+        if (interim) {
+            input.value = final + interim;
+        }
+        input.style.height = 'auto';
+        input.style.height = input.scrollHeight + 'px';
     };
 
     voiceRecognition.onerror = (event) => {
@@ -391,7 +429,12 @@ function startVoiceInput() {
     };
 
     voiceRecognition.onend = () => {
-        stopVoiceInput();
+        // Auto-restart if still listening (for continuous mode)
+        if (isListening) {
+            try { voiceRecognition.start(); } catch {}
+        } else {
+            stopVoiceInput();
+        }
     };
 
     voiceRecognition.start();
@@ -399,6 +442,7 @@ function startVoiceInput() {
 
 function stopVoiceInput() {
     isListening = false;
+    if (voiceInterimTimeout) { clearTimeout(voiceInterimTimeout); voiceInterimTimeout = null; }
     if (voiceRecognition) {
         try { voiceRecognition.stop(); } catch {}
     }
@@ -406,4 +450,5 @@ function stopVoiceInput() {
     const micIcon = document.getElementById('chatMicIcon');
     if (micBtn) micBtn.classList.remove('listening');
     if (micIcon) micIcon.textContent = 'mic';
+    if (navigator.vibrate) navigator.vibrate(20);
 }

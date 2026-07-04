@@ -17,8 +17,15 @@ function generatePesanNumber() {
     const d = String(today.getDate()).padStart(2, '0');
     const dateStr = `${y}${m}${d}`;
     const todayPesan = pesanan.filter(p => p.number && p.number.startsWith(`PSN-${dateStr}`));
-    const seq = todayPesan.length + 1;
-    return `PSN-${dateStr}-${String(seq).padStart(3, '0')}`;
+    let maxSeq = 0;
+    todayPesan.forEach(p => {
+        const parts = p.number.split('-');
+        if (parts.length === 3) {
+            const seq = parseInt(parts[2], 10);
+            if (seq > maxSeq) maxSeq = seq;
+        }
+    });
+    return `PSN-${dateStr}-${String(maxSeq + 1).padStart(3, '0')}`;
 }
 
 // ===== CHIP SELECTOR SYSTEM =====
