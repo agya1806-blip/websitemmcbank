@@ -110,6 +110,10 @@
                     <span class="hq-icon"><span class="m-icon">swap_horiz</span></span>
                     <span class="hq-label">Hutang</span>
                 </button>
+                <button class="hq-item" onclick="showPage('calendar')">
+                    <span class="hq-icon"><span class="m-icon">calendar_month</span></span>
+                    <span class="hq-label">Kalender</span>
+                </button>
                 <button class="hq-item" onclick="showPage('wallet')">
                     <span class="hq-icon"><span class="m-icon">credit_card</span></span>
                     <span class="hq-label">Dompet</span>
@@ -194,7 +198,7 @@
                     <div class="menu-item" onclick="showPage('customer')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">people</span></div><div class="menu-label">Pelanggan</div></div>
                     <div class="menu-item" onclick="showPage('products')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">inventory_2</span></div><div class="menu-label">Produk</div></div>
                     <div class="menu-item" onclick="showPage('debt')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">account_balance_wallet</span></div><div class="menu-label">Hutang</div></div>
-                    <div class="menu-item" onclick="showPage('receivable')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">currency_exchange</span></div><div class="menu-label">Piutang</div></div>
+                    <div class="menu-item" onclick="showPage('debt');setTimeout(()=>switchDebtTab('receivable'),100)"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">currency_exchange</span></div><div class="menu-label">Piutang</div></div>
                     <div class="menu-item" onclick="showPage('reports')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">bar_chart</span></div><div class="menu-label">Laporan</div></div>
                 </div>
             </div>
@@ -337,13 +341,36 @@
         </div>
 
         <div class="page" id="page-debt">
+            <div class="tabs">
+                <button class="tab active" onclick="switchDebtTab('debt')">Hutang</button>
+                <button class="tab" onclick="switchDebtTab('receivable')">Piutang</button>
+            </div>
             <div id="debtList"></div>
-            <button class="fab" onclick="openDebtModal()">+</button>
+            <div id="receivableList" style="display:none"></div>
+            <button class="fab" id="debtFab" onclick="openDebtModal()">+</button>
         </div>
 
-        <div class="page" id="page-receivable">
-            <div id="receivableList"></div>
-            <button class="fab" onclick="openReceivableModal()">+</button>
+        <div class="page" id="page-receivable" style="display:none"></div>
+
+        <!-- CALENDAR PAGE -->
+        <div class="page" id="page-calendar">
+            <div style="padding:0 16px">
+                <div class="card">
+                    <div class="card-title"><span class="m-icon" style="font-size:18px">calendar_month</span> Kalender Transaksi
+                        <div style="display:flex;gap:4px;margin-left:auto">
+                            <button class="btn btn-outline" onclick="calendarPrevMonth()" style="padding:4px 8px;font-size:14px;min-height:auto">‹</button>
+                            <span id="calendarMonthLabel" style="font-size:13px;font-weight:600;min-width:120px;text-align:center;display:flex;align-items:center;justify-content:center"></span>
+                            <button class="btn btn-outline" onclick="calendarNextMonth()" style="padding:4px 8px;font-size:14px;min-height:auto">›</button>
+                        </div>
+                    </div>
+                    <div id="calendarGrid" style="margin-top:8px"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="m-icon" style="font-size:18px">receipt_long</span> Detail Tanggal Terpilih</div>
+                    <div id="calendarDetail" style="min-height:60px;font-size:13px;color:var(--text-secondary)">Pilih tanggal untuk melihat transaksi</div>
+                </div>
+            </div>
+            <div style="height:20px"></div>
         </div>
 
         <div class="page" id="page-purchase">
@@ -706,21 +733,44 @@
                 <div class="card">
                     <div class="card-title"><span class="m-icon" style="font-size:18px">store</span> Profil Usaha</div>
                     <div style="margin-top:4px">
-                        <label class="field-label">Nama Usaha</label>
-                        <input type="text" class="form-input" id="profileBusinessName" placeholder="Nama bisnis Anda" style="font-size:14px">
-                        <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
-                            <button class="btn btn-primary" onclick="saveProfileBusiness()" style="font-size:12px;padding:8px 20px">Simpan</button>
+                        <div class="form-group">
+                            <label class="form-label">Logo Usaha</label>
+                            <div style="display:flex;gap:12px;align-items:center">
+                                <img id="profileLogoPreview" src="icons/icon-192.png" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:2px solid var(--border)">
+                                <input type="file" id="profileLogoInput" accept="image/*" style="display:none" onchange="handleProfileLogo(this)">
+                                <button class="btn btn-outline" onclick="document.getElementById('profileLogoInput').click()" style="font-size:12px">Ganti</button>
+                                <button class="btn btn-danger" onclick="removeProfileLogo()" style="font-size:12px;padding:8px 12px">✕</button>
+                            </div>
                         </div>
+                        <div class="form-group">
+                            <label class="form-label">Nama Usaha</label>
+                            <input type="text" class="form-input" id="profileBusinessName" placeholder="Nama bisnis Anda">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nomor WhatsApp</label>
+                            <input type="text" class="form-input" id="profileWhatsApp" placeholder="08xxxxxxxxxx">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Alamat Usaha</label>
+                            <textarea class="form-textarea" id="profileAddress" placeholder="Alamat lengkap usaha Anda" rows="2"></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveProfileBusiness()">💾 Simpan Profil Usaha</button>
                     </div>
                 </div>
                 <div class="card">
                     <div class="card-title"><span class="m-icon" style="font-size:18px">person</span> Profil Pengguna</div>
                     <div style="margin-top:4px">
-                        <label class="field-label">Nama Pengguna</label>
-                        <input type="text" class="form-input" id="profileUserName" placeholder="Nama Anda" style="font-size:14px">
-                        <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
-                            <button class="btn btn-primary" onclick="saveProfileUser()" style="font-size:12px;padding:8px 20px">Simpan</button>
+                        <div class="form-group">
+                            <label class="form-label">Nama Pengguna</label>
+                            <input type="text" class="form-input" id="profileUserName" placeholder="Nama Anda">
                         </div>
+                        <button class="btn btn-primary" onclick="saveProfileUser()">💾 Simpan Profil Pengguna</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="m-icon" style="font-size:18px">palette</span> Tampilan</div>
+                    <div style="margin-top:4px">
+                        <div class="toggle"><span>Mode Gelap</span><div class="theme-toggle" id="profileDarkToggle" onclick="toggleTheme()"><div class="theme-toggle-knob"></div></div></div>
                     </div>
                 </div>
             </div>

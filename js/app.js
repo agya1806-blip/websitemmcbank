@@ -2441,20 +2441,68 @@ function renderFullActivity() {
 
 function loadProfile() {
     const settings = loadData(DB.settings) || {};
-    const nameEl = document.getElementById('profileBusinessName');
-    const userEl = document.getElementById('profileUserName');
-    if (nameEl) nameEl.value = settings.businessName || '';
-    if (userEl) userEl.value = settings.userName || '';
+    const fields = {
+        profileBusinessName: settings.businessName || '',
+        profileUserName: settings.userName || '',
+        profileWhatsApp: settings.whatsapp || '',
+        profileAddress: settings.address || '',
+    };
+    Object.entries(fields).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+    });
+    // Load logo
+    const savedLogo = localStorage.getItem('mughis_logo_dataurl');
+    const logoEl = document.getElementById('profileLogoPreview');
+    if (logoEl) logoEl.src = savedLogo || 'icons/icon-192.png';
+    // Sync dark toggle
+    const dt = document.getElementById('profileDarkToggle');
+    if (dt) {
+        const isDark = localStorage.getItem('mughis_theme') === 'dark';
+        dt.classList.toggle('active', isDark);
+    }
+}
+
+function handleProfileLogo(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const dataUrl = e.target.result;
+        localStorage.setItem('mughis_logo_dataurl', dataUrl);
+        const preview = document.getElementById('profileLogoPreview');
+        if (preview) preview.src = dataUrl;
+        const headerLogo = document.getElementById('headerLogo');
+        if (headerLogo) headerLogo.src = dataUrl;
+        showToast('Logo diperbarui');
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeProfileLogo() {
+    localStorage.removeItem('mughis_logo_dataurl');
+    const preview = document.getElementById('profileLogoPreview');
+    if (preview) preview.src = 'icons/icon-192.png';
+    const headerLogo = document.getElementById('headerLogo');
+    if (headerLogo) headerLogo.src = 'icons/icon-192.png';
+    showToast('Logo dihapus');
 }
 
 function saveProfileBusiness() {
-    const el = document.getElementById('profileBusinessName');
-    if (!el) return;
+    const els = {
+        businessName: 'profileBusinessName',
+        whatsapp: 'profileWhatsApp',
+        address: 'profileAddress',
+    };
     const settings = loadData(DB.settings) || {};
-    settings.businessName = el.value.trim() || 'Mughis Group';
+    Object.entries(els).forEach(([key, id]) => {
+        const el = document.getElementById(id);
+        if (el) settings[key] = el.value.trim();
+    });
+    settings.businessName = settings.businessName || 'Mughis Group';
     saveData(DB.settings, settings);
     renderAll();
-    showToast('Nama usaha disimpan');
+    showToast('Profil usaha disimpan');
 }
 
 function saveProfileUser() {
@@ -2467,9 +2515,138 @@ function saveProfileUser() {
     showToast('Nama pengguna disimpan');
 }
 
+// ==================== CALENDAR ====================
+
+let calendarDate = new Date();
+
+function renderCalendar() {
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+    const mn = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    document.getElementById('calendarMonthLabel').textContent = mn[month] + ' ' + year;
+
+    const allTx = loadData(DB.transactions) || [];
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    // Build day data
+    const dayData = {};
+    for (let d = 1; d <= daysInMonth; d++) {
+        const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        dayData[d] = { income: 0, expense: 0, count: 0, dateStr: ds, tx: [] };
+    }
+    allTx.forEach(t => {
+        if (!t.date) return;
+        const d = new Date(t.date);
+        if (d.getFullYear() === year && d.getMonth() === month) {
+            const day = d.getDate();
+            if (dayData[day]) {
+                const amt = Math.abs(parseFloat(t.amount) || 0);
+                if (t.type === 'income') dayData[day].income += amt;
+                else dayData[day].expense += amt;
+                dayData[day].count++;
+                dayData[day].tx.push(t);
+            }
+        }
+    });
+
+    // Selected day
+    const selDay = document.getElementById('calendarGrid')?.dataset?.selDay;
+    const selEl = document.getElementById('calendarDetail');
+
+    let html = '<table style="width:100%;border-collapse:collapse">';
+    html += '<tr style="font-size:10px;color:var(--text-secondary);font-weight:600">';
+    ['Min','Sen','Sel','Rab','Kam','Jum','Sab'].forEach(d => {
+        html += `<td style="padding:4px 0;text-align:center;width:14.28%">${d}</td>`;
+    });
+    html += '</tr><tr>';
+
+    // Empty cells before first day
+    for (let i = 0; i < firstDay; i++) html += '<td></td>';
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        if ((d + firstDay - 1) % 7 === 0 && d > 1) html += '</tr><tr>';
+        const dd = dayData[d];
+        const ds = dd?.dateStr || '';
+        const isToday = ds === todayStr;
+        const isSelected = selDay && parseInt(selDay) === d;
+        html += `<td onclick="calendarSelectDay(${d})" style="text-align:center;padding:2px;cursor:pointer;border-radius:8px;${isSelected ? 'background:var(--gold);color:#fff' : isToday ? 'background:rgba(201,168,122,0.15)' : ''}">
+            <div style="font-size:12px;font-weight:${isToday?'700':'400'}">${d}</div>`;
+        if (dd && dd.count > 0) {
+            html += `<div style="font-size:8px;line-height:1.2;margin-top:1px">`;
+            if (dd.income > 0) html += `<span style="color:#4CAF50">▲${Math.round(dd.income/1000)}k</span>`;
+            if (dd.expense > 0) html += `<span style="color:#f44336">${Math.round(dd.expense/1000)}k▼</span>`;
+            html += `</div>`;
+        }
+        html += '</td>';
+    }
+    html += '</tr></table>';
+    document.getElementById('calendarGrid').innerHTML = html;
+    if (selEl) {
+        if (selDay && dayData[parseInt(selDay)]) {
+            showCalendarDetail(parseInt(selDay), dayData);
+        } else {
+            selEl.innerHTML = 'Pilih tanggal untuk melihat transaksi';
+        }
+    }
+}
+
+function calendarSelectDay(day) {
+    document.getElementById('calendarGrid').dataset.selDay = day;
+    renderCalendar();
+}
+
+function showCalendarDetail(day, dayData) {
+    const dd = dayData[day];
+    const selEl = document.getElementById('calendarDetail');
+    if (!dd || dd.count === 0) {
+        selEl.innerHTML = `<div style="color:var(--text-secondary);padding:8px 0">📭 Tidak ada transaksi tanggal ${dd?.dateStr || ''}</div>`;
+        return;
+    }
+    const sorted = dd.tx.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+    let html = `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px">${dd.count} transaksi · Pemasukan ${formatRupiah(dd.income)} · Pengeluaran ${formatRupiah(dd.expense)}</div>`;
+    sorted.forEach(t => {
+        const icon = t.type === 'income' ? '📥' : '📤';
+        html += `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:13px">
+            <span>${icon} ${t.description || t.note || '-'}</span>
+            <span style="font-weight:600;color:${t.type === 'income' ? 'var(--success)' : 'var(--danger)'}">${t.type === 'income' ? '+' : '-'}${formatRupiah(Math.abs(parseFloat(t.amount) || 0))}</span>
+        </div>`;
+    });
+    selEl.innerHTML = html;
+}
+
+function calendarPrevMonth() {
+    calendarDate.setMonth(calendarDate.getMonth() - 1);
+    renderCalendar();
+}
+
+function calendarNextMonth() {
+    calendarDate.setMonth(calendarDate.getMonth() + 1);
+    renderCalendar();
+}
+
+// ==================== DEBT / RECEIVABLE TABS ====================
+
+function switchDebtTab(tab) {
+    document.querySelectorAll('#page-debt .tab').forEach(t => t.classList.remove('active'));
+    const btn = event?.target || document.querySelector(`#page-debt .tab[onclick*="'${tab}'"]`);
+    if (btn) btn.classList.add('active');
+    document.getElementById('debtList').style.display = tab === 'debt' ? 'block' : 'none';
+    document.getElementById('receivableList').style.display = tab === 'receivable' ? 'block' : 'none';
+    const fab = document.getElementById('debtFab');
+    if (fab) {
+        fab.onclick = tab === 'debt' ? openDebtModal : openReceivableModal;
+    }
+    if (tab === 'debt') renderDebts();
+    else renderReceivables();
+}
+
 function showPage(pageName) {
+    if (pageName === 'receivable') { showPage('debt'); setTimeout(()=>switchDebtTab('receivable'),100); return; }
     const current = document.querySelector('.page.active');
-    const navOrder = ['dashboard','finance','pesan','customer','products','debt','receivable','activity','reports','chat','profile','about','purchase','settings'];
+    const navOrder = ['dashboard','finance','pesan','customer','products','debt','receivable','calendar','activity','reports','chat','profile','about','purchase','settings'];
     const curIdx = current ? navOrder.indexOf(current.id.replace('page-','')) : -1;
     const nextIdx = navOrder.indexOf(pageName);
     const dir = nextIdx > curIdx ? 'slide-left' : 'slide-right';
@@ -2489,6 +2666,7 @@ function showPage(pageName) {
     if (pageName === 'purchase') renderPurchases();
     if (pageName === 'activity') renderFullActivity();
     if (pageName === 'profile') loadProfile();
+    if (pageName === 'calendar') renderCalendar();
 }
 
 function switchFinanceTab(type) {
