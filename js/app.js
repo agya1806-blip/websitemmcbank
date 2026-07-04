@@ -1545,15 +1545,22 @@ function renderActivities() {
 
 function showActivityDetail(activityId) {
     const activities = loadData(DB.activities);
-    const activity = activities.find(a => a.id === activityId);
+    const activity = activities.find(a => a.id === activityId || a.time == activityId);
     if (!activity) return;
+    
+    const icon = activity.icon || '📝';
+    const desc = activity.desc || activity.text || activity.description || '-';
+    const ts = activity.time || activity.timestamp || Date.now();
+    const d = new Date(ts);
+    const fullDate = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const fullTime = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB';
     
     const detail = `
         <div style="padding: 20px; text-align: center;">
-            <div style="font-size: 48px; margin-bottom: 16px;">📝</div>
-            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">${activity.description}</div>
+            <div style="font-size: 48px; margin-bottom: 16px;">${icon}</div>
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">${desc}</div>
             <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">
-                ${formatDateTime(activity.timestamp)}
+                ${fullDate}<br>${fullTime}
             </div>
             <button class="btn btn-outline" onclick="closeModal('activityDetailModal')" style="margin-top: 16px;">Tutup</button>
         </div>
@@ -1842,11 +1849,19 @@ function renderReports() {
     const pesanList = typeof getPesanData === 'function' ? getPesanData() : [];
     const debts = loadData(DB.debts);
     const receivables = loadData(DB.receivables);
+    const wallets = loadData(DB.wallets);
     const now = new Date();
     const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const monthNamesShort = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
+    // Wallet name lookup
+    const walletMap = {};
+    wallets.forEach(w => { walletMap[w.id] = w.name; });
+
+    // Determine period
     let filtered = [];
     let periodLabel = '';
+    let periodStart, periodEnd;
 
     function inRange(d, startM, endM, year) {
         const m = d.getMonth();
@@ -1858,11 +1873,16 @@ function renderReports() {
         const today = now.toISOString().split('T')[0];
         filtered = transactions.filter(t => t.date === today);
         periodLabel = 'Laporan Harian - ' + formatDate(today);
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        periodEnd = new Date(periodStart);
     } else if (tab === 'weekly') {
-        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-        filtered = transactions.filter(t => new Date(t.date) >= weekAgo);
-        periodLabel = 'Laporan Mingguan - ' + formatDate(weekAgo.toISOString().split('T')[0]) + ' hingga ' + formatDate(now.toISOString().split('T')[0]);
+        periodEnd = new Date(now);
+        periodStart = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        filtered = transactions.filter(t => new Date(t.date) >= periodStart);
+        periodLabel = 'Laporan Mingguan - ' + formatDate(periodStart.toISOString().split('T')[0]) + ' hingga ' + formatDate(periodEnd.toISOString().split('T')[0]);
     } else if (tab === 'monthly') {
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         filtered = transactions.filter(t => {
             const d = new Date(t.date);
             return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -1872,14 +1892,47 @@ function renderReports() {
         const startM = parseInt(document.getElementById('reportMonthStart')?.value || '0');
         const endM = parseInt(document.getElementById('reportMonthEnd')?.value || '11');
         const targetYear = now.getFullYear();
+        periodStart = new Date(targetYear, startM, 1);
+        periodEnd = new Date(targetYear, endM + 1, 0);
         filtered = transactions.filter(t => {
             const d = new Date(t.date);
             return d.getFullYear() === targetYear && d.getMonth() >= startM && d.getMonth() <= endM;
         });
         periodLabel = 'Laporan Tahunan ' + targetYear + ' (' + monthNames[startM] + ' – ' + monthNames[endM] + ')';
     }
-    
-    let income = 0, expense = 0, invoiceIncome = 0, modalOut = 0;
+
+    // Read filters
+    const walletFilter = document.getElementById('reportWalletFilter')?.value || '';
+    const catFilter = document.getElementById('reportCategoryFilter')?.value || '';
+
+    // Apply filters
+    if (walletFilter) {
+        filtered = filtered.filter(t => t.walletId === walletFilter);
+    }
+    if (catFilter) {
+        filtered = filtered.filter(t => t.category === catFilter);
+    }
+
+    // Populate filter dropdowns
+    const walletFilterEl = document.getElementById('reportWalletFilter');
+    if (walletFilterEl) {
+        const currentVal = walletFilterEl.value;
+        walletFilterEl.innerHTML = '<option value="">Semua Dompet</option>' +
+            wallets.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+        walletFilterEl.value = currentVal;
+    }
+
+    const catFilterEl = document.getElementById('reportCategoryFilter');
+    if (catFilterEl) {
+        const allCats = [...new Set(transactions.map(t => t.category).filter(Boolean))].sort();
+        const currentCatVal = catFilterEl.value;
+        catFilterEl.innerHTML = '<option value="">Semua Kategori</option>' +
+            allCats.map(c => `<option value="${c}">${c}</option>`).join('');
+        catFilterEl.value = currentCatVal;
+    }
+
+    // Calculate current period totals
+    let income = 0, expense = 0, modalOut = 0;
     filtered.forEach(t => {
         const amt = parseFloat(t.amount);
         if (t.type === 'income') {
@@ -1890,26 +1943,147 @@ function renderReports() {
             modalOut += amt;
         }
     });
-    
-    // Hitung pendapatan dari pesanan dalam periode
+
+    // Invoice income from pesan in period
     const pesanFilter = p => {
-        if (tab === 'daily') return p.date === now.toISOString().split('T');
-        if (tab === 'weekly') return new Date(p.date) >= new Date(now - 7 * 24 * 60 * 60 * 1000);
-        if (tab === 'monthly') { const d = new Date(p.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }
-        { const d = new Date(p.date); return d.getFullYear() === now.getFullYear(); }
+        const pd = new Date(p.date);
+        if (tab === 'daily') return p.date === now.toISOString().split('T')[0];
+        if (tab === 'weekly') return pd >= new Date(now - 7 * 24 * 60 * 60 * 1000);
+        if (tab === 'monthly') return pd.getMonth() === now.getMonth() && pd.getFullYear() === now.getFullYear();
+        const startM = parseInt(document.getElementById('reportMonthStart')?.value || '0');
+        const endM = parseInt(document.getElementById('reportMonthEnd')?.value || '11');
+        return pd.getFullYear() === now.getFullYear() && pd.getMonth() >= startM && pd.getMonth() <= endM;
     };
+    let invoiceIncome = 0;
     pesanList.filter(pesanFilter).forEach(p => {
         if (p.status === 'Lunas') invoiceIncome += parseFloat(p.total || 0);
         else if (p.status === 'DP') invoiceIncome += parseFloat(p.dp || 0);
     });
-    
+
+    const netProfit = invoiceIncome - modalOut;
+
+    // Previous period calculation
+    const prevStart = new Date(periodStart);
+    const prevEnd = new Date(periodStart);
+    if (tab === 'daily') {
+        prevStart.setDate(prevStart.getDate() - 1);
+        prevEnd.setDate(prevEnd.getDate() - 1);
+    } else if (tab === 'weekly') {
+        prevStart.setDate(prevStart.getDate() - 7);
+        prevEnd.setDate(prevEnd.getDate() - 7);
+    } else if (tab === 'monthly') {
+        prevStart.setMonth(prevStart.getMonth() - 1);
+        prevEnd.setMonth(prevEnd.getMonth() - 1);
+        prevEnd.setDate(0);
+        prevStart.setDate(1);
+    } else {
+        prevStart.setFullYear(prevStart.getFullYear() - 1);
+        prevEnd.setFullYear(prevEnd.getFullYear() - 1);
+        prevEnd.setMonth(11);
+        prevEnd.setDate(31);
+    }
+
+    let prevIncome = 0, prevExpense = 0;
+    transactions.forEach(t => {
+        const td = new Date(t.date);
+        if (td >= prevStart && td <= prevEnd) {
+            const amt = parseFloat(t.amount);
+            if (t.type === 'income') prevIncome += amt;
+            else if (t.type === 'expense' && !t.isModalKeluar) prevExpense += amt;
+        }
+    });
+
+    // Category breakdown
+    const catTotals = {};
+    const catTypes = {};
+    filtered.forEach(t => {
+        const cat = t.category || 'Lainnya';
+        const amt = parseFloat(t.amount);
+        if (!catTotals[cat]) { catTotals[cat] = 0; catTypes[cat] = t.type; }
+        catTotals[cat] += amt;
+    });
+    const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+
+    // Group by week for detail
+    function getWeekNumber(d) {
+        const startOfYear = new Date(d.getFullYear(), 0, 1);
+        const diff = d - startOfYear;
+        const oneWeek = 7 * 24 * 60 * 60 * 1000;
+        return Math.ceil((diff + startOfYear.getDay() * 24 * 60 * 60 * 1000) / oneWeek);
+    }
+
+    function getWeekLabel(d) {
+        // Find Monday of this week
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d);
+        monday.setDate(diff);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        return 'Minggu ' + formatDate(monday.toISOString().split('T')[0]) + ' – ' + formatDate(sunday.toISOString().split('T')[0]);
+    }
+
+    const weekGroups = {};
+    filtered.forEach(t => {
+        const d = new Date(t.date);
+        const key = d.getFullYear() + '-W' + getWeekNumber(d);
+        if (!weekGroups[key]) weekGroups[key] = { label: getWeekLabel(d), items: [] };
+        weekGroups[key].items.push(t);
+    });
+    const sortedWeeks = Object.keys(weekGroups).sort();
+
+    // Debt & Receivable
     const totalDebt = debts.filter(d => d.status !== 'Lunas').reduce((s, d) => s + parseFloat(d.amount), 0);
     const totalReceivable = receivables.filter(r => r.status !== 'Lunas').reduce((s, r) => s + parseFloat(r.amount), 0);
-    const netProfit = invoiceIncome - modalOut;
-    
+
+    // === CHART ===
+    setTimeout(() => {
+        const ctx = document.getElementById('reportChartCanvas');
+        if (!ctx) return;
+        if (window._reportChart) window._reportChart.destroy();
+
+        const labels = ['Pemasukan', 'Pengeluaran'];
+        const chartData = [income, expense];
+        const colors = ['#C9A87A', '#775B5B'];
+
+        window._reportChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nominal',
+                    data: chartData,
+                    backgroundColor: colors,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) { return 'Rp' + value.toLocaleString('id-ID'); },
+                            font: { size: 10 }
+                        }
+                    },
+                    x: {
+                        ticks: { font: { size: 11, weight: 'bold' } }
+                    }
+                }
+            }
+        });
+    }, 50);
+
     let detailHtml = `
         <div class="report-card">
             <div style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--primary)">${periodLabel}</div>
+            
+            <canvas id="reportChartCanvas" style="height:140px;width:100%;margin-bottom:16px"></canvas>
             
             <div style="margin-bottom:20px">
                 <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px">Ringkasan Transaksi</div>
@@ -1926,6 +2100,21 @@ function renderReports() {
             </div>
             
             <div style="margin-bottom:20px">
+                <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px">Perbandingan Periode Sebelumnya</div>
+                <div class="report-item"><span class="report-label">Pemasukan (Periode Lalu)</span><span class="report-value positive">${formatRupiah(prevIncome)}</span></div>
+                <div class="report-item"><span class="report-label">Pengeluaran (Periode Lalu)</span><span class="report-value negative">${formatRupiah(prevExpense)}</span></div>
+                <div class="report-item"><span class="report-label">Selisih (Periode Lalu)</span><span class="report-value ${prevIncome-prevExpense>=0?'positive':'negative'}">${formatRupiah(prevIncome-prevExpense)}</span></div>
+            </div>
+            
+            <div style="margin-bottom:20px">
+                <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px">Ringkasan per Kategori</div>
+                ${sortedCats.length === 0 ? '<p style="text-align:center;color:var(--text-secondary);padding:8px">Tidak ada data</p>' :
+                    sortedCats.map(([cat, total]) => `
+                        <div class="report-item"><span class="report-label">${cat}</span><span class="report-value ${total>=0?'positive':'negative'}">${formatRupiah(total)}</span></div>
+                    `).join('')}
+            </div>
+            
+            <div style="margin-bottom:20px">
                 <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px">Hutang & Piutang</div>
                 <div class="report-item"><span class="report-label">Total Hutang</span><span class="report-value negative">${formatRupiah(totalDebt)}</span></div>
                 <div class="report-item"><span class="report-label">Total Piutang</span><span class="report-value positive">${formatRupiah(totalReceivable)}</span></div>
@@ -1934,15 +2123,20 @@ function renderReports() {
             <div style="margin-bottom:20px">
                 <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px">Detail Transaksi</div>
                 ${filtered.length === 0 ? '<p style="text-align:center;color:var(--text-secondary);padding:20px">Tidak ada transaksi</p>' : `
-                    <div style="max-height:300px;overflow-y:auto">
-                        ${filtered.map(t => `
-                            <div style="padding:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px">
-                                <div>
-                                    <div style="font-weight:600">${t.description}</div>
-                                    <div style="color:var(--text-secondary);font-size:11px">${formatDate(t.date)} • ${t.category}</div>
-                                </div>
-                                <div style="text-align:right;font-weight:600;color:${t.type==='income'?'var(--success)':'var(--danger)'}">${t.type==='income'?'+':'-'} ${formatRupiah(t.amount)}</div>
-                            </div>
+                    <div style="max-height:400px;overflow-y:auto">
+                        ${sortedWeeks.map(wk => `
+                            <div style="font-size:11px;font-weight:700;color:var(--gold);padding:8px 0 4px;text-transform:uppercase">${weekGroups[wk].label}</div>
+                            ${weekGroups[wk].items.map(t => {
+                                const wName = walletMap[t.walletId] || 'Dompet';
+                                return `
+                                <div style="padding:6px 8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px">
+                                    <div style="flex:1">
+                                        <div style="font-weight:600">${t.description}</div>
+                                        <div style="color:var(--text-secondary);font-size:10px">${formatDate(t.date)} • ${t.category} • ${wName}</div>
+                                    </div>
+                                    <div style="text-align:right;font-weight:700;color:${t.type==='income'?'var(--success)':'var(--danger)'};white-space:nowrap;margin-left:8px">${t.type==='income'?'+':'-'} ${formatRupiah(t.amount)}</div>
+                                </div>`;
+                            }).join('')}
                         `).join('')}
                     </div>
                 `}
@@ -2571,27 +2765,114 @@ function exportExcel() {
 
 // ==================== ACTIVITY PAGE ====================
 
+function formatTime(ts) {
+    if (!ts) return '-';
+    const d = new Date(ts);
+    return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+}
+
+window.activityFilter = 'all';
+
+function switchActivityFilter(type) {
+    window.activityFilter = type;
+    document.querySelectorAll('#activityFilterTabs .tab').forEach(t => t.classList.remove('active'));
+    const btn = document.querySelector(`#activityFilterTabs .tab[onclick*="'${type}'"]`);
+    if (btn) btn.classList.add('active');
+    renderFullActivity();
+}
+
 function renderFullActivity() {
     const container = document.getElementById('activityFullList');
     if (!container) return;
-    const activities = loadData(DB.activities) || [];
+
+    const filter = window.activityFilter || 'all';
+    const searchText = (document.getElementById('activitySearch')?.value || '').toLowerCase().trim();
+
+    let activities = loadData(DB.activities) || [];
+
+    // Filter by type
+    if (filter !== 'all') {
+        activities = activities.filter(a => {
+            const icon = a.icon || '';
+            const desc = (a.desc || a.text || '').toLowerCase();
+            if (filter === 'finance') {
+                return ['📥', '📤', '💰', '🏦'].some(i => icon.includes(i)) ||
+                    ['pemasukan', 'pengeluaran', 'transfer', 'transaksi'].some(k => desc.includes(k));
+            }
+            if (filter === 'pesan') {
+                return ['📄', '✏️'].some(i => icon.includes(i)) ||
+                    ['pesan', 'invoice'].some(k => desc.includes(k));
+            }
+            if (filter === 'other') {
+                const isFinance = ['📥', '📤', '💰', '🏦'].some(i => icon.includes(i)) ||
+                    ['pemasukan', 'pengeluaran', 'transfer', 'transaksi'].some(k => desc.includes(k));
+                const isPesan = ['📄', '✏️'].some(i => icon.includes(i)) ||
+                    ['pesan', 'invoice'].some(k => desc.includes(k));
+                return !isFinance && !isPesan;
+            }
+            return true;
+        });
+    }
+
+    // Filter by search text
+    if (searchText) {
+        activities = activities.filter(a => (a.desc || a.text || '').toLowerCase().includes(searchText));
+    }
+
     if (activities.length === 0) {
         container.innerHTML = '<div class="empty-state" style="padding:40px 0;text-align:center"><div class="empty-icon" style="font-size:40px;opacity:0.3">📋</div><p style="color:var(--text-secondary);margin-top:8px">Belum ada aktivitas</p></div>';
         return;
     }
-    const sorted = [...activities].reverse().slice(0, 100);
-    container.innerHTML = sorted.map(a => {
+
+    // Sort by time descending (newest first)
+    const sorted = [...activities].sort((a, b) => (b.time || 0) - (a.time || 0)).slice(0, 200);
+
+    // Group by day
+    const DAY_MS = 86400000;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today - DAY_MS);
+
+    const groups = {};
+    sorted.forEach(a => {
         const d = new Date(a.time || Date.now());
-        const day = d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-        const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        return `<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light);align-items:flex-start">
-            <span style="font-size:18px;flex-shrink:0">${a.icon || '📌'}</span>
-            <div style="flex:1;min-width:0">
-                <div style="font-size:13px;color:var(--text)">${a.desc || a.text || '-'}</div>
-                <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px">${day} ${time}</div>
-            </div>
-        </div>`;
-    }).join('');
+        d.setHours(0, 0, 0, 0);
+        const key = d.getTime();
+        if (!groups[key]) groups[key] = { date: d, items: [] };
+        groups[key].items.push(a);
+    });
+
+    const sortedGroups = Object.values(groups).sort((a, b) => b.date - a.date);
+
+    let html = '';
+    sortedGroups.forEach(g => {
+        const diff = Math.round((today - g.date) / DAY_MS);
+        let label;
+        if (diff === 0) label = 'Hari Ini';
+        else if (diff === 1) label = 'Kemarin';
+        else label = g.date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+        html += `<div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:12px;font-weight:700;color:var(--primary)">${label}</span>
+                <span class="badge badge-gold" style="font-size:10px">${g.items.length}</span>
+            </div>`;
+
+        g.items.forEach(a => {
+            const safeTime = a.time || Date.now();
+            html += `<div onclick="showActivityDetail('${a.id || safeTime}')" style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light);align-items:flex-start;cursor:pointer">
+                <span style="font-size:16px;flex-shrink:0">${a.icon || '📌'}</span>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:13px;color:var(--text)">${a.desc || a.text || '-'}</div>
+                    <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px">${formatTime(a.time)}</div>
+                </div>
+            </div>`;
+        });
+
+        html += '</div>';
+    });
+
+    container.innerHTML = html;
 }
 
 // ==================== PROFILE PAGE ====================

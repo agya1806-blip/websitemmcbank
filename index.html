@@ -408,6 +408,10 @@
                     <button class="btn btn-outline" onclick="renderReports()" style="font-size:12px;padding:6px 10px;min-height:36px">Terapkan</button>
                 </div>
             </div>
+            <div id="reportFilters" style="display:flex;gap:8px;padding:0 16px 8px">
+                <select id="reportWalletFilter" class="form-select" style="flex:1;font-size:12px" onchange="renderReports()"><option value="">Semua Dompet</option></select>
+                <select id="reportCategoryFilter" class="form-select" style="flex:1;font-size:12px" onchange="renderReports()"><option value="">Semua Kategori</option></select>
+            </div>
             <div id="reportContent"></div>
             <div style="display:flex;gap:8px;margin:12px 16px">
                 <button class="btn btn-primary" onclick="openExportDatePicker()" style="flex:1;font-size:13px">📄 Export PDF</button>
@@ -758,6 +762,15 @@
         <!-- ACTIVITY PAGE -->
         <div class="page" id="page-activity">
             <div style="padding:0 16px">
+                <!-- Filter tabs -->
+                <div class="tabs" id="activityFilterTabs" style="margin-bottom:8px">
+                    <button class="tab active" onclick="switchActivityFilter('all')">Semua</button>
+                    <button class="tab" onclick="switchActivityFilter('finance')">Keuangan</button>
+                    <button class="tab" onclick="switchActivityFilter('pesan')">Pesanan</button>
+                    <button class="tab" onclick="switchActivityFilter('other')">Lainnya</button>
+                </div>
+                <!-- Search -->
+                <input type="text" id="activitySearch" class="form-input" placeholder="Cari aktivitas..." style="margin-bottom:8px;font-size:13px" oninput="renderFullActivity()">
                 <div class="card">
                     <div class="card-title"><span class="m-icon" style="font-size:18px">history</span> Riwayat Aktivitas</div>
                     <div id="activityFullList"></div>
