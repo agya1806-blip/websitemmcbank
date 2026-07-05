@@ -838,23 +838,30 @@
         <div class="page" id="page-chat">
             <div class="chat-header">
                 <div class="chat-header-info">
-                    <span class="chat-header-icon"><span class="m-icon" style="font-size:22px">smart_toy</span></span>
+                    <span class="chat-header-icon"><span class="m-icon" style="font-size:20px">smart_toy</span></span>
                     <div>
                         <div class="chat-header-title">AI Asisten</div>
-                        <div class="chat-header-status">Online · siap membantu</div>
                     </div>
                 </div>
-                <button class="chat-clear-btn" onclick="clearChat()"><span class="m-icon" style="font-size:20px">delete</span></button>
+                <button class="chat-clear-btn" onclick="clearChat()" title="Hapus chat"><span class="m-icon" style="font-size:18px">delete</span></button>
             </div>
             <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-quick-actions" id="chatQuickActions">
+                <button class="chip" onclick="quickChat('cek saldo saya')">💰 Saldo</button>
+                <button class="chip" onclick="quickChat('catat pemasukan')">📝 Catat</button>
+                <button class="chip" onclick="quickChat('buat pesanan baru')">📦 Pesanan</button>
+                <button class="chip" onclick="quickChat('ringkasan bisnis')">📊 Bisnis</button>
+                <button class="chip" onclick="quickChat('hutang saya')">💳 Hutang</button>
+                <button class="chip" onclick="quickChat('piutang saya')">📤 Piutang</button>
+            </div>
             <div class="chat-input-bar">
-                <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ketik, mic, foto, atau scan bill..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
-                <button class="chat-mic-btn" id="chatMicBtn" onclick="toggleVoiceInput()" title="Voice input"><span class="m-icon" id="chatMicIcon">mic</span></button>
-                <button class="chat-img-btn" id="chatImgBtn" onclick="document.getElementById('chatPhotoInput').click()" title="Kirim foto"><span class="m-icon">image</span></button>
+                <textarea class="chat-input" id="chatInput" rows="1" placeholder="Tanya AI..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+                <button class="chat-btn-round chat-mic-btn" id="chatMicBtn" onclick="toggleVoiceInput()" title="Voice"><span class="m-icon" id="chatMicIcon">mic</span></button>
+                <button class="chat-btn-round chat-img-btn" id="chatImgBtn" onclick="document.getElementById('chatPhotoInput').click()" title="Foto"><span class="m-icon">image</span></button>
                 <input type="file" id="chatPhotoInput" accept="image/*" style="display:none" onchange="sendPhotoToAI(this)">
-                <button class="chat-scan-btn" id="chatScanBtn" onclick="document.getElementById('chatBillInput').click()" title="Scan bill/nota"><span class="m-icon">receipt_long</span></button>
+                <button class="chat-btn-round chat-scan-btn" id="chatScanBtn" onclick="document.getElementById('chatBillInput').click()" title="Scan"><span class="m-icon">receipt_long</span></button>
                 <input type="file" id="chatBillInput" accept="image/*" capture="environment" style="display:none" onchange="scanBill(this)">
-                <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()"><span class="m-icon">send</span></button>
+                <button class="chat-btn-round chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()"><span class="m-icon">send</span></button>
             </div>
         </div>
 

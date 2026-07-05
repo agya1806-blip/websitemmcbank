@@ -347,6 +347,13 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
+// ==================== QUICK ACTIONS ====================
+
+function quickChat(text) {
+    document.getElementById('chatInput').value = text;
+    sendChatMessage();
+}
+
 // ==================== VOICE INPUT ====================
 
 let voiceRecognition = null;
