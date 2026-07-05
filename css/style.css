@@ -2689,11 +2689,11 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
     box-shadow: 0 3px 10px rgba(201,168,122,0.3);
 }
 .chat-send-btn:active { transform: scale(0.9); }
-.chat-mic-btn, .chat-img-btn, .chat-scan-btn {
+.chat-mic-btn, .chat-img-btn, .chat-cam-btn {
     background: var(--surface-2); color: var(--text-secondary);
 }
-.chat-mic-btn:active, .chat-img-btn:active, .chat-scan-btn:active { transform: scale(0.9); }
-.chat-img-btn:hover, .chat-scan-btn:hover { background: var(--surface-3); color: var(--gold); }
+.chat-mic-btn:active, .chat-img-btn:active, .chat-cam-btn:active { transform: scale(0.9); }
+.chat-img-btn:hover, .chat-cam-btn:hover { background: var(--surface-3); color: var(--gold); }
 .chat-mic-btn.listening {
     background: var(--gold); color: white;
     box-shadow: 0 0 0 4px rgba(201, 168, 122, 0.3);

@@ -857,10 +857,10 @@
             <div class="chat-input-bar">
                 <textarea class="chat-input" id="chatInput" rows="1" placeholder="Tanya AI..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
                 <button class="chat-btn-round chat-mic-btn" id="chatMicBtn" onclick="toggleVoiceInput()" title="Voice"><span class="m-icon" id="chatMicIcon">mic</span></button>
-                <button class="chat-btn-round chat-img-btn" id="chatImgBtn" onclick="document.getElementById('chatPhotoInput').click()" title="Foto"><span class="m-icon">image</span></button>
+                <button class="chat-btn-round chat-img-btn" id="chatImgBtn" onclick="document.getElementById('chatPhotoInput').click()" title="Galeri"><span class="m-icon">image</span></button>
                 <input type="file" id="chatPhotoInput" accept="image/*" style="display:none" onchange="sendPhotoToAI(this)">
-                <button class="chat-btn-round chat-scan-btn" id="chatScanBtn" onclick="document.getElementById('chatBillInput').click()" title="Scan"><span class="m-icon">receipt_long</span></button>
-                <input type="file" id="chatBillInput" accept="image/*" capture="environment" style="display:none" onchange="scanBill(this)">
+                <button class="chat-btn-round chat-cam-btn" id="chatCamBtn" onclick="document.getElementById('chatCamInput').click()" title="Kamera"><span class="m-icon">photo_camera</span></button>
+                <input type="file" id="chatCamInput" accept="image/*" capture="environment" style="display:none" onchange="scanBill(this)">
                 <button class="chat-btn-round chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()"><span class="m-icon">send</span></button>
             </div>
         </div>
