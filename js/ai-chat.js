@@ -452,3 +452,116 @@ function stopVoiceInput() {
     if (micIcon) micIcon.textContent = 'mic';
     if (navigator.vibrate) navigator.vibrate(20);
 }
+
+// ==================== PHOTO & BILL SCAN ====================
+
+function sendPhotoToAI(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    processImageFile(file, 'Apa yang ada di foto ini? Analisis dan jelaskan.');
+    input.value = '';
+}
+
+function scanBill(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    processImageFile(file, 'Baca nota/bill ini. Ekstrak informasi penting: tanggal, item, harga total, nama toko/pelanggan. Format rapi.');
+    input.value = '';
+}
+
+async function processImageFile(file, prompt) {
+    if (!CONFIG.GEMINI_API_KEY) {
+        alert('⚠️ API Key Gemini belum diisi!\nIsi di Settings → API AI.');
+        return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+        alert('⚠️ File terlalu besar! Maksimal 10MB.');
+        return;
+    }
+
+    // Validate image type
+    if (!file.type.startsWith('image/')) {
+        alert('⚠️ Hanya file gambar yang didukung.');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const dataUrl = e.target.result;
+        const base64 = dataUrl.split(',')[1];
+        const mimeType = file.type;
+
+        addChatMessage('user', `📷 [Mengirim foto untuk analisis...]\n*(Memproses...)`, null);
+
+        const img = new Image();
+        img.onload = async function() {
+            let processedBase64 = base64;
+            let processedMime = mimeType;
+
+            // Resize if too large (> 3MP)
+            if (img.width * img.height > 3000000) {
+                const canvas = document.createElement('canvas');
+                const scale = Math.sqrt(3000000 / (img.width * img.height));
+                canvas.width = Math.round(img.width * scale);
+                canvas.height = Math.round(img.height * scale);
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                processedBase64 = canvas.toDataURL(mimeType, 0.8).split(',')[1];
+            }
+
+            showTyping();
+            const result = await queryGeminiVision(processedBase64, processedMime, prompt);
+            hideTyping();
+
+            // Update the user message
+            const history = loadChatHistory();
+            const lastMsg = history[history.length - 1];
+            if (lastMsg && lastMsg.role === 'user') {
+                lastMsg.text = `📷 [Foto dikirim]`;
+                saveChatHistory(history);
+            }
+
+            addChatMessage('ai', result);
+            renderChatMessages();
+        };
+        img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function queryGeminiVision(base64Data, mimeType, prompt) {
+    const systemPrompt = `Kamu adalah asisten AI untuk aplikasi bisnis "MUGHIS BANK".
+Kamu bisa melihat dan menganalisis gambar. 
+${prompt}
+
+Berikan jawaban dalam bahasa Indonesia yang jelas dan rapi.`;
+
+    try {
+        const res = await fetch(`${CONFIG.GEMINI_API_URL}?key=${CONFIG.GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [
+                        { text: systemPrompt },
+                        { inline_data: { mime_type: mimeType, data: base64Data } }
+                    ]
+                }],
+                generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
+            })
+        });
+        if (!res.ok) {
+            let errMsg = '';
+            try { const err = await res.json(); errMsg = err?.error?.message || ''; } catch {}
+            if (res.status === 429) return '⚠️ Kuota AI habis atau key tidak valid.';
+            if (res.status === 403) return '❌ API Key tidak valid. Pastikan key sudah benar di Settings.';
+            return 'Error AI (' + res.status + '): ' + errMsg;
+        }
+        const data = await res.json();
+        return data?.candidates?.[0]?.content?.parts?.[0]?.text || 'AI tidak merespon. Coba lagi.';
+    } catch (err) {
+        return 'Koneksi error: ' + err.message;
+    }
+}

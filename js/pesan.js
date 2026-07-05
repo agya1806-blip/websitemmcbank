@@ -535,22 +535,55 @@ Hanya kirim item-itemnya saja, tanpa angka awal, tanpa teks lain.`;
 // ===== RENDER PESAN =====
 function switchPesanTab(tab) {
     currentPesanTab = tab;
-    const tabs = document.querySelectorAll('#page-pesan .tab');
-    tabs.forEach(t => t.classList.remove('active'));
-    const btn = Array.from(tabs).find(t => t.getAttribute('onclick')?.includes(`'${tab}'`));
+    document.querySelectorAll('#page-pesan .pesan-stat-card').forEach(c => c.classList.remove('active'));
+    const btn = document.querySelector(`#page-pesan .pesan-stat-card[onclick*="'${tab}'"]`);
     if (btn) btn.classList.add('active');
+    renderPesan();
+}
+
+function switchPesanType(type) {
+    currentPesanType = type === 'all' ? null : type;
     renderPesan();
 }
 
 function renderPesan() {
     const tab = currentPesanTab || 'all';
+    const type = currentPesanType;
     const search = document.getElementById('pesanSearch')?.value?.toLowerCase() || '';
     let pesanan = getPesanData();
+
+    // Update stat counts
+    const all = pesanan;
+    const baru = all.filter(p => p.orderStatus === 'Baru');
+    const proses = all.filter(p => p.orderStatus === 'Diproses');
+    const selesai = all.filter(p => p.orderStatus === 'Selesai');
+    const batal = all.filter(p => p.orderStatus === 'Dibatalkan');
+    const setStat = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setStat('pesanStatAll', all.length);
+    setStat('pesanStatBaru', baru.length);
+    setStat('pesanStatProses', proses.length);
+    setStat('pesanStatSelesai', selesai.length);
+    setStat('pesanStatBatal', batal.length);
+
+    // Update type counts
+    const typeCounts = {};
+    all.forEach(p => { const t = p.type || 'umum'; typeCounts[t] = (typeCounts[t] || 0) + 1; });
+    const typeCountIds = { all: 'typeCountAll', print: 'typeCountPrint', laptop: 'typeCountLaptop', handphone: 'typeCountHP', tiktok: 'typeCountTikTok', umum: 'typeCountUmum' };
+    Object.entries(typeCountIds).forEach(([key, id]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = key === 'all' ? all.length : (typeCounts[key] || 0);
+    });
+    // Mark active type button
+    document.querySelectorAll('#page-pesan .pesan-type-btn').forEach(c => c.classList.remove('active'));
+    const activeBtn = document.querySelector(`#page-pesan .pesan-type-btn[data-type="${type || 'all'}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
 
     if (tab === 'baru') pesanan = pesanan.filter(p => p.orderStatus === 'Baru');
     else if (tab === 'proses') pesanan = pesanan.filter(p => p.orderStatus === 'Diproses');
     else if (tab === 'selesai') pesanan = pesanan.filter(p => p.orderStatus === 'Selesai');
     else if (tab === 'batal') pesanan = pesanan.filter(p => p.orderStatus === 'Dibatalkan');
+
+    if (type) pesanan = pesanan.filter(p => p.type === type);
 
     if (search) pesanan = pesanan.filter(p =>
         (p.number || '').toLowerCase().includes(search) ||
@@ -558,9 +591,7 @@ function renderPesan() {
         (p.type || '').toLowerCase().includes(search)
     );
 
-    const sortBy = document.getElementById('pesanSort')?.value || 'date';
-    if (sortBy === 'date') pesanan.sort((a, b) => new Date(b.date) - new Date(a.date));
-    else if (sortBy === 'total') pesanan.sort((a, b) => parseFloat(b.total) - parseFloat(a.total));
+    pesanan.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     const container = document.getElementById('pesanList');
     if (!container) return;
@@ -569,45 +600,58 @@ function renderPesan() {
         return;
     }
 
-    const typeIcon = { print: 'auto_stories', laptop: 'laptop', umum: 'shopping_cart', tiktok: 'smart_display', handphone: 'phone_android' };
     const typeLabel = { print: 'Percetakan', laptop: 'Laptop', umum: 'Umum', tiktok: 'TikTok', handphone: 'Handphone' };
-    const orderBadge = { Baru: 'badge-info', Diproses: 'badge-warning', Selesai: 'badge-success', Dibatalkan: 'badge-danger' };
+    const typeIcon = { print: 'auto_stories', laptop: 'laptop', umum: 'shopping_cart', tiktok: 'smart_display', handphone: 'phone_android' };
 
-        container.innerHTML = pesanan.map(p => {
+    function renderCard(p) {
         const os = p.orderStatus || 'Baru';
         const dpPercent = p.total > 0 ? Math.min(100, Math.round((parseFloat(p.dp || 0) / p.total) * 100)) : 0;
+        const badgeColor = os==='Baru'?'#C9A87A':os==='Diproses'?'#E6A817':os==='Selesai'?'#5B8C5A':'#9B7E7E';
         return `
-        <div class="card">
-            <div class="list-item" style="padding-top:0;cursor:pointer" onclick="showPesanDetail('${p.id}')">
-                <div class="list-icon" style="background:#e0e7ff;font-size:20px"><span class="m-icon">${typeIcon[p.type] || 'description'}</span></div>
-                <div class="list-content">
-                    <div class="list-title">${p.number}</div>
-                    <div class="list-subtitle">${p.customerName} • ${formatDate(p.date)} • ${typeLabel[p.type] || p.type}</div>
-                </div>
-                <div style="text-align:right">
-                    <div class="list-amount">${formatRupiah(p.total)}</div>
-                    <span class="badge ${orderBadge[os] || 'badge-info'}">${os}</span>
-                </div>
+        <div class="card" style="cursor:pointer;padding:12px 14px;margin:6px 12px" onclick="showPesanDetail('${p.id}')">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <div style="font-weight:700;font-size:13px;color:var(--text)">${p.number}</div>
+                <span style="background:${badgeColor};color:#fff;padding:2px 8px;border-radius:5px;font-size:9px;font-weight:700">${os}</span>
             </div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">${p.customerName || '-'} • ${formatDate(p.date)}</div>
+            <div style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:8px">${formatRupiah(p.total)}</div>
             ${p.status === 'DP' ? `
-            <div style="margin:8px 0 4px">
-                <div class="progress-bar-track" style="height:6px">
-                    <div class="progress-bar-fill" style="width:${dpPercent}%"></div>
-                </div>
-                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:2px">
+            <div style="margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-bottom:2px">
                     <span>DP ${dpPercent}%</span>
-                    <span>Rp ${formatRupiah(p.dp||0)} / ${formatRupiah(p.total)}</span>
+                    <span>${formatRupiah(p.dp||0)} / ${formatRupiah(p.total)}</span>
                 </div>
+                <div class="progress-bar-track" style="height:3px;background:var(--surface-3)"><div class="progress-bar-fill" style="width:${dpPercent}%;background:var(--gold)"></div></div>
             </div>` : ''}
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-                ${os === 'Baru' ? `<button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="updatePesanStatus('${p.id}','Diproses')">⚙️ Proses</button>` : ''}
-                ${os === 'Diproses' ? `<button class="btn btn-success" style="padding:6px;font-size:12px;flex:1" onclick="updatePesanStatus('${p.id}','Selesai')">✅ Selesai</button>` : ''}
-                ${os !== 'Dibatalkan' && os !== 'Selesai' ? `<button class="btn btn-danger" style="padding:6px;font-size:12px" onclick="updatePesanStatus('${p.id}','Dibatalkan')">❌ Batal</button>` : ''}
-                ${p.status !== 'Lunas' ? `<button class="btn btn-success" style="padding:6px;font-size:12px;flex:1" onclick="payPesan('${p.id}')">💰 Bayar</button>` : ''}
-                <button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="event.stopPropagation();showPesanDetail('${p.id}')">📄 Detail</button>
+            <div style="display:flex;gap:6px">
+                ${os === 'Baru' ? `<button class="btn btn-outline" style="padding:5px;font-size:10px;flex:1;min-height:30px;border-radius:6px" onclick="event.stopPropagation();updatePesanStatus('${p.id}','Diproses')">⚙️ Proses</button>` : ''}
+                ${os === 'Diproses' ? `<button class="btn btn-success" style="padding:5px;font-size:10px;flex:1;min-height:30px;border-radius:6px" onclick="event.stopPropagation();updatePesanStatus('${p.id}','Selesai')">✅ Selesai</button>` : ''}
+                ${os !== 'Dibatalkan' && os !== 'Selesai' ? `<button class="btn btn-danger" style="padding:5px;font-size:10px;min-height:30px;border-radius:6px;width:32px" onclick="event.stopPropagation();updatePesanStatus('${p.id}','Dibatalkan')">✕</button>` : ''}
+                ${p.status !== 'Lunas' ? `<button class="btn btn-success" style="padding:5px;font-size:10px;flex:1;min-height:30px;border-radius:6px" onclick="event.stopPropagation();payPesan('${p.id}')">💰 Bayar</button>` : ''}
+                <button class="btn btn-primary" style="padding:5px;font-size:10px;flex:1;min-height:30px;border-radius:6px" onclick="event.stopPropagation();showPesanDetail('${p.id}')">📄 Detail</button>
             </div>
         </div>`;
-    }).join('');
+    }
+
+    if (tab === 'all' && !type && !search) {
+        // Group by type
+        const groups = {};
+        const typeOrder = ['print', 'laptop', 'handphone', 'tiktok', 'umum'];
+        pesanan.forEach(p => { const t = p.type || 'umum'; if (!groups[t]) groups[t] = []; groups[t].push(p); });
+        let html = '';
+        typeOrder.forEach(t => {
+            if (!groups[t] || groups[t].length === 0) return;
+            html += `<div style="display:flex;align-items:center;gap:8px;padding:12px 12px 4px">
+                <span class="m-icon" style="font-size:18px;color:var(--gold)">${typeIcon[t] || 'description'}</span>
+                <span style="font-weight:700;font-size:13px;color:var(--text)">${typeLabel[t] || t}</span>
+                <span style="font-size:11px;color:var(--text-secondary);margin-left:auto">${groups[t].length}</span>
+            </div>`;
+            html += groups[t].map(p => renderCard(p)).join('');
+        });
+        container.innerHTML = html;
+    } else {
+        container.innerHTML = pesanan.map(p => renderCard(p)).join('');
+    }
 }
 
 function renderRecentPesan() {

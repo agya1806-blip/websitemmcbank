@@ -83,6 +83,7 @@
                 <div class="header-actions">
                     <button class="icon-btn" onclick="showPage('chat')" title="AI Chat"><span class="m-icon">smart_toy</span></button>
                     <button class="icon-btn" onclick="showPage('about')" title="Info"><span class="m-icon">info</span></button>
+                    <button class="icon-btn" id="headerThemeToggle" onclick="toggleTheme()" title="Mode Gelap/Terang"><span class="m-icon">dark_mode</span></button>
                     <button class="icon-btn" onclick="showPage('settings')" title="Pengaturan"><span class="m-icon">tune</span></button>
                     <button class="icon-btn" onclick="location.reload()" title="Refresh"><span class="m-icon">refresh</span></button>
                 </div>
@@ -295,14 +296,18 @@
 
 
         <div class="page" id="page-pesan">
-            <div class="pesan-summary" style="display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto">
+            <div class="pesan-summary" style="display:flex;gap:6px;padding:0 12px 8px;overflow-x:auto">
+                <div class="pesan-stat-card active" onclick="switchPesanTab('all')">
+                    <span class="pesan-stat-num" id="pesanStatAll">0</span>
+                    <span class="pesan-stat-label">Semua</span>
+                </div>
                 <div class="pesan-stat-card" onclick="switchPesanTab('baru')">
                     <span class="pesan-stat-num" id="pesanStatBaru">0</span>
                     <span class="pesan-stat-label">Baru</span>
                 </div>
                 <div class="pesan-stat-card" onclick="switchPesanTab('proses')">
                     <span class="pesan-stat-num" id="pesanStatProses">0</span>
-                    <span class="pesan-stat-label">Diproses</span>
+                    <span class="pesan-stat-label">Proses</span>
                 </div>
                 <div class="pesan-stat-card" onclick="switchPesanTab('selesai')">
                     <span class="pesan-stat-num" id="pesanStatSelesai">0</span>
@@ -310,25 +315,44 @@
                 </div>
                 <div class="pesan-stat-card" onclick="switchPesanTab('batal')">
                     <span class="pesan-stat-num" id="pesanStatBatal">0</span>
-                    <span class="pesan-stat-label">Dibatalkan</span>
+                    <span class="pesan-stat-label">Batal</span>
                 </div>
             </div>
-            <div class="tabs">
-                <button class="tab active" onclick="switchPesanTab('all')">📋 Semua</button>
-                <button class="tab" onclick="switchPesanTab('baru')">🆕 Baru</button>
-                <button class="tab" onclick="switchPesanTab('proses')">⚙️ Proses</button>
-                <button class="tab" onclick="switchPesanTab('selesai')">✅ Selesai</button>
-                <button class="tab" onclick="switchPesanTab('batal')">❌ Batal</button>
+            <div class="pesan-type-filter">
+                <button class="pesan-type-btn active" data-type="all" onclick="switchPesanType('all')">
+                    <span class="m-icon">apps</span>
+                    <span class="type-label">Semua</span>
+                    <span class="type-count" id="typeCountAll">0</span>
+                </button>
+                <button class="pesan-type-btn" data-type="print" onclick="switchPesanType('print')">
+                    <span class="m-icon">auto_stories</span>
+                    <span class="type-label">Percetakan</span>
+                    <span class="type-count" id="typeCountPrint">0</span>
+                </button>
+                <button class="pesan-type-btn" data-type="laptop" onclick="switchPesanType('laptop')">
+                    <span class="m-icon">laptop</span>
+                    <span class="type-label">Laptop</span>
+                    <span class="type-count" id="typeCountLaptop">0</span>
+                </button>
+                <button class="pesan-type-btn" data-type="handphone" onclick="switchPesanType('handphone')">
+                    <span class="m-icon">phone_android</span>
+                    <span class="type-label">Handphone</span>
+                    <span class="type-count" id="typeCountHP">0</span>
+                </button>
+                <button class="pesan-type-btn" data-type="tiktok" onclick="switchPesanType('tiktok')">
+                    <span class="m-icon">smart_display</span>
+                    <span class="type-label">TikTok</span>
+                    <span class="type-count" id="typeCountTikTok">0</span>
+                </button>
+                <button class="pesan-type-btn" data-type="umum" onclick="switchPesanType('umum')">
+                    <span class="m-icon">shopping_cart</span>
+                    <span class="type-label">Umum</span>
+                    <span class="type-count" id="typeCountUmum">0</span>
+                </button>
             </div>
             <div class="search-bar">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" id="pesanSearch" placeholder="Cari pesanan..." oninput="renderPesan()">
-            </div>
-            <div style="display:flex;gap:8px;margin:0 16px 12px">
-                <select class="form-select" id="pesanSort" onchange="renderPesan()" style="flex:1;min-height:40px;font-size:13px;padding:8px 12px">
-                    <option value="date">📅 Urut: Tanggal</option>
-                    <option value="total">💰 Urut: Nominal</option>
-                </select>
             </div>
             <div id="pesanList"></div>
             <button class="fab" onclick="openPesanKategoriModal()">+</button>
@@ -432,6 +456,8 @@
             </div>
             <div id="reportMonthRange" style="padding:0 16px 8px">
                 <div style="display:flex;gap:6px;align-items:center;background:var(--surface-2);border-radius:12px;padding:8px 10px">
+                    <span style="color:var(--text-secondary);font-size:11px;font-weight:600;white-space:nowrap">Tahun</span>
+                    <select id="reportYear" class="form-select" style="width:72px;min-height:36px;font-size:12px;padding:6px 8px;border-radius:8px" onchange="renderReports()"></select>
                     <span style="color:var(--text-secondary);font-size:11px;font-weight:600;white-space:nowrap">Dari</span>
                     <select id="reportMonthStart" class="form-select" style="flex:1;min-height:36px;font-size:12px;padding:6px 8px;border-radius:8px"></select>
                     <span style="color:var(--text-secondary);font-size:11px;font-weight:600;white-space:nowrap">sd</span>
@@ -484,16 +510,17 @@
         </div>
 
         <div class="page" id="page-settings">
-            <div class="settings-accordion">
+            <div style="padding:0 12px 16px">
 
-                <!-- ===== GRUP 1: PROFIL ===== -->
-                <div class="settings-group">
-                    <div class="settings-group-header open" onclick="toggleSettingsGroup(this)">
-                        <span class="m-icon">person</span> Profil
-                        <span class="settings-arrow">expand_more</span>
+                <!-- ===== PROFIL ===== -->
+                <div class="card settings-card">
+                    <div class="settings-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span class="m-icon" style="color:var(--gold)">person</span>
+                        <span style="flex:1;font-weight:700">Profil</span>
+                        <span class="settings-card-arrow">expand_more</span>
                     </div>
-                    <div class="settings-group-body open">
-                        <div class="card">
+                    <div class="settings-card-body">
+                        <div class="card" style="margin:0 0 8px">
                             <div class="card-title">👤 Profil Pengguna</div>
                             <div class="form-group">
                                 <label class="form-label">Email</label>
@@ -504,10 +531,10 @@
                                 <input type="text" class="form-input" id="settingUserName" readonly style="background:var(--surface-2);color:var(--text-secondary)">
                             </div>
                             <div style="padding:8px 0">
-                                <span style="font-size:12px;color:var(--text-secondary)">📌 Data tersimpan khusus untuk akun ini. Login dengan akun lain untuk data berbeda.</span>
+                                <span style="font-size:12px;color:var(--text-secondary)">📌 Data tersimpan khusus untuk akun ini.</span>
                             </div>
                         </div>
-                        <div class="card">
+                        <div class="card" style="margin:0 0 8px">
                             <div class="card-title">🏪 Profil Usaha</div>
                             <div class="form-group">
                                 <label class="form-label">Nama Usaha</label>
@@ -523,43 +550,43 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Logo Usaha</label>
-                                <div style="display:flex;gap:12px;align-items:center">
+                                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
                                     <img id="logoPreview" src="icons/icon-192.png" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:2px solid var(--border)">
                                     <input type="file" id="logoUploadInput" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
-                                    <button class="btn btn-outline" onclick="document.getElementById('logoUploadInput').click()" style="font-size:13px">Ganti Logo</button>
-                                    <button class="btn btn-danger" onclick="removeLogo()" style="font-size:13px;padding:8px 12px">✕ Hapus</button>
+                                    <button class="btn btn-outline" onclick="document.getElementById('logoUploadInput').click()" style="font-size:13px;width:auto">Ganti Logo</button>
+                                    <button class="btn btn-danger" onclick="removeLogo()" style="font-size:13px;padding:8px 12px;width:auto">✕ Hapus</button>
                                 </div>
-                                <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Format PNG/JPG, akan otomatis di-resize. Logo tampil di slip foto invoice.</div>
                             </div>
-                            <button class="btn btn-primary" onclick="saveSettings()">💾 Simpan Pengaturan</button>
+                            <button class="btn btn-primary" onclick="saveSettings()" style="margin-top:4px">💾 Simpan Pengaturan</button>
                         </div>
-                        <div class="card">
+                        <div class="card" style="margin:0">
                             <div class="card-title">🎨 Tampilan</div>
                             <div class="toggle"><span>Mode Gelap</span><div class="theme-toggle" id="darkModeToggle" onclick="toggleTheme()"><div class="theme-toggle-knob"></div></div></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ===== GRUP 2: KEAMANAN ===== -->
-                <div class="settings-group">
-                    <div class="settings-group-header" onclick="toggleSettingsGroup(this)">
-                        <span class="m-icon">lock</span> Keamanan
-                        <span class="settings-arrow">expand_more</span>
+                <!-- ===== KEAMANAN ===== -->
+                <div class="card settings-card">
+                    <div class="settings-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span class="m-icon" style="color:var(--gold)">lock</span>
+                        <span style="flex:1;font-weight:700">Keamanan</span>
+                        <span class="settings-card-arrow">expand_more</span>
                     </div>
-                    <div class="settings-group-body">
-                        <div class="card">
+                    <div class="settings-card-body">
+                        <div class="card" style="margin:0 0 8px">
                             <div class="card-title">🔐 Keamanan PIN</div>
-                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Aktifkan PIN 6 digit untuk mengunci aplikasi setiap kali dibuka.</div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Aktifkan PIN 6 digit untuk mengunci aplikasi.</div>
                             <div class="form-group">
                                 <label class="form-label">PIN 6 Digit</label>
                                 <input type="password" class="form-input" id="settingPin" placeholder="Masukkan PIN 6 digit" maxlength="6" inputmode="numeric" pattern="[0-9]*">
                             </div>
                             <div style="display:flex;gap:8px">
-                                <button class="btn btn-primary" onclick="savePin()">💾 Simpan PIN</button>
-                                <button class="btn btn-danger" onclick="removePin()">✕ Hapus PIN</button>
+                                <button class="btn btn-primary" onclick="savePin()" style="flex:1">💾 Simpan PIN</button>
+                                <button class="btn btn-danger" onclick="removePin()" style="flex:1">✕ Hapus PIN</button>
                             </div>
                         </div>
-                        <div class="card">
+                        <div class="card" style="margin:0">
                             <div class="card-title">🏬 Multi-Cabang</div>
                             <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Kelola cabang/toko untuk membedakan transaksi per lokasi.</div>
                             <div id="cabangList"></div>
@@ -572,95 +599,132 @@
                     </div>
                 </div>
 
-                <!-- ===== GRUP 3: KONTEN BISNIS ===== -->
-                <div class="settings-group">
-                    <div class="settings-group-header" onclick="toggleSettingsGroup(this)">
-                        <span class="m-icon">description</span> Konten Bisnis
-                        <span class="settings-arrow">expand_more</span>
+                <!-- ===== METODE PEMBAYARAN ===== -->
+                <div class="card settings-card">
+                    <div class="settings-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span class="m-icon" style="color:var(--gold)">credit_card</span>
+                        <span style="flex:1;font-weight:700">Metode Pembayaran</span>
+                        <span class="settings-card-arrow">expand_more</span>
                     </div>
-                    <div class="settings-group-body">
-                        <div class="card">
-                            <div class="card-title">💳 Metode Pembayaran</div>
-                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Metode ini akan tampil di slip invoice dan pesan WhatsApp.</div>
-                            <div id="paymentMethodsList"></div>
-                            <button class="btn btn-outline" onclick="showAddPaymentMethod()" style="margin-top:8px">+ Tambah Metode Bayar</button>
-                            <button class="btn btn-primary" onclick="savePaymentMethodsFromUI()" style="margin-top:8px;display:block">💾 Simpan Metode Bayar</button>
+                    <div class="settings-card-body">
+                        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Metode ini tampil di slip invoice dan pesan WhatsApp.</div>
+                        <div id="paymentMethodsList"></div>
+                        <button class="btn btn-outline" onclick="showAddPaymentMethod()" style="margin-top:8px">+ Tambah Metode Bayar</button>
+                        <button class="btn btn-primary" onclick="savePaymentMethodsFromUI()" style="margin-top:8px">💾 Simpan Metode Bayar</button>
+                    </div>
+                </div>
+
+                <!-- ===== LAYANAN USAHA ===== -->
+                <div class="card settings-card">
+                    <div class="settings-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span class="m-icon" style="color:var(--gold)">miscellaneous_services</span>
+                        <span style="flex:1;font-weight:700">Layanan Usaha</span>
+                        <span class="settings-card-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-card-body">
+                        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Layanan ini tampil di slip foto invoice.</div>
+                        <div id="servicesList"></div>
+                        <button class="btn btn-outline" onclick="addServiceItem()" style="margin-top:8px">+ Tambah Layanan</button>
+                        <button class="btn btn-primary" onclick="saveServicesFromUI()" style="margin-top:8px">💾 Simpan Layanan</button>
+                    </div>
+                </div>
+
+                <!-- ===== TIPE PESANAN ===== -->
+                <div class="card settings-card">
+                    <div class="settings-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span class="m-icon" style="color:var(--gold)">description</span>
+                        <span style="flex:1;font-weight:700">Tipe Pesanan</span>
+                        <span class="settings-card-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-card-body">
+                        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Tipe pesanan yang tersedia. Tipe bawaan tidak bisa dihapus.</div>
+                        <div id="invoiceTypesList"></div>
+                        <button class="btn btn-outline" onclick="showAddInvoiceType()" style="margin-top:8px">+ Tambah Tipe Pesanan</button>
+                        <button class="btn btn-primary" onclick="saveInvoiceTypesFromUI()" style="margin-top:8px">💾 Simpan Tipe Pesanan</button>
+                    </div>
+                </div>
+
+                <!-- ===== KATEGORI TRANSAKSI KUSTOM ===== -->
+                <div class="card settings-card">
+                    <div class="settings-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span class="m-icon" style="color:var(--gold)">label</span>
+                        <span style="flex:1;font-weight:700">Kategori Transaksi Kustom</span>
+                        <span class="settings-card-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-card-body">
+                        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Tambah kategori kustom untuk pemasukan dan pengeluaran. Kategori bawaan tidak bisa dihapus.</div>
+                        <div style="margin-bottom:8px">
+                            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Kategori Pemasukan Tambahan</label>
+                            <div id="customIncomeCatsList"></div>
+                            <button class="btn btn-outline" onclick="addCustomCategory('income')" style="margin-top:4px;font-size:12px">+ Tambah Kategori Pemasukan</button>
                         </div>
-                        <div class="card">
-                            <div class="card-title">📋 Layanan Usaha</div>
-                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Layanan ini tampil di slip foto invoice.</div>
-                            <div id="servicesList"></div>
-                            <button class="btn btn-outline" onclick="addServiceItem()" style="margin-top:8px">+ Tambah Layanan</button>
-                            <button class="btn btn-primary" onclick="saveServicesFromUI()" style="margin-top:8px;display:block">💾 Simpan Layanan</button>
+                        <div>
+                            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Kategori Pengeluaran Tambahan</label>
+                            <div id="customExpenseCatsList"></div>
+                            <button class="btn btn-outline" onclick="addCustomCategory('expense')" style="margin-top:4px;font-size:12px">+ Tambah Kategori Pengeluaran</button>
                         </div>
-                        <div class="card">
-                            <div class="card-title">📑 Tipe Pesanan</div>
-                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Tipe pesanan yang tersedia. Tipe bawaan tidak bisa dihapus.</div>
-                            <div id="invoiceTypesList"></div>
-                            <button class="btn btn-outline" onclick="showAddInvoiceType()" style="margin-top:8px">+ Tambah Tipe Pesanan</button>
-                            <button class="btn btn-primary" onclick="saveInvoiceTypesFromUI()" style="margin-top:8px;display:block">💾 Simpan Tipe Pesanan</button>
+                        <button class="btn btn-primary" onclick="saveCustomCategories()" style="margin-top:8px">💾 Simpan Kategori Kustom</button>
+                    </div>
+                </div>
+
+                <!-- ===== SHORTCUT CEPAT ===== -->
+                <div class="card settings-card">
+                    <div class="settings-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span class="m-icon" style="color:var(--gold)">bolt</span>
+                        <span style="flex:1;font-weight:700">Shortcut Cepat</span>
+                        <span class="settings-card-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-card-body">
+                        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Pilih menu yang tampil di quick menu dashboard (minimal 4).</div>
+                        <div id="shortcutList"></div>
+                        <button class="btn btn-primary" onclick="saveShortcuts()" style="margin-top:8px">💾 Simpan Shortcut</button>
+                    </div>
+                </div>
+
+                <!-- ===== AI ASSISTANT ===== -->
+                <div class="card settings-card">
+                    <div class="settings-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span class="m-icon" style="color:var(--gold)">smart_toy</span>
+                        <span style="flex:1;font-weight:700">AI Assistant</span>
+                        <span class="settings-card-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-card-body">
+                        <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">
+                            AI bisa bantu isi item pesanan dan kategorisasi transaksi.<br>
+                            Dapatkan API Key gratis di <strong>https://aistudio.google.com/apikey</strong>
                         </div>
-                        <div class="card">
-                            <div class="card-title">🏷️ Kategori Transaksi Kustom</div>
-                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Tambah kategori kustom untuk pemasukan dan pengeluaran. Kategori bawaan tidak bisa dihapus.</div>
-                            <div style="margin-bottom:8px">
-                                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Kategori Pemasukan Tambahan</label>
-                                <div id="customIncomeCatsList"></div>
-                                <button class="btn btn-outline" onclick="addCustomCategory('income')" style="margin-top:4px;font-size:12px">+ Tambah Kategori Pemasukan</button>
-                            </div>
-                            <div style="margin-bottom:8px">
-                                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Kategori Pengeluaran Tambahan</label>
-                                <div id="customExpenseCatsList"></div>
-                                <button class="btn btn-outline" onclick="addCustomCategory('expense')" style="margin-top:4px;font-size:12px">+ Tambah Kategori Pengeluaran</button>
-                            </div>
-                            <button class="btn btn-primary" onclick="saveCustomCategories()" style="margin-top:8px;display:block">💾 Simpan Kategori Kustom</button>
+                        <div class="form-group">
+                            <label class="form-label">Gemini API Key</label>
+                            <input type="text" class="form-input" id="settingAiKey" placeholder="Masukkan API Key Gemini">
+                        </div>
+                        <button class="btn btn-primary" onclick="saveAiKey()" style="background:linear-gradient(90deg,#775B5B,#9B7E7E)">💾 Simpan API Key</button>
+                    </div>
+                </div>
+
+                <!-- ===== BAHASA ===== -->
+                <div class="card settings-card">
+                    <div class="settings-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span class="m-icon" style="color:var(--gold)">language</span>
+                        <span style="flex:1;font-weight:700">Bahasa</span>
+                        <span class="settings-card-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-card-body">
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+                            <span style="font-size:14px;font-weight:600">Indonesia</span>
+                            <button class="btn btn-outline" onclick="toggleLanguage()" style="font-size:12px;padding:6px 16px;width:auto">Ganti ke English</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- ===== GRUP 4: PERSONALISASI ===== -->
-                <div class="settings-group">
-                    <div class="settings-group-header" onclick="toggleSettingsGroup(this)">
-                        <span class="m-icon">tune</span> Personalisasi
-                        <span class="settings-arrow">expand_more</span>
+                <!-- ===== BACKUP & DATA ===== -->
+                <div class="card settings-card">
+                    <div class="settings-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span class="m-icon" style="color:var(--gold)">cloud</span>
+                        <span style="flex:1;font-weight:700">Backup & Data</span>
+                        <span class="settings-card-arrow">expand_more</span>
                     </div>
-                    <div class="settings-group-body">
-                        <div class="card">
-                            <div class="card-title">⚡ Shortcut Cepat</div>
-                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Pilih menu yang tampil di quick menu dashboard (minimal 4).</div>
-                            <div id="shortcutList"></div>
-                            <button class="btn btn-primary" onclick="saveShortcuts()" style="margin-top:8px">💾 Simpan Shortcut</button>
-                        </div>
-                        <div class="card">
-                            <div class="card-title">🤖 AI Assistant</div>
-                            <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">
-                                AI bisa bantu isi item pesanan dan kategorisasi transaksi.<br>
-                                Dapatkan API Key gratis di <strong>https://aistudio.google.com/apikey</strong>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Gemini API Key</label>
-                                <input type="text" class="form-input" id="settingAiKey" placeholder="Masukkan API Key Gemini">
-                            </div>
-                            <button class="btn btn-primary" onclick="saveAiKey()" style="background:linear-gradient(90deg,#775B5B,#9B7E7E)">💾 Simpan API Key</button>
-                        </div>
-                        <div class="card">
-                            <div class="card-title"><span class="m-icon" style="font-size:18px">language</span> Bahasa / Language</div>
-                            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
-                                <span style="font-size:14px">Indonesia</span>
-                                <button class="btn btn-outline" onclick="toggleLanguage()" style="font-size:12px;padding:6px 16px">Ganti ke English</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ===== GRUP 5: DATA ===== -->
-                <div class="settings-group">
-                    <div class="settings-group-header" onclick="toggleSettingsGroup(this)">
-                        <span class="m-icon">cloud</span> Backup & Data
-                        <span class="settings-arrow">expand_more</span>
-                    </div>
-                    <div class="settings-group-body">
-                        <div class="card">
+                    <div class="settings-card-body">
+                        <div class="card" style="margin:0 0 8px">
                             <div class="card-title"><span class="m-icon" style="font-size:18px">cloud_upload</span> Backup Telegram</div>
                             <div style="padding:8px 0;font-size:12px;color:var(--text-secondary);line-height:1.8">
                                 <div>📱 Lokal: ✅ Tersimpan di perangkat ini</div>
@@ -671,7 +735,7 @@
                                 1. Buka Telegram cari <strong>@BotFather</strong><br>
                                 2. Ketik <strong>/newbot</strong> → ikuti petunjuk<br>
                                 3. Copy <strong>Bot Token</strong> (format: 123456:ABC-DEF)<br>
-                                4. Kirim pesan ke bot kamu lalu buka <strong>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</strong><br>
+                                4. Kirim pesan ke bot lalu buka <strong>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</strong><br>
                                 5. Copy angka <strong>chat_id</strong> (dari "chat":{"id":...})<br>
                                 6. Masukkan Token & Chat ID di bawah
                             </div>
@@ -687,7 +751,7 @@
                             <button class="btn btn-success" onclick="syncToTelegram()" style="margin-bottom:6px">⬆️ Backup Data ke Telegram</button>
                             <button class="btn btn-outline" onclick="restoreFromTelegram()">⬇️ Restore Data dari Telegram</button>
                         </div>
-                        <div class="card">
+                        <div class="card" style="margin:0">
                             <div class="card-title">💾 Data & Sharing</div>
                             <button class="btn btn-outline" onclick="exportData()" style="margin-bottom:8px">📥 Export Data (JSON)</button>
                             <button class="btn btn-outline" onclick="document.getElementById('importFile').click()" style="margin-bottom:8px">📤 Import Data dari File</button>
@@ -784,8 +848,12 @@
             </div>
             <div class="chat-messages" id="chatMessages"></div>
             <div class="chat-input-bar">
-                <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ketik atau sentuh mic untuk bicara..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
-                <button class="chat-mic-btn" id="chatMicBtn" onclick="toggleVoiceInput()"><span class="m-icon" id="chatMicIcon">mic</span></button>
+                <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ketik, mic, foto, atau scan bill..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
+                <button class="chat-mic-btn" id="chatMicBtn" onclick="toggleVoiceInput()" title="Voice input"><span class="m-icon" id="chatMicIcon">mic</span></button>
+                <button class="chat-img-btn" id="chatImgBtn" onclick="document.getElementById('chatPhotoInput').click()" title="Kirim foto"><span class="m-icon">image</span></button>
+                <input type="file" id="chatPhotoInput" accept="image/*" style="display:none" onchange="sendPhotoToAI(this)">
+                <button class="chat-scan-btn" id="chatScanBtn" onclick="document.getElementById('chatBillInput').click()" title="Scan bill/nota"><span class="m-icon">receipt_long</span></button>
+                <input type="file" id="chatBillInput" accept="image/*" capture="environment" style="display:none" onchange="scanBill(this)">
                 <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()"><span class="m-icon">send</span></button>
             </div>
         </div>
