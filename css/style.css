@@ -318,8 +318,9 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
     left: 16px;
     right: 16px;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(201, 168, 122, 0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgba(201, 168, 122, 0.6), transparent);
     border-radius: 1px;
+    box-shadow: 0 0 12px rgba(201, 168, 122, 0.3);
 }
 
 .header-top {
@@ -2442,8 +2443,9 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
     position: absolute;
     bottom: 0;
     left: 0; right: 0;
-    height: 1px;
+    height: 2px;
     background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    box-shadow: 0 0 12px rgba(201, 168, 122, 0.3);
 }
 .bottom-nav {
     background: linear-gradient(180deg, var(--surface) 20%, var(--surface-2) 100%);
@@ -2585,19 +2587,12 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
     justify-content: space-between;
     padding: 10px 16px;
     background: var(--surface);
-    border-bottom: 1px solid var(--border-light);
+    border-bottom: 2px solid var(--gold);
     position: sticky;
     top: 0;
     z-index: 10;
 }
-.chat-header-info { display: flex; align-items: center; gap: 10px; }
-.chat-header-icon {
-    width: 34px; height: 34px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--gold), var(--secondary-light));
-    display: flex; align-items: center; justify-content: center;
-    color: white; box-shadow: 0 3px 10px rgba(201,168,122,0.3);
-}
-.chat-header-title { font-size: 14px; font-weight: 700; }
+.chat-header-title { font-size: 15px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px; }
 .chat-clear-btn {
     width: 32px; height: 32px; border-radius: 50%; border: none;
     background: var(--surface-2); color: var(--text-secondary);

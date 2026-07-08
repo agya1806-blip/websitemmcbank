@@ -81,11 +81,9 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <button class="icon-btn" onclick="showPage('chat')" title="AI Chat"><span class="m-icon">smart_toy</span></button>
                     <button class="icon-btn" onclick="showPage('about')" title="Info"><span class="m-icon">info</span></button>
                     <button class="icon-btn" id="headerThemeToggle" onclick="toggleTheme()" title="Mode Gelap/Terang"><span class="m-icon">dark_mode</span></button>
                     <button class="icon-btn" onclick="showPage('settings')" title="Pengaturan"><span class="m-icon">tune</span></button>
-                    <button class="icon-btn" onclick="location.reload()" title="Refresh"><span class="m-icon">refresh</span></button>
                 </div>
             </div>
             <div class="balance-card">
@@ -101,8 +99,8 @@
                     <span class="hq-label">Pesanan</span>
                 </button>
                 <button class="hq-item" onclick="showPage('finance')">
-                    <span class="hq-icon"><span class="m-icon">account_balance</span></span>
-                    <span class="hq-label">Keuangan</span>
+                    <span class="hq-icon"><span class="m-icon">edit_note</span></span>
+                    <span class="hq-label">Catat Keuangan</span>
                 </button>
                 <button class="hq-item" onclick="showPage('products')">
                     <span class="hq-icon"><span class="m-icon">inventory_2</span></span>
@@ -216,7 +214,7 @@
             <div class="card">
                 <div class="card-title">⚡ Menu Cepat</div>
                 <div class="menu-grid">
-                    <div class="menu-item" onclick="showPage('finance')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">account_balance</span></div><div class="menu-label">Keuangan</div></div>
+                    <div class="menu-item" onclick="showPage('finance')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">edit_note</span></div><div class="menu-label">Catat Keuangan</div></div>
                     <div class="menu-item" onclick="showPage('wallet')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">credit_card</span></div><div class="menu-label">Dompet</div></div>
                     <div class="menu-item" onclick="showPage('pesan')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">note</span></div><div class="menu-label">Pesanan</div></div>
                     <div class="menu-item" onclick="showPage('customer')"><div class="menu-icon"><span class="m-icon" style="font-size:24px;color:white">people</span></div><div class="menu-label">Pelanggan</div></div>
@@ -425,7 +423,8 @@
         <div class="page" id="page-calendar">
             <div style="padding:0 16px">
                 <div class="card">
-                    <div class="card-title"><span class="m-icon" style="font-size:18px">calendar_month</span> Kalender Transaksi
+                    <div class="card-title" style="gap:4px">
+                        <span class="m-icon" style="font-size:18px">calendar_month</span> Kalender
                         <div style="display:flex;gap:4px;margin-left:auto">
                             <button class="btn btn-outline" onclick="calendarPrevMonth()" style="padding:4px 8px;font-size:14px;min-height:auto">‹</button>
                             <span id="calendarMonthLabel" style="font-size:13px;font-weight:600;min-width:120px;text-align:center;display:flex;align-items:center;justify-content:center"></span>
@@ -435,8 +434,19 @@
                     <div id="calendarGrid" style="margin-top:8px"></div>
                 </div>
                 <div class="card">
-                    <div class="card-title"><span class="m-icon" style="font-size:18px">receipt_long</span> Detail Tanggal Terpilih</div>
+                    <div class="card-title"><span class="m-icon" style="font-size:18px">receipt_long</span> Detail Tanggal</div>
                     <div id="calendarDetail" style="min-height:60px;font-size:13px;color:var(--text-secondary)">Pilih tanggal untuk melihat transaksi</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="m-icon" style="font-size:18px">date_range</span> Export Range Tanggal</div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+                        <span style="font-size:11px;color:var(--text-secondary);font-weight:600">Dari</span>
+                        <input type="date" id="calExportStart" class="form-input" style="flex:1;min-width:100px;font-size:12px;padding:8px">
+                        <span style="font-size:11px;color:var(--text-secondary);font-weight:600">sd</span>
+                        <input type="date" id="calExportEnd" class="form-input" style="flex:1;min-width:100px;font-size:12px;padding:8px">
+                        <button class="btn btn-primary" onclick="exportCalendarRange()" style="font-size:11px;white-space:nowrap">📊 Export</button>
+                    </div>
+                    <div id="calExportResult" style="margin-top:8px;font-size:12px;color:var(--text-secondary)"></div>
                 </div>
             </div>
             <div style="height:20px"></div>
@@ -837,12 +847,7 @@
         <!-- CHAT PAGE -->
         <div class="page" id="page-chat">
             <div class="chat-header">
-                <div class="chat-header-info">
-                    <span class="chat-header-icon"><span class="m-icon" style="font-size:20px">smart_toy</span></span>
-                    <div>
-                        <div class="chat-header-title">AI Asisten</div>
-                    </div>
-                </div>
+                <div class="chat-header-title">AI Asisten</div>
                 <button class="chat-clear-btn" onclick="clearChat()" title="Hapus chat"><span class="m-icon" style="font-size:18px">delete</span></button>
             </div>
             <div class="chat-messages" id="chatMessages"></div>
@@ -945,7 +950,7 @@
                 <span class="nav-label">Aktivitas</span>
             </button>
             <button class="nav-item nav-chat-btn" onclick="showPage('chat')" data-page="chat">
-                <span class="nav-icon"><span class="m-icon">smart_toy</span></span>
+                <span class="nav-icon"><span class="m-icon">chat</span></span>
                 <span class="nav-label">AI Chat</span>
             </button>
             <button class="nav-item" onclick="showPage('reports')" data-page="reports">

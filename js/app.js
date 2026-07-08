@@ -2861,6 +2861,12 @@ function renderCalendar() {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
 
+    // Set default export range to current month
+    const startEl = document.getElementById('calExportStart');
+    const endEl = document.getElementById('calExportEnd');
+    if (startEl && !startEl.value) startEl.value = `${year}-${String(month+1).padStart(2,'0')}-01`;
+    if (endEl && !endEl.value) endEl.value = `${year}-${String(month+1).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
+
     // Build day data
     const dayData = {};
     for (let d = 1; d <= daysInMonth; d++) {
@@ -2955,6 +2961,65 @@ function calendarPrevMonth() {
 function calendarNextMonth() {
     calendarDate.setMonth(calendarDate.getMonth() + 1);
     renderCalendar();
+}
+
+function exportCalendarRange() {
+    const startEl = document.getElementById('calExportStart');
+    const endEl = document.getElementById('calExportEnd');
+    const startVal = startEl?.value;
+    const endVal = endEl?.value;
+    if (!startVal || !endVal) { document.getElementById('calExportResult').textContent = '⚠️ Pilih tanggal mulai dan selesai.'; return; }
+    if (startVal > endVal) { document.getElementById('calExportResult').textContent = '⚠️ Tanggal mulai harus sebelum tanggal selesai.'; return; }
+
+    const allTx = loadData(DB.transactions) || [];
+    const filtered = allTx.filter(t => t.date && t.date >= startVal && t.date <= endVal);
+    const startD = new Date(startVal + 'T00:00:00');
+    const endD = new Date(endVal + 'T00:00:00');
+
+    let income = 0, expense = 0, modalOut = 0;
+    filtered.forEach(t => {
+        const a = parseFloat(t.amount) || 0;
+        if (t.type === 'income') income += a;
+        else if (t.type === 'expense' && !t.isModalKeluar) expense += a;
+        else if (t.type === 'expense' && t.isModalKeluar) modalOut += a;
+    });
+
+    const totalTx = filtered.length;
+    const sorted = filtered.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+    let html = `<div style="padding:8px 0;border-top:1px solid var(--border-light);margin-top:6px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:6px">
+            <div style="background:var(--surface-2);border-radius:8px;padding:8px;text-align:center">
+                <div style="font-size:9px;color:var(--text-secondary)">Transaksi</div>
+                <div style="font-size:16px;font-weight:700;color:var(--text)">${totalTx}</div>
+            </div>
+            <div style="background:var(--success-light);border-radius:8px;padding:8px;text-align:center">
+                <div style="font-size:9px;color:var(--text-secondary)">Pemasukan</div>
+                <div style="font-size:14px;font-weight:700;color:var(--success)">${formatRupiah(income)}</div>
+            </div>
+            <div style="background:var(--danger-light);border-radius:8px;padding:8px;text-align:center">
+                <div style="font-size:9px;color:var(--text-secondary)">Pengeluaran</div>
+                <div style="font-size:14px;font-weight:700;color:var(--danger)">${formatRupiah(expense)}</div>
+            </div>
+        </div>`;
+
+    if (totalTx > 0) {
+        html += `<div style="max-height:200px;overflow-y:auto;border-top:1px solid var(--border-light);padding-top:6px">`;
+        sorted.forEach(t => {
+            const wName = loadData(DB.wallets).find(w => w.id === t.walletId)?.name || 'Dompet';
+            html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border-light);font-size:11px">
+                <div style="flex:1;min-width:0">
+                    <span style="font-weight:600">${t.date}</span>
+                    <span style="color:var(--text-secondary);margin-left:4px">${t.description || t.category || '-'}</span>
+                </div>
+                <span style="font-weight:600;color:${t.type==='income'?'var(--success)':'var(--danger)'};white-space:nowrap;margin-left:6px">${t.type==='income'?'+':'-'}${formatRupiah(t.amount)}</span>
+            </div>`;
+        });
+        html += `</div>`;
+    }
+
+    html += `</div>`;
+    document.getElementById('calExportResult').innerHTML = html;
 }
 
 // ==================== DEBT / RECEIVABLE TABS ====================
