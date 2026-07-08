@@ -535,6 +535,7 @@ function init() {
 
     updateSyncStatus();
     checkCloudDataAvailable();
+    processRecurringTransactions();
     setTimeout(checkDueDates, 1000);
     setInterval(checkDueDates, 3600000);
 }
@@ -3064,6 +3065,117 @@ function sendCalendarWA() {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
+// ==================== RECURRING TRANSACTIONS ====================
+
+function renderRecurringList() {
+    const container = document.getElementById('recurringList');
+    if (!container) return;
+    const list = loadData(DB.recurring) || [];
+    if (list.length === 0) {
+        container.innerHTML = '<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">Belum ada transaksi berulang.</div>';
+        return;
+    }
+    container.innerHTML = list.map((r, i) => `
+        <div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--border-light);font-size:13px">
+            <div style="flex:1">
+                <div style="font-weight:600">${r.label}</div>
+                <div style="font-size:11px;color:var(--text-secondary)">${r.type === 'income' ? 'Pemasukan' : 'Pengeluaran'} • ${formatRupiah(r.amount)} • Tgl ${r.day}</div>
+            </div>
+            <button class="btn btn-outline" style="padding:4px 8px;font-size:11px" onclick="editRecurring('${r.id}')">Edit</button>
+            <button class="btn btn-danger" style="padding:4px 8px;font-size:11px" onclick="deleteRecurring('${r.id}')">✕</button>
+        </div>
+    `).join('');
+}
+
+function openRecurringModal(data) {
+    document.getElementById('recEditId').value = data?.id || '';
+    document.getElementById('recLabel').value = data?.label || '';
+    document.getElementById('recAmount').value = data?.amount || '';
+    document.getElementById('recType').value = data?.type || 'expense';
+    document.getElementById('recCategory').value = data?.category || '';
+    document.getElementById('recDay').value = data?.day || '1';
+    const sel = document.getElementById('recWallet');
+    const wallets = loadData(DB.wallets);
+    sel.innerHTML = wallets.map(w => `<option value="${w.id}" ${w.id === data?.walletId ? 'selected' : ''}>${w.name}</option>`).join('');
+    openModal('recurringModal');
+}
+
+function editRecurring(id) {
+    const list = loadData(DB.recurring) || [];
+    const item = list.find(r => r.id === id);
+    if (item) openRecurringModal(item);
+}
+
+function saveRecurring() {
+    const id = document.getElementById('recEditId').value;
+    const label = document.getElementById('recLabel').value.trim();
+    const amount = document.getElementById('recAmount').value;
+    const type = document.getElementById('recType').value;
+    const category = document.getElementById('recCategory').value.trim();
+    const walletId = document.getElementById('recWallet').value;
+    const day = parseInt(document.getElementById('recDay').value);
+    if (!label || !amount || isNaN(day) || day < 1 || day > 31) { alert('⚠️ Isi semua field dengan benar (label, jumlah, tanggal 1-31).'); return; }
+    let list = loadData(DB.recurring) || [];
+    if (id) {
+        const idx = list.findIndex(r => r.id === id);
+        if (idx !== -1) list[idx] = { ...list[idx], label, amount: parseFloat(amount), type, category, walletId, day };
+    } else {
+        list.push({ id: 'rec_' + Date.now(), label, amount: parseFloat(amount), type, category, walletId, day, active: true, lastRun: null });
+    }
+    saveData(DB.recurring, list);
+    closeModal('recurringModal');
+    renderRecurringList();
+    showToast('✅ Transaksi berulang disimpan');
+}
+
+function deleteRecurring(id) {
+    if (!confirm('Hapus transaksi berulang ini?')) return;
+    let list = loadData(DB.recurring) || [];
+    list = list.filter(r => r.id !== id);
+    saveData(DB.recurring, list);
+    renderRecurringList();
+    showToast('Dihapus');
+}
+
+function processRecurringTransactions() {
+    const list = loadData(DB.recurring) || [];
+    if (list.length === 0) return;
+    const now = new Date();
+    const today = now.getDate();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    let created = 0;
+    list.forEach(r => {
+        if (!r.active) return;
+        if (r.day !== today) return;
+        const lastRun = r.lastRun ? new Date(r.lastRun) : null;
+        if (lastRun && lastRun.getMonth() === thisMonth && lastRun.getFullYear() === thisYear) return;
+        let transactions = loadData(DB.transactions) || [];
+        transactions.push({
+            id: 'tx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            type: r.type,
+            amount: r.amount,
+            category: r.category || 'Transaksi Berulang',
+            description: r.label + ' (Otomatis)',
+            walletId: r.walletId,
+            date: dateStr,
+            cabang: '',
+            createdAt: Date.now()
+        });
+        saveData(DB.transactions, transactions);
+        r.lastRun = now.toISOString();
+        created++;
+    });
+    if (created > 0) {
+        saveData(DB.recurring, list);
+        showToast(`✅ ${created} transaksi berulang tercatat`);
+    }
+}
+
 // ==================== DEBT / RECEIVABLE TABS ====================
 
 function switchDebtTab(tab) {
@@ -3462,6 +3574,7 @@ function updateSettingsUI() {
     renderCustomCategoriesSettings();
     renderCabangSettings();
     renderShortcutSettings();
+    renderRecurringList();
 }
 
 const EXTRA_KEYS = {

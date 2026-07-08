@@ -578,6 +578,12 @@ function renderPesan() {
     const activeBtn = document.querySelector(`#page-pesan .pesan-type-btn[data-type="${type || 'all'}"]`);
     if (activeBtn) activeBtn.classList.add('active');
 
+    // Archive filter
+    const showArchivedPesan = document.getElementById('showArchivedPesan')?.checked;
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    if (!showArchivedPesan) pesanan = pesanan.filter(p => !p.date || new Date(p.date) >= sixMonthsAgo);
+
     if (tab === 'baru') pesanan = pesanan.filter(p => p.orderStatus === 'Baru');
     else if (tab === 'proses') pesanan = pesanan.filter(p => p.orderStatus === 'Diproses');
     else if (tab === 'selesai') pesanan = pesanan.filter(p => p.orderStatus === 'Selesai');

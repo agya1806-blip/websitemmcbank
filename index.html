@@ -358,6 +358,12 @@
                 <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" id="pesanSearch" placeholder="Cari pesanan..." oninput="renderPesan()">
             </div>
+            <div style="display:flex;gap:6px;align-items:center;padding:2px 16px 6px">
+                <label class="toggle" style="gap:6px;font-size:11px;color:var(--text-secondary)">
+                    <input type="checkbox" id="showArchivedPesan" onchange="renderPesan()" style="accent-color:var(--gold)">
+                    Tampilkan arsip (>6 bln)
+                </label>
+            </div>
             <div id="pesanList"></div>
             <button class="fab" onclick="openPesanKategoriModal()">+</button>
         </div>
@@ -698,6 +704,22 @@
                         <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Pilih menu yang tampil di quick menu dashboard (minimal 4).</div>
                         <div id="shortcutList"></div>
                         <button class="btn btn-primary" onclick="saveShortcuts()" style="margin-top:8px">💾 Simpan Shortcut</button>
+                    </div>
+                </div>
+
+                <!-- ===== TRANSAKSI BERULANG ===== -->
+                <div class="card settings-card">
+                    <div class="settings-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span class="m-icon" style="color:var(--gold)">repeat</span>
+                        <span style="flex:1;font-weight:700">Transaksi Berulang</span>
+                        <span class="settings-card-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-card-body">
+                        <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:8px">
+                           Otomatis catat transaksi bulanan. Cek setiap kali buka aplikasi.
+                        </div>
+                        <div id="recurringList"></div>
+                        <button class="btn btn-outline" onclick="openRecurringModal()" style="margin-top:8px;font-size:12px">+ Tambah Baru</button>
                     </div>
                 </div>
 
@@ -1497,6 +1519,44 @@
                 <div class="modal-body no-print" style="padding-top:0">
                     <button class="btn btn-success" onclick="shareCatalog()" style="margin-bottom:10px">📱 Bagikan via WA</button>
                     <button class="btn btn-outline" onclick="closeModal('productCatalogModal')">Tutup</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RECURRING MODAL -->
+        <div class="modal-overlay" id="recurringModal">
+            <div class="modal">
+                <div class="modal-header"><span class="modal-title" id="recurringModalTitle">Tambah Transaksi Berulang</span><button class="modal-close" onclick="closeModal('recurringModal')">✕</button></div>
+                <div class="modal-body">
+                    <input type="hidden" id="recEditId">
+                    <div class="form-group">
+                        <label class="form-label">Label</label>
+                        <input type="text" class="form-input" id="recLabel" placeholder="contoh: Listrik Bulanan">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Jumlah (Rp)</label>
+                        <input type="number" class="form-input" id="recAmount" placeholder="500000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipe</label>
+                        <select class="form-select" id="recType">
+                            <option value="expense">Pengeluaran</option>
+                            <option value="income">Pemasukan</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Kategori</label>
+                        <input type="text" class="form-input" id="recCategory" placeholder="Listrik, Internet, Gaji...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Dompet</label>
+                        <select class="form-select" id="recWallet"></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tanggal (tanggal setiap bulan)</label>
+                        <input type="number" class="form-input" id="recDay" placeholder="1-31" min="1" max="31">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveRecurring()" style="width:100%">💾 Simpan</button>
                 </div>
             </div>
         </div>
