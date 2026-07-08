@@ -25,7 +25,8 @@ const DB = {
     settings: 'mughis_settings',
     activities: 'mughis_activities',
     users: 'mughis_users',
-    pesan: 'mughis_pesan'
+    pesan: 'mughis_pesan',
+    recurring: 'mughis_recurring'
 };
 
 const defaultWallets = [
@@ -1671,10 +1672,16 @@ function renderTransactions() {
     const wallets = loadData(DB.wallets);
     const walletMap = Object.fromEntries(wallets.map(w => [w.id, w]));
     
+    // Apply archive filter
+    const showArchived = document.getElementById('showArchivedTx')?.checked;
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const filteredByDate = showArchived ? transactions : transactions.filter(t => new Date(t.date) >= sixMonthsAgo || !t.date);
+    
     // Apply cabang filter
     const cabangFilter = document.getElementById('cabangFilter');
     const activeCabang = cabangFilter ? cabangFilter.value : '';
-    const filtered = activeCabang ? transactions.filter(t => t.cabang === activeCabang) : transactions;
+    const filtered = activeCabang ? filteredByDate.filter(t => t.cabang === activeCabang) : filteredByDate;
     
     const incomeList = filtered.filter(t => t.type === 'income');
     const expenseList = filtered.filter(t => t.type === 'expense' && !t.isModalKeluar);
@@ -1691,18 +1698,17 @@ function renderTransactions() {
             const isIncome = t.type === 'income' || t.type === 'transfer_in';
             const isExpense = t.type === 'expense' || t.type === 'transfer_out';
             return `
-            <div class="card">
+            <div class="card" style="cursor:pointer" onclick="editTransaction('${t.id}')">
                 <div class="list-item" style="padding-top:0">
                     <div class="list-icon" style="background:${isIncome?'rgba(201,168,122,0.15)':'rgba(119,91,91,0.12)'}">${isIncome?'📥':'📤'}</div>
                     <div class="list-content">
                         <div class="list-title">${t.description}</div>
                         <div class="list-subtitle">${formatDate(t.date)} • ${t.category} • ${walletMap[t.walletId]?.name||'-'}${t.cabang ? ' • <span class="cabang-tag">' + t.cabang + '</span>' : ''}</div>
                     </div>
-                    <div class="list-amount ${t.type}">${isIncome?'+':'-'} ${formatRupiah(t.amount)}</div>
+                    <div class="list-amount ${t.type}" style="cursor:default" onclick="event.stopPropagation()">${isIncome?'+':'-'} ${formatRupiah(t.amount)}</div>
                 </div>
                 <div style="display:flex;gap:8px;padding:0 0 12px;margin-top:8px">
-                    <button class="btn btn-outline" style="padding:6px;font-size:12px;flex:1" onclick="editTransaction('${t.id}')">Edit</button>
-                    <button class="btn btn-danger" style="padding:6px;font-size:12px;flex:1" onclick="deleteTransaction('${t.id}')">Hapus</button>
+                    <button class="btn btn-danger" style="padding:6px;font-size:12px;flex:1" onclick="event.stopPropagation();deleteTransaction('${t.id}')">Hapus</button>
                 </div>
             </div>`;
         }).join('');
@@ -3020,6 +3026,42 @@ function exportCalendarRange() {
 
     html += `</div>`;
     document.getElementById('calExportResult').innerHTML = html;
+    // Store data for PDF/WA export
+    window._calExportData = { startVal, endVal, income, expense, modalOut, totalTx, sorted, startD, endD };
+    const actions = document.getElementById('calExportActions');
+    if (actions) { actions.style.display = 'flex'; }
+}
+
+function exportCalendarPDF() {
+    const d = window._calExportData;
+    if (!d) return;
+    const { startVal, endVal, income, expense, modalOut, totalTx, sorted } = d;
+    const wName = (id) => loadData(DB.wallets).find(w => w.id === id)?.name || 'Dompet';
+    let rows = sorted.map(t => `${t.date}\t${t.description||'-'}\t${t.category||'-'}\t${wName(t.walletId)}\t${t.type==='income'?'Pemasukan':'Pengeluaran'}\t${formatRupiah(t.amount)}`).join('\n');
+    const text = `LAPORAN KEUANGAN\nPeriode: ${startVal} s/d ${endVal}\n\nRINGKASAN:\nTotal Transaksi: ${totalTx}\nPemasukan: ${formatRupiah(income)}\nPengeluaran: ${formatRupiah(expense)}\n${modalOut ? 'Modal Keluar: '+formatRupiah(modalOut)+'\n' : ''}Saldo Bersih: ${formatRupiah(income - expense - modalOut)}\n\nDETAIL:\nTanggal\tDeskripsi\tKategori\tDompet\tTipe\tJumlah\n${rows}\n\n-- Dicetak dari Mughis Bank`;
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `laporan_keuangan_${startVal}_${endVal}.txt`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+function sendCalendarWA() {
+    const d = window._calExportData;
+    if (!d) return;
+    const { startVal, endVal, income, expense, modalOut, totalTx, sorted } = d;
+    const days = Math.round((d.endD - d.startD) / (1000*60*60*24)) + 1;
+    let msg = `📊 *Laporan Keuangan*\n🗓 ${startVal} s/d ${endVal} (${days} hari)\n\n📌 *Ringkasan*\n• Transaksi: ${totalTx}\n• Pemasukan: ${formatRupiah(income)}\n• Pengeluaran: ${formatRupiah(expense)}`;
+    if (modalOut) msg += `\n• Modal Keluar: ${formatRupiah(modalOut)}`;
+    msg += `\n• Saldo Bersih: ${formatRupiah(income - expense - modalOut)}`;
+    const top = sorted.slice(0, 10);
+    if (top.length) {
+        msg += `\n\n📋 *Transaksi Terbaru*`;
+        top.forEach(t => msg += `\n${t.date} ${t.description||'-'} (${t.type==='income'?'+':'-'}${formatRupiah(t.amount)})`);
+        if (sorted.length > 10) msg += `\n...dan ${sorted.length - 10} transaksi lainnya`;
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 // ==================== DEBT / RECEIVABLE TABS ====================

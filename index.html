@@ -276,6 +276,12 @@
                 <button class="tab" onclick="switchFinanceTab('transfer')">Transfer</button>
             </div>
             <div id="cabangFilterContainer" style="padding:0 12px"></div>
+            <div style="display:flex;gap:6px;align-items:center;padding:4px 16px 6px">
+                <label class="toggle" style="gap:6px;font-size:11px;color:var(--text-secondary)">
+                    <input type="checkbox" id="showArchivedTx" onchange="renderTransactions()" style="accent-color:var(--gold)">
+                    Tampilkan arsip (>6 bln)
+                </label>
+            </div>
             <div id="finance-income"><div id="incomeList"></div></div>
             <div id="finance-expense" style="display:none;"><div id="expenseList"></div></div>
             <div id="finance-modal" style="display:none;"><div id="modalList"></div></div>
@@ -447,6 +453,10 @@
                         <button class="btn btn-primary" onclick="exportCalendarRange()" style="font-size:11px;white-space:nowrap">📊 Export</button>
                     </div>
                     <div id="calExportResult" style="margin-top:8px;font-size:12px;color:var(--text-secondary)"></div>
+                    <div id="calExportActions" style="display:none;gap:6px;margin-top:6px;flex-wrap:wrap">
+                        <button class="btn btn-outline" onclick="sendCalendarWA()" style="font-size:11px;flex:1">📱 Kirim WA</button>
+                        <button class="btn btn-outline" onclick="exportCalendarPDF()" style="font-size:11px;flex:1">📄 PDF</button>
+                    </div>
                 </div>
             </div>
             <div style="height:20px"></div>
