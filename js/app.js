@@ -3205,6 +3205,22 @@ function saveAiKey() {
     alert('✅ API Key AI disimpan!');
 }
 
+let apiKeyVisible = false;
+function toggleApiKeyVisibility() {
+    apiKeyVisible = !apiKeyVisible;
+    const el = document.getElementById('apiKeyDisplay');
+    const eye = document.getElementById('apiKeyEye');
+    if (!el) return;
+    if (apiKeyVisible) {
+        const key = localStorage.getItem(`mughis_ai_key_${currentUser?.userId || 'guest'}`) || '(belum diisi)';
+        el.textContent = key;
+        if (eye) eye.textContent = 'visibility_off';
+    } else {
+        el.textContent = '••••••••';
+        if (eye) eye.textContent = 'visibility';
+    }
+}
+
 // ==================== SETTINGS: Payment Methods, Services, Invoice Types UI ====================
 
 function renderPaymentMethodsSettings() {
